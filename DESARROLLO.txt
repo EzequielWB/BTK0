@@ -1,0 +1,606 @@
+================================================================================
+ LA BITAK0R4_ DE EZEQUIEL - LOG DE DESARROLLO
+ Registro paso a paso de todo lo que se va construyendo.
+================================================================================
+
+[2026-09-07] FASE 1 - ESTRUCTURA COMPLETA
+  - Scaffold con create-next-app@latest:
+    * Next.js 16.3.4, React 19, TypeScript, Tailwind CSS v4, ESLint, App Router
+    * El proyecto se creó en la subcarpeta "bitakra/" (npm no permite mayúsculas
+      en el nombre del paquete) y se movió todo a la raíz E:\PROYECTO_BitAK0RA
+  - Dependencias instaladas:
+    * @supabase/ssr + @supabase/supabase-js -> conexión con Supabase
+    * @serwist/next + serwist -> PWA (service worker, offline)
+    * recharts -> gráficos de estadísticas
+  - Git: repositorio inicializado por create-next-app en la raíz.
+
+  - Base de datos (Supabase):
+    * supabase/schema.sql -> tablas: password_config, objectives, days,
+      daily_objectives, temporal_goals. RLS habilitado sin políticas: solo el
+      service role key (backend) puede acceder.
+    * supabase/seed.sql -> contraseña inicial "bitakra" + 3 objetivos de ejemplo.
+
+  - Configuración:
+    * next.config.ts -> envoltura conSerwist (PWA). swSrc app/sw.ts, swDest
+      public/sw.js, cacheOnNavigation, register automático, deshabilitado en dev.
+    * scripts: dev = "next dev --turbopack", build = "next build --webpack"
+      (Serwist requiere webpack en build).
+    * tsconfig: lib webworker + types "@serwist/next/typings" y "node".
+    * .gitignore: public/sw*.js ignorados.
+    * .env.local.example -> plantilla de variables de Supabase
+      (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
+       SUPABASE_SERVICE_ROLE_KEY).
+
+  - PWA:
+    * app/manifest.ts -> manifest.webmanifest (nombre, íconos, standalone,
+      colores).
+    * app/sw.ts -> service worker Serwist.
+    * scripts/gen-icons.mjs -> generó icon-192.png, icon-512.png y
+      apple-touch-icon.png (placeholders de color sólido).
+    * Se verificó que el <link rel=manifest> y theme-color se inyectan en el
+      HTML.
+
+  - Lógica / capa de datos:
+    * lib/supabase/server.ts -> cliente del lado servidor con service role key.
+    * lib/supabase/client.ts -> cliente del navegador (anon key, para uso futuro).
+    * lib/session.ts -> auth: hash SHA-256 (salt::password), cookie httpOnly
+      "bitakra_session" de 30 días, isAuthenticated() verifica contra Supabase.
+    * lib/actions.ts -> Server Actions:
+      - loginAction / logoutAction / changePasswordAction
+      - saveDayNotes (upsert día + notas)
+      - toggleDailyObjectiveAction (check de objetivos por día)
+      - CRUD objectives (crear/editar/activar/borrar)
+      - CRUD temporal_goals (crear/editar/activar/borrar)
+    * lib/utils.ts -> helpers de fechas (ISO, calendario grid, labels en es).
+    * lib/types.ts -> tipos de las tablas + ChecklistItem + DayStatsPoint.
+
+  - Rutas / páginas:
+    * proxy.ts -> protege /bitacora/* si no hay cookie de sesión; redirige /
+      a /bitacora si ya hay sesión. (Convención "proxy" de Next 16, reemplaza
+      al deprecado middleware.)
+    * app/page.tsx -> login (gate de contraseña) si no hay sesión.
+    * app/(bitacora)/layout.tsx -> header con nav (Hoy / Ajustes / Stats / Salir).
+    * app/(bitacora)/page.tsx -> redirige a la fecha de hoy.
+    * app/(bitacora)/[date]/page.tsx -> vista del día: calendario + navegación,
+      checklist de objetivos (con contador), metas temporales activas para esa
+      fecha, notas con guardado.
+    * app/(bitacora)/settings/page.tsx -> CRUD de objetivos, CRUD de metas
+      temporales y cambio de contraseña.
+    * app/(bitacora)/stats/page.tsx -> cumplimiento (%) de los últimos 30 días
+      (gráfico recharts), racha actual, días con registro/notas.
+
+  - Componentes:
+    * password-gate, logoff-button, calendar-nav (día prev/next + calendario
+      mensual), objectives-checklist (useOptimistic), temporal-goals-section,
+      notes-editor (estados idle/unsaved/saving/saved/error), objective-manager,
+      temporal-goal-manager, change-password-form, stats-charts.
+
+  - Verificación:
+    * npm run lint -> sin errores ni warnings.
+    * npm run build (webpack) -> compila OK, todo dinámico, Serwist bundló sw.js.
+    * Nota: npm audit reporta 2 vuln high en browserslist (dependencia de build
+      de @serwist/next). Es tooling de build, riesgo bajo. El fix requiere
+      @serwist/next@9.4.1 (breaking change) -> se deja pendiente.
+
+  - PENDIENTES (próximos pasos para el usuario):
+    1. Crear proyecto en Supabase.
+    2. Copiar .env.local.example a .env.local y cargar las 3 claves.
+    3. Correr supabase/schema.sql y supabase/seed.sql en el SQL Editor.
+    4. npm run dev y entrar con la contraseña inicial "bitakra"
+       (cambiarla después desde Ajustes > Seguridad).
+    5. Deploy en Vercel (link del repo, variables de entorno, build --webpack
+       ya configurado).
+    6. Estética / tema visual (pensado como fase final).
+
+[2026-09-08] FASE 2 - MODO LOCAL + RUTAS + NOTAS POR DÍA
+  - BUG IMPORTANTE corregido: el grupo de rutas "(bitacora)" NO agrega segmento
+    a la URL (nomenclatura de rutas de Next), así que /bitacora daba 404 y
+    /bitacora/[date] no existía. Se renombró app/(bitacora)/ -> app/bitacora/.
+    Ahora las rutas son /bitacora, /bitacora/[date], /bitacora/settings y
+    /bitacora/stats (se corrigieron path del log FASE 1 arriba: es bitacora/).
+  - Modo local sin Supabase: lib/local-client.ts emula el cliente (select/eq/
+    in/gte/lte/order/single/maybeSingle/insert/upsert/update/delete), persiste
+    en .data/local-db.json (gitignored). Se activa solo si falta la URL de
+    Supabase o con LOCAL_MODE=1. Password inicial local: "bitakra".
+    * lib/supabase/server.ts -> createClient() elige local o Supabase; expone
+      isLocalMode().
+    * app/bitacora/layout.tsx -> badge "LOCAL · SIN DB" cuando corresponde.
+    * Login muestra hint de contraseña local en modo local (PasswordGate).
+  - Notas: se reemplaza el campo único days.notes por una TABLA notes (id, date,
+    content, created_at). Ahora cada día acumula varias notas.
+    * supabase/schema.sql -> nueva tabla notes (+ índice date,created_at) y se
+      dropea days.notes.
+    * lib/actions.ts -> addNoteAction(date, content) y deleteNoteAction(id, date)
+      reemplazan a saveDayNotes.
+    * components/notes-editor.tsx -> lista cronológica de notas ENCIMA del
+      textarea, cada una con hora y botón Eliminar; se agregan con useOptimistic
+      (append), mensaje "Nota agregada" y limpieza del textarea.
+    * El id de cada nota lo genera el CLIENTE (crypto.randomUUID) y se manda en
+      el insert: así el id optimista == id del server y borrar siempre acierta
+      aunque el refresh del server tarde (evita carreras del useOptimistic).
+      addNoteAction(date, content, id).
+    * app/bitacora/[date]/page.tsx -> consulta notas del día, NotesEditor con
+      key={date} para resetear al navegar entre días.
+    * stats: "Días con notas" y "hasData" ahora se calculan desde la tabla notes.
+  - Fix warning de React: "An optimistic state update occurred outside a
+    transition" en objectives-checklist: toggleOptimistic() ahora va DENTRO del
+    startTransition junto a la acción.
+  - ESLint: se ignoran scripts/** (herramientas de testeo: scripts/smoke-test.js).
+  - Frase motivacional: components/motivational-quote.tsx + lib/quotes.ts (12 frases
+    cortas en español con autor). Recuadro justo debajo de la fecha en
+    app/bitacora/[date]/page.tsx: cita con comillas «» en itálica, autor normal.
+    Rota por día de forma determinística (hash de la fecha -> índice): cada día
+    muestra una distinta, estable durante todo el día.
+  - Verificado: npm run build (webpack) compila con las rutas correctas; lint OK.
+
+[2026-09-08] FASE 3 - MÁS FRASES + MARCADO DE DÍAS CUMPLIDOS
+  - Frase motivacional v2: pool expandido de 12 a ~96 frases en lib/quotes.ts
+    (pool local en vez de API externa: la PWA debe andar offline y sin rate
+    limits). Nuevo getRandomQuote() y botón "↻ Otra frase" en
+    components/motivational-quote.tsx (ahora client component, useState), que
+    refresca la cita al instante. La del día sigue siendo determinística por
+    fecha (quoteForDate).
+  - Marcado de días cumplidos en el calendario:
+    * Tabla nueva settings (fila única id=1): completion_mode ('off'|'count'|
+      'percent') + threshold. En supabase/schema.sql (con insert default) y
+      seed en lib/local-client.ts. FIX: load() ahora se asegura de que la fila
+      singleton de settings exista aunque la DB local se haya creado antes.
+    * lib/completion.ts -> isDayFulfilled(config, total, completed): modo
+      'count' (objetivos >= threshold) o 'percent' (% >= threshold).
+    * lib/actions.ts -> saveSettingsAction revalida settings + bitacora.
+    * components/completion-settings-form.tsx -> en Ajustes: criterio
+      (desactivado / por cantidad / por %) + valor mínimo.
+    * components/calendar-nav.tsx -> prop marks (Record<fecha, bool>):
+      día cumplido = punto verde esmeralda ● bajo el número (+ title "Día
+      cumplido"). Las celdas mantienen el * del día actual.
+    * app/bitacora/[date]/page.tsx -> calcula marks: settings + total de
+      objetivos activos + daily_objectives de todos los días (solo si modo
+      distinto de off). Nota: el "total" de un día se estima con los objetivos
+      activos actuales.
+  - Verificado en dev: tsc, lint, build (webpack) y smoke-test completo
+    (refresh de frase, guardado de ajustes, recuadro verde, notas, stats).
+    PENDIENTE AL CONECTAR SUPABASE: sigue el item de updated_at en inserts.
+
+[2026-09-08] FASE 7 - OJO 3D IMPONENTE + APAGADO CRT AL ERRAR EL LOGIN
+  - Ojo reescrito como render 3D real (components/login/ascii-eye.tsx):
+    por celda se proyecta al elipsoide del globo ocular y se calcula la
+    normal -> luz difusa desde arriba-izq + brillo especular + atenuacion de
+    limbo, y la luminosidad se mapea a una rampa de densidad ASCII
+    (· . : - = + * # % @). Mucho mas grande: grid 52x30 celdas, canvas
+    832x510 CSS (min(92vw, 832px)).
+  - Iris/pupila como disco SOBRE la superficie de la esfera orientado por el
+    vector de mirada (G): al mirar de costado el patch se recorre hacia el
+    borde del globo (profundidad real). Iris en anillos concentricos
+    (limbo oscuro, medio, interno), pupila con glint humedo arriba-izq.
+  - Parpados como ocultadores 3D: parpado superior con ceja marcada y arruga
+    (arco que sigue el globo, mas alto hacia afuera) y linea de pestanas
+    brillante que se adelgaza al cerrar; el cerrado colapsa en una fina linea
+    de luz central. Parepado inferior leve.
+  - El ojo se ve ENTERO: la piel del parpado superior (cuenca) se extiende por
+    fuera del globo hasta la arruga, la del inferior envuelve la base, y los
+    CANTOS (puntas) quedan definidos por piel periorbitaria que rodea cada
+    extremo del globo (sin marco/anel posterior, solo ceja marcada).
+  - Miradas: al inicio lentas/solemnes (3-5s); ROUND 2 -> mas rapidas y
+    MARCADAS hacia los costados: sacadas cada ~1.2-2.2s con targets laterales
+    fuertes (hasta +-0.85 en X, +-0.6 en Y) y snaps mas veloces (k dt*7).
+    El parpadeo sigue siendo espaciado (~6-10s).
+  - ROUND 3 (mirada fija alternada): se elimina la sacada aleatoria. El ojo
+    mira SIEMPRE a un lado fijo (+-0.8 horizontal) y CADA parpadeo cambia al
+    lado opuesto: el flip ocurre con el parpado totalmente cerrado (en el
+    hold del blink), asi "parpadea y mira al otro". Parpadeos mas rapidos
+    (cada ~1.5-2.8s, duracion ~340ms) para que el ritmo sea vivo.
+  - ROUND 4 (forma + mirada): se eliminan las "alas" laterales (cantos y
+    cuenca anchos); el tejido periorbitario queda finito y pegado al globo
+    (cuenca delgada arriba/abajo + arruga sutil + punta chica en cada canto).
+    Se quita el brillo especular de la esclera (solo queda el glint humedo
+    sobre la pupila). La mirada ya no es solo izquierda/derecha: cicla un
+    set de 8 direcciones fijas (costados, arriba 3/4, abajo 3/4) y cada
+    parpadeo avanza a la siguiente direccion (con el ojo cerrado). Solo al
+    errar el login mira directo al frente y sale el fade out.
+  - scripts/render-eye.js (dev-tool, exento de ESLint por scripts/): replica
+    la misma matematica sin canvas e imprime el ojo como ASCII en la terminal
+    (estados center/right/left/up/down/half/blink/stare) para iterar el arte
+    sin ver capturas. Con la rampa · . : - = + * # % @  y los %/@/#/tilde
+    _ del parpado/ceja.
+  - Titulo corregido: "¿Sos el que tiene que ser?" (antes "quien").
+  - Login con maquina de estados (components/login/login-screen.tsx, nuevo):
+    idle -> wrong -> flash -> off. PasswordGate agrega onError (detecta
+    error de loginAction una vez por intento) y disabled para no reenviar.
+  - Al errar la contraseña: el ojo fija la mirada AL FRENTE (~320ms, prop
+    stare del AsciiEye -> target 0,0, micro-vida minima y sin sacadas) y
+    luego se reproduce el apagado de televisor viejo (components/login/
+    crt-shutdown.tsx): destello blanco corto con scanlines oscuras -> la
+    imagen brilla y COLAPSA hacia el centro con curvatura (reloj de arena) y
+    parpadeo de fosforo -> linea central que se acorta parpadeando -> NEGRO
+    ABSOLUTO. El apagado NO es un rectangulo blanco plano: la banda se curva,
+    parpadea y se aplasta tipo TV. Sin texto ni boton; hay que refrescar la
+    pagina para reintentar.
+  - El contenido (lluvia, form) se desmonta al llegar a "off"; queda solo un
+    div negro fijo. app/page.tsx ahora monta LoginScreen.
+  - Smoke test ampliado: clave incorrecta -> aparece el overlay negro, el
+    input desaparece, y tras refrescar el login vuelve. Todo verde + sin
+    errores JS (tsc, lint, build webpack).
+
+[2026-09-08] FASE 6 - LOGIN VISUAL (solo /)
+  - Fondo negro + lluvia de caracteres monocroma (blanco cabeza -> grises ->
+    casi transparente): canvas fixed full-viewport (components/login/
+    rain-backdrop.tsx), RAF ~28fps, charset alfanum + katakana + simbolos,
+    pausa con visibilitychange, respeta prefers-reduced-motion.
+  - Ojo ASCII animado al centro (components/login/ascii-eye.tsx): forma
+    almendrada procedimental (elipse con esquinas), esclerotica sombreada con
+    luz desde arriba-izq, iris + pupila brillante que se mueve por sacadas
+    aleatorias (cambia de direccion cada 0.9-2.6s) y parpadea cada ~4-7s
+    (parpados superior/inferior + linea de ojo cerrado). Halo oscuro radial
+    detras para destacarlo de la lluvia.
+  - Titulo pixel "¿Sos quien tiene que ser?" con fuente Press Start 2P
+    (next/font/google self-hosted, fallback monospace) -> util font-pixel.
+  - Input password oscuro de una linea + boton flecha -> al final (type submit,
+    aria-label "Entrar"); sigue name=password/required/autoFocus.
+  - Los selectores del smoke test no cambian (login sigue pasando).
+  - Ajuste visual: lluvia mas densa (GAP 11, FONT 13) y mas rapida
+    (2.1-5.3 px/frame), mas al fondo con opacity-70 + blur 2px. Ojo mas 3D:
+    iris en anillos concentricos (@ o 0 : hacia la pupila), pupila con
+    brillo (glint) arriba-izq, sombra de parpado superior, rebote de luz
+    inferior, contorno tenue de la cuenca y sclera con luz direccional.
+
+[2026-09-08] FASE 5 - CUADRADO PARTICIONADO (3 COLORES) + SECCIÓN "QUÉ APRENDÍ"
+  - Cuadrado del día: sólido y más grande (h-7/min-w-7), se particiona en
+    franjas de igual tamaño según lo que se hizo ese día:
+      * verde  = día cumplido (objetivos, según Ajustes)
+      * amarillo = hay notas
+      * rojo   = hay aprendizajes ("qué aprendí")
+    1 sola cosa -> 100% un color; 2 -> 50/50; 3 -> 33/33/33. El número del
+    día se superpone con texto blanco + sombra.
+  - Nueva tabla learnings (id, date, content, created_at) como notes.
+    Actions addLearningAction/deleteLearningAction (mismo patrón, id generado
+    en el cliente con crypto.randomUUID).
+  - Editor compartido DailyEntriesEditor: notas y aprendizajes reutilizan el
+    mismo componente (lista cronológica + textarea + botón + useOptimistic).
+    NotesEditor y LearningsEditor ahora son wrappers.
+  - Página de día: los 2 editores van lado a lado (grid md:grid-cols-2).
+    Fix React: keys únicas `notes-${date}` / `learnings-${date}` (eran iguales
+    y React tiraba "two children with the same key").
+  - Marcado del calendario: 3 sets (completados por config de Ajustes, con
+    nota, con aprendizaje) por mes visible -> marks[date] = DayMark.
+  - Stats: nueva tarjeta "Días con aprendizajes" (hasData incluye learnings).
+
+[2026-09-08] FASE 4 - FRASES REALES CON ROL + MARCADO NOTORIO
+  - Frases v3: pool re-curado con SOLO frases reales y/o refranes populares
+    (~60), eliminando las inventadas. Cada cita suma el rol del autor: ej.
+    "— Søren Kierkegaard, filósofo danés". Los "anónimos" ahora son refranes
+    populares verificables ("Refrán popular"/"Proverbio chino") o frases
+    famosas anónimas. El tipo MotivationalQuote pasa a author + role? y el
+    footer las muestra separadas por coma.
+  - Marcado de días cumplidos: en vez del puntito, el día cumplido se resalta
+    con un CUADRADO verde cerrado alrededor del número (span inline con
+    border-2 border-emerald-500 y h-6/min-w-6, más chico que la celda),
+    visible junto al día seleccionado y al * del día actual.
+  - PENDIENTE AL CONECTAR SUPABASE: conDefaults() de local-client agrega
+    updated_at a inserts; las tablas objectives y temporal_goals no tienen esa
+    columna -> revisar si al insertar en Supabase real da error (local no afecta).
+[2026-09-08] FASE 8 - MAQUETAS VISUALES (public/maquetas.html)
+  - Pagina estatica autocontenida servida en /maquetas.html, sin login.
+    Muestra la vista dia completa (calendario, cita, objetivos, metas,
+    notas, aprendizajes) en 5 temas que rotan automaticamente cada 8s
+    con controles (prev/next/dots/play-pausa/flechas de teclado).
+  - ROUND 1: 4 temas (CRT terminal, Neon, Papel, Pixel 8-bit). El usuario
+    los encontro muy parecidos entre si; le gusto solo el de papel y pido
+    variedad usando su mundo de referencia (oleo, renacimiento, escultura,
+    sobrio, verde ftalo).
+  - ROUND 2 (definitivo), 5 temas:
+    1. Papel (cuaderno de tinta claro, serif Georgia, guias pautadas).
+    2. Carbonilla (reversion del papel: cuaderno oscuro, tinta sepia,
+       sello en negativo).
+    3. Al oleo (lienzo texturizado con marco de galeria, doble moldura con
+       filo dorado, pinceladas/pigmento verde ftalo + oxido + ocre en las
+       esquinas, calendario con marcas redondas tipo mancha).
+    4. Renacimiento (marmol con vetas, verde renacimiento + oro, fuente
+       Cinzel, cabecera centrada con floron, hoy como medallon dorado).
+    5. Sobrio verde ftalo (fondo ftalo profundo, un unico acento ftalo
+       claro, headers uppercase con tracking, cards solo con linea fina).
+- Verificado con playwright-core: 5 temas rotan, dots/prev/next OK,
+     sin errores JS; tsc y lint verdes (no se toco codigo TS).
+   - ROUND 3 (6 temas): el usuario pidio un rediseno ESTRUCTURAL agresivo
+     (no mas variaciones solo de color) + estetica cyberpunk/retro en blanco
+     y negro con neon. Se conserva el esquema del ROUND 2 pero ahora cada
+     tema es una composicion distinta:
+     1. Papel (cuaderno claro, tinta azul noche, serif Georgia, guias).
+     2. Carbonilla (reversion del papel: cuaderno oscuro, tinta sepia,
+        sello en negativo roto).
+     3. Al oleo - GALERIA (pagina completa de museo: pared con franja
+        verde ftalo del piso, cuadros ENMARCADOS colgados en composicion
+        asimetrica con molduras dobles y filo dorado, placa de museo debajo
+        de cada cuadro, copete "SALA VERTICAL No. 3").
+     4. Renacimiento - FRONTISPICIO (portada de libro: fronton + floron
+        dorado, marmol con vetas, cabecera centrada en mayusculas con
+        numeros de "voto" en romanos I/II/III, hoy como medallon dorado,
+        folios laterales con filigrana).
+     5. Verde ftalo - EDITORIAL (revista sobria: masthead, numero de dia
+        GIGANTE "08", reglas finas ftalo, mucho aire, headers uppercase).
+     6. Cyberpunk HUD 2026 (fondo negro, solo blanco + verde acido #00ff9d,
+        fuente Geist Mono, scanlines por CSS, reloj display y LED, glitch
+        animado en la cita, ticker marquee de "SISTEMA EN LINEA", bloques
+        con esquinas en L, cursor bloque parpadeante, cellular 240x320).
+   - Verificado con playwright-core: 6 dots, 6 secciones en orden, next
+     cicla 0->5 y prev vuelve a envolver al 6, un solo dot activo, indicator
+     "N · Nombre · N/6", play/pausa alterna, auto-rotacion post-reload (pos
+     0 -> 1 a los 8.5s), y por tema: fondo/fuente distintos y elementos
+     estructurales presentes (6 molduras+6 placas en galeria, folios con
+     filigrana en renacimiento, masthead editorial, glitch+ticker+mono en
+cyberpunk). Sin errores JS. tsc y lint verdes (HTML/CSS/JS estatico,
+      no se toco codigo TS).
+   - ROUND 4 (Cyberpunk x10 colores): el usuario elige el tema Cyberpunk
+     como su favorito y pide 10 variaciones de color del neon (la primera
+     que quiere ver: BLANCO). Decision de UX: cada variacion es un slide
+     propio en la rotacion (15 temas totales, 15 dots).
+   - CSS: todo el bloque .t-cyb (~90 reglas) refactorizado de hexes
+     hardcodeados a CSS custom properties definidas en .t-cyb:
+     --cyb-bg/#030303, --cyb-fg/#f2f2f2, --cyb-neon (literal del accent),
+     --cyb-neon-rgb (tripleta para rgba(var(--cyb-neon-rgb),.45)), grises
+     (--cyb-mut/dim/faint/deep), bordes/paneles (--cyb-lines/deck-bg/
+     panel/blk/btn/num/track-bg/track/field/border) y glitch
+     (--cyb-g1/#ff3b5c, --cyb-g2/#00e5ff). Se mantienen fijos: scanlines,
+     vinheta, LED amber/rojo semanticos, seg a/r del calendario.
+     10 variantes solo cambian las 2 variables del neon:
+     cyb-verde #00ff9d, cyb-blanco #f2f2f2, cyb-cian #00e0ff,
+     cyb-ambar #ffb020, cyb-rojo #ff3b5c, cyb-fucsia #ff4fd8,
+     cyb-violeta #b26bff, cyb-azul #4d8fff, cyb-amarillo #ffd21e,
+     cyb-naranja #ff7a2e.
+   - HTML: el section 6 quedó como `mock t-cyb cyb-verde` y se duplico
+     9 veces (via script node en temp, UTF-8) con data-name "6..15 ·
+     Cyberpunk · <color>". El rotador es data-driven: 15 dots, indicator
+     "N · Nombre · N/15" sin tocar el JS.
+   - Verificado con playwright-core: 15 dots / 15 secciones en orden, next
+     cicla 0->14, prev envuelve al 15, un solo dot activo, play/pausa,
+     auto-rotacion post-reload. Por variante: --cyb-neon computado coincide
+     y la cascada recoloriza ticker (bg invertido), celda del dia, borde de
+     checkbox, caret y barras de progreso; glitch y scanlines presentes en
+     las 10. Sin errores JS. tsc y lint verdes.
+   - ROUND 4.1 ajustes pedidos por el usuario sobre la variante blanco:
+     * En el calendario lo blanco de los dias vuelve al verde acido:
+       .t-cyb.cyb-blanco .cell .seg i.g y .cell.today .numwrap -> #00ff9d
+       (sombra rgba(0,255,157,.45)). Segs ambar/rojo siguen igual.
+     * El LED "SYS.OK" (i.led base) en blanco vuelve al verde acido via
+       .t-cyb.cyb-blanco .led:not(.amber):not(.red) (los LEDs amarillo y
+       rojo de LOCAL/NO-DB quedan semanticos).
+     * Se elimina el cursor bloque parpadeante (span.caret) que aparecia
+       junto al boton "Agregar nota" en los 10 tema cyberpunk y su regla
+       CSS .t-cyb .caret (dead code). El boton queda solo.
+   - Verificado con playwright-core: en "7 · blanco neon" la celda del dia,
+     seg g y SYS.OK computan rgb(0,255,157), ticker sigue blanco, LEDs
+     amber/red sin cambios, .caret count 0 en toda la pagina, send a la
+     vista, ninguna regla .caret en los stylesheets. Sin errores JS.
+     tsc y lint verdes.
+   - ROUND 5 (restyling COMPLETO de la app real al tema elegido): el
+     usuario confirma la variante BLANCO NEON para toda la bitacora.
+     Decisiones fijadas: alcance = TODA la app (header HUD + vista dia +
+     Ajustes + Stats; login queda con su CRT intacto) y las frases
+     cripticas rotan en cada carga Y al errar la clave.
+   - app/globals.css: base cyberpunk. :root --background/#030303 y
+     --foreground/#f2f2f2, body oscuro + Geist Mono. Wrapper .cyb-shell
+     define las custom properties (--cyb-neon/f2f2f2, --cyb-green/#00ff9d,
+     --cyb-amber/#ffe14a, grises mut/dim/faint/deep, bordes lines/deck-bg/
+     panel/blk/btn/num/track-bg/track/field/border, glitch g1/g2) +
+     scanlines y vinheta fijas (::before/::after, z 5/6). Helpers: .blk
+     (esquinas en L), .blk-tag (// TITULO), .cyb-btn/.cyb-btn.small/.tight,
+     .cyb-in (inputs oscuros caret neon), .cyb-check (cuadrado con ✕),
+     .cyb-link/.cyb-link.red, .led/.led.amber/.led.red, .cyb-ticker
+     (marquee blanco invertido), .glitch (RGB split con data-text),
+     .enrow, .cal-btn, .cyb-num + segs-g/a/r, regla .today verde acido.
+   - app/bitacora/layout.tsx: header HUD sticky (.cyb-deck) con logo
+     "LA_BITAK0R4_", reloj HH:MM:SS con segundos parpadeantes, LEDs
+     SYS.OK (verde acido) / LOCAL-SUPA (ambar) / NO-DB-SYNC (rojo, segun
+     isLocalMode) y nav neon (Hoy/Ajustes/Stats/Salir). Ticker
+     "SISTEMA EN LINEA" bajo el header y stage centrado (max-w 860px).
+   - components/cyb-clock.tsx: nuevo, reloj real 1s, hydrate-safe (render
+     "--:--:--" hasta el mount para evitar hydration mismatch).
+   - Vista dia app/bitacora/[date]/page.tsx: cards .blk con tags
+     "Agenda · <mes>", "Votos · x/y", "Notas_del_día" y "Aprendizajes";
+     TemporalGoalsSection es .blk "Metas_activas".
+   - calendar-nav.tsx: celdas HUD sin fondo de bloque; el numero vive en
+     .cyb-num con segs verticales g/a/r y la celda de hoy en verde acido
+     con numero blanco (igual al mockup: .has-segs pisa el color oscuro).
+   - motivational-quote.tsx: blockquote .blk con cita .glitch (data-text),
+     autor cyb-muted y boton "↻ Otra frase".
+   - objectives-checklist.tsx: checkbox .cyb-check cuadrado neón, titulo
+     tachado + cyb-muted al completarlo, empty state cyb-hint.
+   - daily-entries-editor.tsx (notas/aprendizajes): filas .enrow, hora
+     cyb-hint, Eliminar .cyb-link red, textarea .cyb-in, boton .cyb-btn
+     (sin caret), mensajes #00ff9d / #ff3b5c.
+   - Ajustes: completion-settings-form, objective-manager, temporal-goal-
+     manager y change-password-form en .blk con tags "//" y cyb-in/cyb-btn/
+     cyb-link; logoff-button vinculo rojo en el nav. Stats: cards .blk y
+     stats-charts con barras #00ff9d, grilla #2a2a2a, ticks #8f8f8f y
+     tooltip oscuro.
+   - Login: nuevo lib/login-phrases.ts (pool criptico: "¿Sos el que tiene
+     que ser?", "¿Sos aquel que debe ser?", "¿Quién sos?", "¿Sentiste tu
+     llamado?", "¿Viste la señal?", "No todo es lo que parece. ¿Entrás?",
+     etc, sin repetir la inmediata anterior) rotando en mount (useEffect,
+     para no romper hydration) y en handleError al errar la clave.
+     password-gate: input HUD con border/focus/caret #00ff9d.
+- Verificado: tsc, lint y next build --webpack verdes. Smoke test
+      actualizado a los nuevos selectores (.cyb-deck, .blk, i.segs-g/a/r,
+      "Votos", etc) PASANDO TODO: login frases + CRT off en clave erronea,
+      HUD/reloj/LED/ticker, cita glitch rotando, checkbox HUD, settings
+      count>=1, notas y aprendizajes con segs y persistencia, stats,
+      sin errores JS (el hydration mismatch del login y del reloj se
+      resolvieron con montaje post-hydration). Probe de estilos computados:
+      body #030303 mono, celda hoy rgb(0,255,157) con glow y numero blanco,
+      seg g idem, ticker #f2f2f2/#030303 invertido, SYS.OK verde acido,
+      .caret count 0.
+[2026-09-08] FASE 9 - DINO CHAT (acceso desde la bitacora)
+    - lib/dinosaurs.ts: registro de 6 dinos (tyra, nod0, 4nky, v3l0, br4ch0,
+      tr1l0) con head ASCII 9x9 generado de forma uniforme y verificada por
+      checker automatico (mismo alto, caracteres ASCII).
+    - lib/dinos/*.md (x6): personalidad de cada dino con REGLA DE VOZ en
+      "Frase de registro" (frase rioplatense real aprobada dia a dia).
+    - lib/dino-prompt.ts: arma el system prompt leyendo el .md (cache en
+      memoria); reglas duras de registro rioplatense WhatsApp: voseo, frases
+      cortas (2-4 oraciones), sin saludos/despedidas formales, sin emojis,
+      sin muletillas de IA.
+    - app/api/chat/route.ts: streaming a OpenRouter con autenticacion,
+      historial sanitizado (max 20 msgs), sanitizado de campo, retorno de
+      error en stream. Modelos: env (google/gemma-4-31b-it:free) con cadena
+      de fallback (gemma-4-26b-a4b-it:free, dots-studio/dots-3-note-preview:
+      free, thinkingmachines/inkling-small:free), backoff 900ms y mensaje
+      "Todos los modelos gratis estan saturados" (429) si ninguno anda.
+      temperature 0.5, max_tokens 800, ATTEMPT_TIMEOUT_MS 25s.
+    - components/dino-chat/dino-chat.tsx: dock flotante (solo la cara ASCII,
+      sin label) abajo a la derecha; panel de chat con lista de dinos,
+      cambio de contacto, sesion en sessionStorage (db_dino_chat_v1,
+      DEFAULT_DINO "nod0", MAX_THREAD 40). El dock desaparece cuando el
+      panel esta abierto; solo se cierra con la X (o ESC).
+    - app/globals.css: clases .cyb-dock, .cyb-dchat, .cyb-msg*, etc (blanco
+      neon). Integrado en app/bitacora/layout.tsx.
+    - .env.local / .env.local.example: OPENROUTER_API_KEY (solo .local),
+      OPENROUTER_MODEL y SITE_URL. next.config.ts: outputFileTracingIncludes
+      para que los .md de lib/dinos entren al trace de build de /api/chat.
+    - Verificado: tsc, lint, build, probe del endpoint (200 con respuesta
+      rioplatense real) y smoke con el panel de chat completo.
+[2026-09-08] FASE 10 - DÍAS FUTUROS SOLO LECTURA + RECORDATORIOS
+    - Días futuros bloqueados: en app/bitacora/[date]/page.tsx, si date > hoy
+      se muestra banner "Vista futura · solo lectura" y se ocultan Votos,
+      Notas y Aprendizajes (dato gris). Las celdas futuras del calendario
+      salen grises (.cyb-num.future) sin hover. Guarda de servidor en
+      lib/actions.ts: addNoteAction, addLearningAction y
+      toggleDailyObjectiveAction rechazan fecha > hoy ("Días futuros: solo
+      lectura.").
+    - Entidad reminders: tabla en supabase/schema.sql (id, date, content,
+      created_at, indice por date, RLS), tabla "reminders" en
+      lib/local-client.ts (TABLES + defaultSeed vacio), tipo Reminder en
+      lib/types.ts.
+    - lib/actions.ts: createReminderAction(date, content, id),
+      updateReminderAction(id, content, date) y deleteReminderAction(id, date)
+      con requireAuth + revalidatePath. Sin bloqueo de futuro (el recordatorio
+      es un plan).
+    - components/reminder-panel.tsx (client): lista con Editar (inline) /
+      Borrar, caja "nuevo recordatorio" con campo fecha dd/mm/aa (parse
+      parseShortDate en lib/utils.ts, formato formatShortDate), validacion y
+      guardado optimista. Se reusa en el modal del calendario y en la tarjeta
+      del día.
+    - components/calendar-nav.tsx: long-press (550ms) sobre cualquier celda
+      abre el modal con la fecha prellenada (se cancela si soltas o movés;
+      user-select none + sin contextmenu nativo). Botón REC+ en la fila del
+      año abre el modal con fecha propia textual. Recuadro rojo
+      (.cyb-num.has-reminder) en días con recordatorio activo (date <= hoy);
+      los futuros se ven/editan/borran desde el modal pero no marcan el
+      calendario; los vencidos quedan en la tarjeta del día sin recuadro.
+    - Tarjeta "Recordatorios" en la página del día (acento rojo .reminder-blk
+      si hay activos) con el mismo panel editable.
+    - app/globals.css: .cyb-num.future, .has-reminder, .cyb-cal-grid
+      (user-select) y .cyb-modal / .cyb-modal-panel (overlay fijo z100, encima
+      incluso del chat), .blk.reminder-blk, .blk.future-blk.
+    - Verificado: tsc, lint, next build --webpack. Smoke extendido PASANDO
+      TODO: vista futura sin editores y celda gris, long-press abre modal,
+      crear/editar/borrar recordatorio, recuadro rojo aparece y persiste tras
+      reload, REC+ con fecha propia dd/mm/aa, borrado desde el día futuro.
+      Sin errores JS.
+
+FASE 11 (2026-09-08):
+  - Votos diarios con 3 estados: daily_objectives pasa de boolean completed a
+    texto status ('none' | 'partial' | 'done') con check constraint en
+    supabase/schema.sql. lib/types.ts: ChecklistStatus, DailyObjective.status,
+    ChecklistItem.status. lib/completion.ts: statusOf() migra filas viejas
+    (completed:true -> 'done').
+  - lib/actions.ts: toggleDailyObjectiveAction -> setDailyObjectiveStatusAction
+    ({date, objectiveId, status}) con upsert y guard de dia futuro.
+  - components/objectives-checklist.tsx: 3 slots clicables por objetivo
+    (rojo X = sin hacer, ambar '-' = a medias, verde check = hecho), rol radio,
+    optimista. Ya no hay checkbox.
+  - Pagina del dia: completedCount cuenta status 'done'; stats (percent) usa
+    statusOf + done. Select daily_objectives pasa a '*' para compat.
+  - Recordatorios: la tarjeta del dia ya no muestra el campo de fecha (esta
+    fijado al dia). Se quita el boton REC+ del calendario; nueva
+    components/reminder-fab.tsx: rectangulo fijo abajo a la izquierda (REC+
+    / 'fecha propia') que abre el modal con fecha libre, integrado en
+    app/bitacora/layout.tsx. CSS: .cyb-trio, .cyb-trio-slot.tri-none/partial/done,
+    .cyb-rem-fab.
+  - Smoke actualizado (slots trios + FAB) PASANDO TODO, tsc + lint + build OK.
+    Sin errores JS.
+
+NOTA FASE 11 (ajuste de visual):
+  - Votos redise�ados como 3 casillas tipo checkbox VACIAS (28x28, borde 2px):
+    se marca la que quieras; al tocarla aparece el simbolo en su color (X roja,
+    '-' amarillo, tick verde) con fondo y glow de ese color. El simbolo solo se
+    ve en la casilla elegida.
+  - Bug CSS corregido: el @media (max-width:640px) del .cyb-dchat estaba SIN
+    CERRAR y se tragaba todas las reglas .cyb-trio/.cyb-rem-fab (solo se
+    veian en pantallas <=640px). Se cierra el media y se limpia un bloque
+    .cyb-dock fantasma duplicado. Barra: smoke completo PASANDO, tsc+lint+
+    build OK.
+
+FASE 12 (2026-09-08):
+  - Se elimina el ticker "ACCESO PERMITIDO / LA BITACORA NO SE DETIENE"
+    (div .cyb-ticker del layout + bloque CSS + animacion cymar).
+  - Renombrado: la card de responsabilidades diarias pasa de "Votos" a
+    "Objetivos" (header, banner de vista futura, smoke-test, comentario CSS).
+  - Sistema de puntos para la Complecion: cada estado vale X=0, "-"=0.5,
+    tick=1. lib/completion.ts gana statusValue(), dayScore() y dayPercent();
+    isDayFulfilled ahora compara PUNTOS: modo "count" = puntos >= umbral
+    (un "a medias" aporta 0.5 asi el dia verde no es tan severo), modo
+    "percent" = %(puntos/total) >= umbral.
+  - Dia: el header muestra "Objetivos � 2/3 � 67%". El marcado verde por dia
+    del mes acumula puntos (statusValue) por fecha.
+  - Stats: el % por dia se calcula con puntos sobre el total de objetivos
+    activos; nueva metrica "Eficiencia � 30 dias" = sum(dia/puntos objetivos)
+    => cada dia aporta 0..1, % = puntos/30. Ej: 20 pts en 30 dias = 66%.
+    Grilla del Resumen pasa a 6 celdas.
+  - Ajustes: textos actualizados (hecho=1, a medias=0.5, valor en puntos o %).
+  - Smoke actualizado (ticker ausente, header con % y baja con "-", renames)
+    PASANDO TODO. tsc + lint + next build OK. Sin errores JS.
+
+FASE 13 (2026-09-08):
+  - Chat: botones "C�MO VA EL D�A" y "C�MO VA EL MES" (+ input mm/yy
+    precargado con el mes actual, editable) sobre el input del chat.
+  - Slot de contexto en memoria por request (lib/chat-context.ts):
+    buildDayContext() arma un texto plano compacto del d�a actual (hora,
+    objetivos con ?/-/? y %, cant. de notas con la ultima truncada,
+    aprendizajes y recordatorios, cap ~700 chars); buildMonthContext(mm, yy)
+    arma el resumen del mes literal (dias con registro, puntos, eficiencia %,
+    mejor dia) + una linea por dia con datos (dd/mm puntos % n a, cap 24
+    lineas, ~1200 chars). Ambas regeneran el mismo slot en cada request
+    (sobrescribe el anterior) y no entran al historial guardado en el cliente.
+  - app/api/chat/route.ts: acepta dataQuery ("day" | {kind:"month",month,year}
+    validado) e inyecta el snapshot como mensaje system de contexto entre el
+    prompt y el historial, con instruccion de comentar sin repetir ni enumerar.
+  - Cliente: send() suma dataQuery; los botones mandan el mensaje visible
+    ("�C�mo va el d�a?" / "�C�mo va el mes (mm/yy)?") + el contexto oculto.
+    CSS .cyb-dchat-quick (fila de botones + input mm/yy).
+  - Smoke extendido (botones presentes, mm/yy precargado, ambos responden con
+    streaming) PASANDO TODO. tsc + lint + build OK. Sin errores JS.
+
+NOTA FASE 13 (2026-09-09):
+  - Los botones C�MO VA EL D�A / MES (+ input mm/yy) pasaron a la cabecera del
+    panel, recien debajo de la fila del nombre del dino (.cyb-dchat-head en
+    columna + .cyb-dchat-head-top). Se quito la fila de arriba del input.
+  - La hora del snapshot del dia ahora se calcula forzando la zona horaria de
+    Argentina ("America/Argentina/Buenos_Aires", UTC-3) con Intl en vez de
+    depender de la zona del server: hora HH:MM real y fecha "hoy" real en
+    Argentina (aunque el server corra en UTC, ej. Vercel). A las 00:00 de
+    Argentina el tono "que temprano" del bot es correcto.
+
+NOTA PRE-DEPLOY (2026-09-09):
+  - todayISO() en lib/utils.ts ahora calcula la fecha "hoy" forzando la zona
+    de Argentina (America/Argentina/Buenos_Aires) con Intl (helper arNow(),
+    tambien devuelve hora HH:MM). Toda la app (dias, stats, guard de dias
+    futuros, calendario) queda consistente aunque el server corra en UTC
+    (Vercel). chat-context.ts reutiliza arNow() en vez de su helper propio.
+  - Arte de dinos redisenado (poses mixtas frontales/perfil) en dinosaurs.ts.
+  - Boton C�MO VA EL MES ahora pide el mes al apretar: aparece un mini-form
+    inline mm/yy precargado (autofocus) + OK/?, Enter envia la pregunta y se
+    oculta. Flujo "c�mo va el d�a" directo. Verificado con smoke completo.
+  - Mobile: @media (max-width:640px) agrega body { zoom: 0.8 } (todo al 80%).
+  - Build (webpack)+lint+tsc y smoke al 100% en verde.
+
+NOTA (2026-09-09): BORRADO DE DIA POR TRIPLE TAP
+  - Triple tap (3 clicks rapidos, event.detail>=3) sobre una celda del
+    calendario (solo dias <= hoy; evitado por long-press de recordatorios)
+    abre un modal rojo llamativo (.cyb-modal-danger, borde 2px rojo + glow):
+    "Seguro, borrar" -> paso 2 "SI, BORRAR" (doble OK) -> ejecuta
+    deleteDayDataAction(date) que borra notas, aprendizajes, recordatorios,
+    daily_objectives del dia y la fila days; revalida el dia y el calendario.
+    CANCELAR / click afuera cierra sin borrar.
+  - lib/actions.ts: deleteDayDataAction() (soporta local y Supabase; los
+    deletes encadenados: se borran daily_objectives por day_id ANTES de days).
+  - globals.css: .cyb-modal-danger + .cyb-danger-btn / .cyb-danger-btn-fire.
+  - Smoke nuevas checks (abre/cancela, no borra data real): TODO en verde.

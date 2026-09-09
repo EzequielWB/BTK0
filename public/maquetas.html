@@ -1,0 +1,2505 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Maquetas · La BitAK0R4_ de Ezequiel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Geist+Mono:wght@400;700&family=Geist:wght@400;600;700&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root { --ctl-h: 46px; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: ui-monospace, SFMono-Regular, Menlo, "Courier New", monospace; background: #0b0b0f; }
+
+  /* ---------- barra de control (fuera de la maqueta) ---------- */
+  .ctl {
+    position: fixed; top: 0; left: 0; right: 0; height: var(--ctl-h); z-index: 60;
+    display: flex; align-items: center; gap: 10px; padding: 0 14px;
+    background: #14141a; color: #d8d4ff; border-bottom: 1px solid #2a2a35;
+    font-size: 12px; user-select: none;
+  }
+  .ctl b { font-family: "Press Start 2P", cursive; font-size: 9px; letter-spacing: .5px; color: #a78bfa; }
+  .ctl .spacer { flex: 1; }
+  .ctl button {
+    background: #23232e; color: #e6e3ff; border: 1px solid #3a3a4a; border-radius: 4px;
+    min-width: 32px; height: 28px; cursor: pointer; font-size: 13px; font-family: inherit;
+  }
+  .ctl button:hover { background: #333344; }
+  .dots { display: flex; gap: 6px; }
+  .dots i { width: 9px; height: 9px; border-radius: 50%; background: #3a3a4a; cursor: pointer; }
+  .dots i.on { background: #a78bfa; }
+  .ctl-name { white-space: nowrap; opacity: .85; }
+
+  .stage { padding-top: var(--ctl-h); }
+
+  /* ---------- base: visibilidad, fade ---------- */
+  .mock { display: none; min-height: 100vh; }
+  .mock.active { display: block; animation: fadein .4s ease; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+
+  /* ---------- estructuras comunes (calendario base) ---------- */
+  .cal-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 8px; }
+  .cal-head .btn { border: 1px solid currentColor; border-radius: 4px; padding: 2px 9px; opacity: .8; background: transparent; cursor: pointer; font-family: inherit; font-size: 13px; }
+  .cal-head .day { font-weight: 600; text-transform: capitalize; text-align: center; }
+  .cal-month { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 8px; }
+  .cal-month strong { text-transform: capitalize; text-align: center; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; font-size: 11px; }
+  .cal-grid .wd { padding: 4px 0; opacity: .6; }
+  .cell { display: block; text-decoration: none; color: inherit; padding: 1px; }
+  .cell .numwrap { position: relative; display: inline-flex; height: 26px; min-width: 26px; align-items: center; justify-content: center; border-radius: 3px; overflow: hidden; }
+  .cell .seg { position: absolute; inset: 0; display: flex; flex-direction: column; }
+  .cell .seg i { flex: 1; }
+  .cell .num { position: relative; z-index: 1; font-size: 11px; }
+
+  /* ================================================================
+     1 · PAPEL / CUADERNO (base de referencia)
+     ================================================================ */
+  .t-papel { background:
+      repeating-linear-gradient(180deg, rgba(120,90,30,.05) 0 2px, transparent 2px 4px),
+      #f5eeda; color: #26314a; font-family: Georgia, "Times New Roman", serif; }
+  .t-papel .frame { max-width: 768px; margin: 0 auto; padding: 26px 22px 60px; }
+  .t-papel .m-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-bottom: 14px; border-bottom: 2px solid #1f2a44; }
+  .t-papel .brand { display: flex; align-items: center; gap: 10px; }
+  .t-papel .brand .logo { font-family: Georgia, serif; font-size: 20px; font-weight: 700; color: #1f2a44;
+    text-decoration: underline; text-decoration-thickness: 2px; text-decoration-color: #b8893a; text-underline-offset: 5px; }
+  .t-papel .badge { border: 1px dashed #b8893a; color: #7c5d24; background: rgba(184,137,58,.12); font-family: ui-monospace, monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; padding: 3px 7px; }
+  .t-papel .m-nav { display: flex; align-items: center; gap: 14px; font-size: 13px; }
+  .t-papel .m-nav a { color: inherit; opacity: .75; text-decoration: none; }
+  .t-papel .m-nav a:hover { color: #b8893a; opacity: 1; }
+  .t-papel .m-body { display: flex; flex-direction: column; gap: 16px; }
+  .t-papel .card { border: 1px solid #d7c9a4; background: rgba(255,252,242,.7); border-radius: 3px; padding: 14px; box-shadow: 0 1px 3px rgba(60,45,10,.12); }
+  .t-papel .card h2 { margin: 0 0 10px; font-size: 15px; font-weight: 700; color: #1f2a44; }
+  .t-papel .card h2 .count { font-weight: 400; font-size: 12px; opacity: .7; }
+  .t-papel .cal-head .btn, .t-papel .cal-month .btn { border-color: #8a8578; color: #4a4434; background: rgba(255,255,255,.5); }
+  .t-papel .cell.today { box-shadow: inset 0 0 0 2px #1f2a44; border-radius: 3px; }
+  .t-papel .cell.today .numwrap { background: #1f2a44; }
+  .t-papel .cell.today .num { color: #f5eeda; font-weight: 700; }
+  .t-papel .cell.stripe .num { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+  .t-papel .cell .seg i.g { background: #3f7d4e; }
+  .t-papel .cell .seg i.a { background: #d99e2b; }
+  .t-papel .cell .seg i.r { background: #b0413e; }
+  .t-papel blockquote.quote { margin: 0; }
+  .t-papel .quote p { font-size: 19px; line-height: 1.55; color: #2e3a55; font-style: italic; }
+  .t-papel .quote p::before { content: "«"; }
+  .t-papel .quote p::after { content: "»"; }
+  .t-papel .quote-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
+  .t-papel .quote-foot cite { font-style: normal; font-size: 12px; opacity: .75; }
+  .t-papel .quote-foot cite::before { content: "— "; }
+  .t-papel .quote-foot button { background: transparent; border: 0; cursor: pointer; font-family: inherit; font-size: 12px; opacity: .7; text-decoration: underline; text-underline-offset: 2px; color: #b8893a; }
+  .t-papel .objlist { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+  .t-papel .objlist label { display: flex; align-items: flex-start; gap: 9px; cursor: pointer; }
+  .t-papel .objlist input { margin: 2px 0 0; width: 15px; height: 15px; }
+  .t-papel .objlist .title.done { text-decoration: line-through; opacity: .6; }
+  .t-papel .objlist .desc { display: block; font-size: 12px; opacity: .6; }
+  .t-papel .goallist { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+  .t-papel .goal { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .t-papel .goal .gbar { flex: 1; height: 12px; border-radius: 6px; overflow: hidden; background: #e4d9b8; border: 1px solid #c9b98a; }
+  .t-papel .goal .gbar i { display: block; height: 100%; background: #3f7d4e; }
+  .t-papel .goal .gpct { font-size: 12px; opacity: .8; width: 42px; text-align: right; }
+  .t-papel .cols { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (min-width: 640px) { .t-papel .cols { grid-template-columns: 1fr 1fr; } }
+  .t-papel .enlist { list-style: none; padding: 0; margin: 0 0 10px; display: flex; flex-direction: column; gap: 8px; }
+  .t-papel .entry { border: 1px solid #d7c9a4; border-radius: 3px; background: rgba(255,255,255,.55); padding: 10px; }
+  .t-papel .entry p { margin: 0; white-space: pre-wrap; font-size: 13px; line-height: 1.45; }
+  .t-papel .entry-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 7px; font-size: 11px; }
+  .t-papel .entry-foot time { opacity: .6; }
+  .t-papel .entry-foot .del { background: none; border: 0; cursor: pointer; font-family: inherit; font-size: 11px; text-decoration: underline; text-underline-offset: 2px; color: #b0413e; }
+  .t-papel .empty { font-size: 12px; opacity: .7; margin-bottom: 10px; }
+  .t-papel .einput textarea { width: 100%; font-family: Georgia, serif; font-size: 13px; padding: 9px; resize: vertical; background: transparent; color: #26314a; border: 0; border-bottom: 1px solid #b8a878; background-image: repeating-linear-gradient(180deg, transparent 0 27px, rgba(38,49,74,.25) 27px 28px); line-height: 28px; outline: none; border-radius: 0; }
+  .t-papel .einput .send { margin-top: 8px; padding: 7px 14px; font-family: inherit; font-size: 13px; cursor: pointer; background: #1f2a44; color: #f5eeda; border: 0; border-radius: 2px; }
+
+  /* ================================================================
+     2 · CARBONILLA (reversión del cuaderno)
+     ================================================================ */
+  .t-carbon { background:
+      repeating-linear-gradient(180deg, rgba(226,210,174,.03) 0 1px, transparent 1px 4px),
+      #1a1610; color: #e2d2ae; font-family: Georgia, "Times New Roman", serif; }
+  .t-carbon .frame { max-width: 768px; margin: 0 auto; padding: 26px 22px 60px; }
+  .t-carbon .m-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-bottom: 14px; border-bottom: 2px solid #4a3f2a; }
+  .t-carbon .brand { display: flex; align-items: center; gap: 10px; }
+  .t-carbon .brand .logo { font-family: Georgia, serif; font-size: 20px; font-weight: 700;
+    text-decoration: underline; text-decoration-thickness: 2px; text-decoration-color: #8f7748; text-underline-offset: 5px; }
+  .t-carbon .badge { border: 1px dashed #8f7748; color: #c2a877; background: rgba(143,119,72,.14); font-family: ui-monospace, monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; padding: 3px 7px; }
+  .t-carbon .m-nav { display: flex; align-items: center; gap: 14px; font-size: 13px; }
+  .t-carbon .m-nav a { color: inherit; opacity: .75; text-decoration: none; }
+  .t-carbon .m-nav a:hover { color: #c2a877; opacity: 1; }
+  .t-carbon .m-body { display: flex; flex-direction: column; gap: 16px; }
+  .t-carbon .card { border: 1px solid #3d3423; background: rgba(255,248,232,.04); border-radius: 3px; padding: 14px; box-shadow: inset 0 0 24px rgba(0,0,0,.35); }
+  .t-carbon .card h2 { margin: 0 0 10px; font-size: 15px; font-weight: 700; color: #eadcb8; }
+  .t-carbon .card h2 .count { font-weight: 400; font-size: 12px; opacity: .7; }
+  .t-carbon .cal-head .btn, .t-carbon .cal-month .btn { border-color: #6b5c3c; color: #c9b78e; background: rgba(0,0,0,.25); }
+  .t-carbon .cell.today { box-shadow: inset 0 0 0 2px #c9a45c; border-radius: 3px; }
+  .t-carbon .cell.today .numwrap { background: #c9a45c; }
+  .t-carbon .cell.today .num { color: #1a1610; font-weight: 700; }
+  .t-carbon .cell.stripe .num { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.8); }
+  .t-carbon .cell .seg i.g { background: #7ba46b; }
+  .t-carbon .cell .seg i.a { background: #c9a45c; }
+  .t-carbon .cell .seg i.r { background: #b05a50; }
+  .t-carbon blockquote.quote { margin: 0; }
+  .t-carbon .quote p { font-size: 19px; line-height: 1.55; font-style: italic; color: #eadcb8; }
+  .t-carbon .quote p::before { content: "«"; }
+  .t-carbon .quote p::after { content: "»"; }
+  .t-carbon .quote-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
+  .t-carbon .quote-foot cite { font-style: normal; font-size: 12px; opacity: .75; }
+  .t-carbon .quote-foot cite::before { content: "— "; }
+  .t-carbon .quote-foot button { background: transparent; border: 0; cursor: pointer; font-family: inherit; font-size: 12px; opacity: .7; text-decoration: underline; text-underline-offset: 2px; color: #c2a877; }
+  .t-carbon .objlist { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+  .t-carbon .objlist label { display: flex; align-items: flex-start; gap: 9px; cursor: pointer; }
+  .t-carbon .objlist input { margin: 2px 0 0; width: 15px; height: 15px; accent-color: #7ba46b; }
+  .t-carbon .objlist .title.done { text-decoration: line-through; opacity: .6; }
+  .t-carbon .objlist .desc { display: block; font-size: 12px; opacity: .6; }
+  .t-carbon .goallist { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+  .t-carbon .goal { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .t-carbon .goal .gbar { flex: 1; height: 12px; border-radius: 6px; overflow: hidden; background: #2a241a; border: 1px solid #5a4c30; }
+  .t-carbon .goal .gbar i { display: block; height: 100%; background: #7ba46b; }
+  .t-carbon .goal .gpct { font-size: 12px; opacity: .8; width: 42px; text-align: right; }
+  .t-carbon .cols { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (min-width: 640px) { .t-carbon .cols { grid-template-columns: 1fr 1fr; } }
+  .t-carbon .enlist { list-style: none; padding: 0; margin: 0 0 10px; display: flex; flex-direction: column; gap: 8px; }
+  .t-carbon .entry { border: 1px solid #3d3423; border-radius: 3px; background: rgba(0,0,0,.22); padding: 10px; }
+  .t-carbon .entry p { margin: 0; white-space: pre-wrap; font-size: 13px; line-height: 1.45; }
+  .t-carbon .entry-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 7px; font-size: 11px; }
+  .t-carbon .entry-foot time { opacity: .6; }
+  .t-carbon .entry-foot .del { background: none; border: 0; cursor: pointer; font-family: inherit; font-size: 11px; text-decoration: underline; text-underline-offset: 2px; color: #d08579; }
+  .t-carbon .empty { font-size: 12px; opacity: .7; margin-bottom: 10px; }
+  .t-carbon .einput textarea { width: 100%; font-family: Georgia, serif; font-size: 13px; padding: 9px; resize: vertical; background: transparent; color: #e2d2ae; border: 0; border-bottom: 1px solid #6b5c3c; background-image: repeating-linear-gradient(180deg, transparent 0 27px, rgba(226,210,174,.16) 27px 28px); line-height: 28px; outline: none; border-radius: 0; caret-color: #c9a45c; }
+  .t-carbon .einput textarea::placeholder { color: rgba(226,210,174,.35); }
+  .t-carbon .einput .send { margin-top: 8px; padding: 7px 14px; font-family: inherit; font-size: 13px; cursor: pointer; background: #c9a45c; color: #1a1610; border: 0; border-radius: 2px; font-weight: 700; }
+
+  /* ================================================================
+     3 · AL ÓLEO — GALERÍA DE ARTE (cuadros colgados en la pared)
+     ================================================================ */
+  .t-oleo { background:
+      linear-gradient(180deg, #d7cfba 0%, #c8bfa9 30%, #beb49c 100%); color: #33281a;
+    font-family: Georgia, "Times New Roman", serif; min-height: 100vh; }
+  .t-oleo .oleo-stage { position: relative; z-index: 3; max-width: 860px; margin: 0 auto; padding: 24px 20px 60px; }
+  .t-oleo .oleo-wall { background:
+      repeating-linear-gradient(90deg, rgba(90,70,40,.05) 0 2px, transparent 2px 14px),
+      rgba(255,252,242,.28); border: 2px solid rgba(70,52,28,.35); outline: 1px solid rgba(70,52,28,.2);
+      box-shadow: inset 0 0 60px rgba(70,50,20,.18); padding: 44px 34px; }
+  .t-oleo .oleo-top { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 22px; }
+  .t-oleo .oleo-plaque-title { font-size: 12px; letter-spacing: 3px; text-transform: uppercase; color: #5c4a26; font-weight: 700; }
+  .t-oleo .oleo-brand { font-size: 19px; font-weight: 700; font-style: italic; color: #3a2c18; }
+  .t-oleo .oleo-badge { border: 1px solid #a3823c; color: #6d5526; background: rgba(163,130,60,.16); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; padding: 3px 8px; }
+  .t-oleo .paint { margin: 6px 0; }
+  .t-oleo .paint-row { display: grid; grid-template-columns: 1fr; gap: 40px 32px; }
+  @media (min-width: 700px) {
+    .t-oleo .paint-row.a { grid-template-columns: 5fr 7fr; align-items: start; }
+    .t-oleo .paint-row.b { grid-template-columns: 7fr 5fr; align-items: start; }
+    .t-oleo .paint-row.c { grid-template-columns: 1fr 1fr; align-items: start; }
+  }
+  .t-oleo .paint-cal  { transform: rotate(-.5deg); margin-top: 26px; }
+  .t-oleo .paint-quote{ transform: rotate(.4deg); }
+  .t-oleo .paint-obj  { transform: rotate(-.3deg); }
+  .t-oleo .paint-metas{ transform: rotate(.5deg); margin-top: 22px; }
+  .t-oleo .paint-notas{ transform: rotate(-.4deg); }
+  .t-oleo .paint-apren{ transform: rotate(.55deg); margin-top: 24px; }
+  .t-oleo .paint-frame { background: linear-gradient(135deg, #4a3420 0%, #2b1f12 45%, #523a22 80%); padding: 16px;
+    box-shadow: 0 10px 26px rgba(20,12,0,.45), inset 0 0 0 1px rgba(255,240,200,.3); }
+  .t-oleo .paint-canvas { position: relative; background: #f2ead2; border: 1px solid #c9b98a; padding: 15px; }
+  .t-oleo .paint-canvas::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(100,80,40,.05) 0 1px, transparent 1px 3px); }
+  .t-oleo .plaque { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin: 12px 6px 0; padding: 6px 12px;
+    background: #191206; color: #dcc88e; border-radius: 2px; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; }
+  .t-oleo .plaque em { font-style: italic; text-transform: none; letter-spacing: .5px; opacity: .65; font-size: 9px; }
+  .t-oleo .oleo-foot { margin-top: 34px; text-align: center; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #5c4a26; }
+  .t-oleo .cal-head .btn, .t-oleo .cal-month .btn { border-color: #6a4f2b; color: #4a3a22; background: rgba(255,250,235,.7); }
+  .t-oleo .cell .numwrap { border-radius: 50%; }
+  .t-oleo .cell.today .numwrap { background: #1d6a5f; box-shadow: inset 0 0 0 2px #b08b3e; }
+  .t-oleo .cell.today .num { color: #fff6e0; font-weight: 700; }
+  .t-oleo .cell.stripe .num { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.65); }
+  .t-oleo .cell .seg i.g { background: #1d6a5f; }
+  .t-oleo .cell .seg i.a { background: #c9a55c; }
+  .t-oleo .cell .seg i.r { background: #9c2b2b; }
+  .t-oleo .otext { font-size: 20px; line-height: 1.5; font-style: italic; color: #332617; margin: 0; }
+  .t-oleo .otext::before { content: "«"; } .t-oleo .otext::after { content: "»"; }
+  .t-oleo .ofoot { margin-top: 10px; display: flex; justify-content: space-between; gap: 8px; align-items: center; font-size: 12px; }
+  .t-oleo .ofoot cite { font-style: normal; opacity: .75; }
+  .t-oleo .ofoot cite::before { content: "— "; }
+  .t-oleo .ofoot button { background: transparent; border: 0; cursor: pointer; font-family: inherit; font-size: 11px; text-decoration: underline; text-underline-offset: 2px; color: #7c331f; }
+  .t-oleo .otitle { margin: 0 0 10px; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; color: #5c4a26; }
+  .t-oleo .objlist { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 9px; }
+  .t-oleo .objlist label { display: flex; align-items: flex-start; gap: 9px; cursor: pointer; }
+  .t-oleo .objlist input { margin: 2px 0 0; width: 15px; height: 15px; accent-color: #1d6a5f; }
+  .t-oleo .objlist .done { text-decoration: line-through; opacity: .6; }
+  .t-oleo .objlist .desc { display: block; font-size: 12px; opacity: .6; }
+  .t-oleo .goallist { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 11px; }
+  .t-oleo .goal { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .t-oleo .goal .gbar { flex: 1; height: 13px; border-radius: 8px; overflow: hidden; background: #ded2b0; border: 1px solid #b5a67c; }
+  .t-oleo .goal .gbar i { display: block; height: 100%; background: #1d6a5f; }
+  .t-oleo .goal .gpct { font-size: 12px; opacity: .8; width: 42px; text-align: right; }
+  .t-oleo .enlist { list-style: none; padding: 0; margin: 0 0 10px; display: flex; flex-direction: column; gap: 9px; }
+  .t-oleo .entry { border: 1px solid rgba(42,33,24,.28); background: rgba(255,250,235,.6); padding: 10px; }
+  .t-oleo .entry p { margin: 0; white-space: pre-wrap; font-size: 13px; line-height: 1.45; }
+  .t-oleo .entry-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 7px; font-size: 11px; }
+  .t-oleo .entry-foot time { opacity: .6; }
+  .t-oleo .entry-foot .del { background: none; border: 0; cursor: pointer; font-family: inherit; font-size: 11px; text-decoration: underline; text-underline-offset: 2px; color: #9c2b2b; }
+  .t-oleo .empty { font-size: 12px; opacity: .7; margin-bottom: 10px; }
+  .t-oleo .einput textarea { width: 100%; font-family: Georgia, serif; font-size: 13px; padding: 9px; resize: vertical; background: rgba(255,252,242,.7); color: #2a2118; border: 1px solid #b5a67c; outline: none; caret-color: #1d6a5f; }
+  .t-oleo .einput textarea::placeholder { color: rgba(42,33,24,.4); }
+  .t-oleo .einput .send { margin-top: 8px; padding: 7px 14px; font-family: inherit; font-size: 13px; cursor: pointer; background: #1d6a5f; color: #f5edd8; border: 0; border-radius: 2px; font-weight: 700; }
+
+  /* ================================================================
+     4 · RENACIMIENTO — FRONTISPICIO (frontón, mármol, placa, folios)
+     ================================================================ */
+  .t-rena { background:
+      repeating-linear-gradient(88deg, rgba(64,56,38,.06) 0 3px, transparent 3px 90px),
+      radial-gradient(1100px 600px at 15% 0%, rgba(196,208,170,.35), transparent 60%),
+      radial-gradient(1000px 700px at 90% 100%, rgba(148,118,76,.22), transparent 55%),
+      #e8e0c8; color: #22281c; font-family: Georgia, "Times New Roman", serif; }
+  .t-rena .ren-wrap { max-width: 800px; margin: 0 auto; padding: 30px 24px 64px; }
+  .t-rena .ren-front { text-align: center; position: relative; padding: 26px 0 20px; margin-bottom: 30px;
+    border-top: 3px double #b98f2f; border-bottom: 3px double #1e4b31; }
+  .t-rena .ren-ped { margin-bottom: 12px; color: #b98f2f; font-size: 18px; }
+  .t-rena .ren-ped::before, .t-rena .ren-ped::after { content: "❖"; font-size: 11px; opacity: .7; margin: 0 10px; color: #1e4b31; }
+  .t-rena .ren-title { font-family: "Cinzel", Georgia, serif; font-size: 26px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #1e4b31; margin: 0; }
+  .t-rena .ren-sub { margin-top: 8px; font-family: "Cinzel", Georgia, serif; font-size: 11px; letter-spacing: 4px; text-transform: uppercase; color: #7a6427; }
+  .t-rena .ren-nav { margin-top: 16px; display: flex; justify-content: center; gap: 26px; font-family: "Cinzel", Georgia, serif; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; }
+  .t-rena .ren-nav a { color: inherit; opacity: .8; text-decoration: none; }
+  .t-rena .ren-nav a:hover { color: #b98f2f; }
+  .t-rena .ren-grid { display: grid; grid-template-columns: 1fr; gap: 26px; margin-bottom: 26px; }
+  @media (min-width: 720px) { .t-rena .ren-grid { grid-template-columns: 1fr 1fr; } }
+  .t-rena .ren-grid.wide { grid-template-columns: 1fr; }
+  .t-rena .ren-stone { background: linear-gradient(160deg, #efe8d5, #e2d8bd); border: 1px solid #b6a879;
+    box-shadow: inset 0 2px 8px rgba(90,70,30,.14), inset 0 -4px 10px rgba(90,70,30,.2);
+    padding: 16px; }
+  .t-rena .ren-label { font-family: "Cinzel", Georgia, serif; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #1e4b31; margin: 0 0 12px; }
+  .t-rena .cal-head .btn, .t-rena .cal-month .btn { border-color: #b98f2f; color: #8a6a1f; background: rgba(255,252,240,.6); }
+  .t-rena .cal-month strong { font-family: "Cinzel", Georgia, serif; text-transform: uppercase; letter-spacing: 2px; color: #1e4b31; }
+  .t-rena .cell { border: 1px solid rgba(60,66,45,.16); }
+  .t-rena .cell.today .numwrap { background: #1e4b31; box-shadow: inset 0 0 0 2px #b98f2f; }
+  .t-rena .cell.today .num { color: #f1ecdc; font-weight: 700; }
+  .t-rena .cell.stripe .num { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.7); }
+  .t-rena .cell .seg i.g { background: #1e4b31; }
+  .t-rena .cell .seg i.a { background: #b98f2f; }
+  .t-rena .cell .seg i.r { background: #8f3a2c; }
+  .t-rena .ren-plaque { position: relative; background: transparent; border: 3px double #b98f2f;
+    padding: 22px; text-align: center; box-shadow: inset 0 0 40px rgba(185,143,47,.16); }
+  .t-rena .ren-plaque p { font-size: 21px; line-height: 1.55; font-style: italic; color: #2c362b; margin: 0 0 12px; }
+  .t-rena .ren-plaque p::before { content: "«"; font-style: normal; }
+  .t-rena .ren-plaque p::after { content: "»"; font-style: normal; }
+  .t-rena .ren-plaque .ren-qfoot { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .t-rena .ren-plaque .ren-qfoot cite { font-style: normal; font-family: "Cinzel", Georgia, serif; font-size: 12px; letter-spacing: 1px; color: #7a6427; }
+  .t-rena .ren-plaque .ren-qfoot cite::before { content: "— "; }
+  .t-rena .ren-plaque button { background: transparent; border: 0; cursor: pointer; font-family: "Cinzel", Georgia, serif; font-size: 11px; letter-spacing: 1px; color: #8f3a2c; text-decoration: underline; text-underline-offset: 2px; }
+  .t-rena .ren-votos { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; }
+  .t-rena .ren-votos .voto { display: flex; gap: 12px; align-items: flex-start; }
+  .t-rena .ren-votos .rn { font-family: "Cinzel", Georgia, serif; font-weight: 700; font-size: 15px; color: #b98f2f; min-width: 30px; }
+  .t-rena .ren-votos .voto-label a { color: inherit; text-decoration: none; }
+  .t-rena .ren-votos .voto.done .voto-label { text-decoration: line-through; opacity: .6; }
+  .t-rena .ren-votos .desc { display: block; font-size: 12px; opacity: .6; font-style: italic; }
+  .t-rena .ren-metas { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; }
+  .t-rena .ren-metas .ren-goal-row { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .t-rena .ren-metas .gbar { flex: 1; height: 13px; border: 1px solid #8a7d54; background: repeating-linear-gradient(90deg, rgba(0,0,0,0) 0 6px, #8a7d54 6px 7px); overflow: hidden; }
+  .t-rena .ren-metas .gbar i { display: block; height: 100%; background: #1e4b31; }
+  .t-rena .ren-metas .gpct { font-size: 12px; opacity: .8; width: 42px; text-align: right; font-family: "Cinzel", Georgia, serif; }
+  .t-rena .ren-folio { background: #f4ecd7; border: 1px solid #c3b48a; padding: 18px 20px; position: relative;
+    box-shadow: 0 2px 6px rgba(60,45,10,.12); }
+  .t-rena .ren-folio::before { content: "❦"; position: absolute; top: 8px; right: 12px; color: rgba(185,143,47,.5); font-size: 14px; }
+  .t-rena .ren-folio .enlist { list-style: none; padding: 0; margin: 0 0 10px; display: flex; flex-direction: column; gap: 10px; }
+  .t-rena .ren-folio .entry { border: 0; border-bottom: 1px solid #cdbf94; padding: 4px 0 10px; }
+  .t-rena .ren-folio .entry p { margin: 0 0 6px; font-style: italic; font-size: 14px; line-height: 1.5; }
+  .t-rena .ren-folio .entry-foot { display: flex; justify-content: space-between; font-size: 11px; }
+  .t-rena .ren-folio .entry-foot time { opacity: .6; font-style: normal; }
+  .t-rena .ren-folio .entry-foot .del { background: none; border: 0; cursor: pointer; font-family: inherit; font-size: 11px; text-decoration: underline; color: #8f3a2c; }
+  .t-rena .ren-folio .empty { font-size: 12px; opacity: .7; margin-bottom: 10px; font-style: italic; }
+  .t-rena .ren-folio .einput textarea { width: 100%; font-family: Georgia, serif; font-size: 13px; padding: 8px; resize: vertical; background: rgba(255,252,242,.6); color: #22281c; border: 1px solid #c3b48a; outline: none; caret-color: #1e4b31; }
+  .t-rena .ren-folio .einput .send { margin-top: 8px; padding: 7px 14px; font-family: "Cinzel", Georgia, serif; font-size: 12px; letter-spacing: 1px; cursor: pointer; background: #1e4b31; color: #f1ecdc; border: 0; }
+  .t-rena .ren-foot { text-align: center; font-family: "Cinzel", Georgia, serif; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #7a6427; margin-top: 6px; }
+
+  /* ================================================================
+     5 · SOBRIO VERDE FTALO — EDITORIAL (diario de revista)
+     ================================================================ */
+  .t-ed { background: #f6f3ea; color: #16231f;
+    font-family: Georgia, "Times New Roman", serif; }
+  .t-ed .ed-wrap { max-width: 800px; margin: 0 auto; padding: 26px 26px 70px; }
+  .t-ed .ed-mast { text-align: center; border-top: 5px double #16231f; border-bottom: 1px solid #16231f; padding: 22px 0 14px; margin-bottom: 34px; }
+  .t-ed .ed-mast h1 { font-size: 32px; letter-spacing: 7px; margin: 0; font-weight: 700; }
+  .t-ed .ed-dateline { margin-top: 10px; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #4c5f58; }
+  .t-ed .ed-rule { width: 64px; height: 3px; background: #177e6f; margin: 12px auto 0; }
+  .t-ed .ed-hero { display: flex; align-items: flex-end; gap: 22px; margin-bottom: 30px; padding-bottom: 22px; border-bottom: 1px solid #cfd8d0; }
+  .t-ed .ed-big { font-size: 132px; line-height: .78; font-weight: 700; color: #16231f; }
+  .t-ed .ed-big sub { font-size: 22px; color: #177e6f; font-weight: 700; vertical-align: baseline; }
+  .t-ed .ed-hero-side { display: flex; flex-direction: column; gap: 6px; padding-bottom: 8px; }
+  .t-ed .ed-leg { font-size: 13px; letter-spacing: 3px; text-transform: uppercase; color: #177e6f; font-weight: 600; }
+  .t-ed .ed-meta { font-size: 12px; color: #5a6f68; }
+  .t-ed .ed-quote { font-size: 24px; line-height: 1.45; font-style: italic; color: #27352d; padding: 8px 0 26px; border-bottom: 1px solid #cfd8d0; }
+  .t-ed .ed-quote .ed-qfoot { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; }
+  .t-ed .ed-quote .ed-qfoot cite { font-style: normal; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #5a6f68; }
+  .t-ed .ed-quote .ed-qfoot cite::before { content: "— "; }
+  .t-ed .ed-quote button { background: transparent; border: 0; cursor: pointer; font-family: inherit; font-size: 12px; color: #177e6f; text-decoration: underline; text-underline-offset: 2px; }
+  .t-ed .ed-grid { display: grid; grid-template-columns: 1fr; gap: 34px; margin-top: 30px; }
+  @media (min-width: 720px) { .t-ed .ed-grid { grid-template-columns: 1fr 1fr; } }
+  .t-ed .ed-col h2 { margin: 0 0 14px; font-size: 12px; letter-spacing: 3px; text-transform: uppercase; color: #177e6f; font-weight: 600; border-bottom: 1px solid #cfd8d0; padding-bottom: 6px; }
+  .t-ed .ed-col h2 .count { color: #5a6f68; letter-spacing: 0; }
+  .t-ed .cal-grid .wd { letter-spacing: 1px; color: #7a8f87; }
+  .t-ed .cell { padding: 1px 0; }
+  .t-ed .cell.today .numwrap { background: #177e6f; border-radius: 50%; }
+  .t-ed .cell.today .num { color: #f6f3ea; font-weight: 700; }
+  .t-ed .cell.stripe .num { color: #16231f; font-weight: 600; }
+  .t-ed .cell .seg i.g { background: #2f8f7a; }
+  .t-ed .cell .seg i.a { background: #b7a24b; }
+  .t-ed .cell .seg i.r { background: #c05146; }
+  .t-ed .cal-head .btn, .t-ed .cal-month .btn { border: 0; border-bottom: 2px solid #16231f; color: #16231f; background: transparent; border-radius: 0; padding: 0 4px; }
+  .t-ed .cal-month strong { font-size: 13px; letter-spacing: 2px; }
+  .t-ed .ed-objlist { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; }
+  .t-ed .ed-objlist label { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
+  .t-ed .ed-objlist input { margin: 3px 0 0; width: 14px; height: 14px; accent-color: #177e6f; }
+  .t-ed .ed-objlist .done { text-decoration: line-through; color: #7a8f87; }
+  .t-ed .ed-objlist .desc { display: block; font-size: 12px; color: #7a8f87; }
+  .t-ed .ed-metas { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; }
+  .t-ed .ed-metas .mrow { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .t-ed .ed-metas .gbar { flex: 1; height: 6px; background: #dce3de; }
+  .t-ed .ed-metas .gbar i { display: block; height: 100%; background: #177e6f; }
+  .t-ed .ed-metas .gpct { font-size: 12px; width: 42px; text-align: right; color: #177e6f; font-weight: 600; }
+  .t-ed .ed-entries { list-style: none; padding: 0; margin: 0 0 14px; display: flex; flex-direction: column; gap: 14px; }
+  .t-ed .ed-entries .enrow p { margin: 0 0 4px; font-size: 14px; line-height: 1.5; }
+  .t-ed .ed-entries .enrow .enfoot { display: flex; justify-content: space-between; font-size: 11px; }
+  .t-ed .ed-entries .enrow .enfoot time { color: #7a8f87; }
+  .t-ed .ed-entries .enrow .enfoot .del { background: none; border: 0; cursor: pointer; font-family: inherit; font-size: 11px; text-decoration: underline; color: #c05146; }
+  .t-ed .ed-input textarea { width: 100%; font-family: Georgia, serif; font-size: 13px; padding: 8px; resize: vertical; background: transparent; color: #16231f; border: 0; border-bottom: 2px solid #177e6f; outline: none; caret-color: #177e6f; }
+  .t-ed .ed-input textarea::placeholder { color: #a9b8b1; }
+  .t-ed .ed-input .send { margin-top: 8px; padding: 6px 14px; font-family: inherit; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; background: transparent; color: #177e6f; border: 1px solid #177e6f; }
+  .t-ed .ed-foot { margin-top: 40px; display: flex; justify-content: space-between; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #7a8f87; border-top: 1px solid #cfd8d0; padding-top: 12px; }
+  .t-ed .empty { font-size: 12px; color: #7a8f87; margin-bottom: 12px; }
+
+  /* ================================================================
+     6 · CYBERPUNK — HUD RETRO (negro + 10 variantes de color del neón:
+     verde ácido, blanco, cian, ámbar, rojo, fucsia, violeta, azul,
+     amarillo, naranja; solo cambian --cyb-neon y --cyb-neon-rgb)
+     ================================================================ */
+  .t-cyb {
+    --cyb-bg: #030303;
+    --cyb-fg: #f2f2f2;
+    --cyb-neon: #00ff9d;
+    --cyb-neon-rgb: 0, 255, 157;
+    --cyb-mut: #8f8f8f;
+    --cyb-dim: #6f6f6f;
+    --cyb-faint: #555;
+    --cyb-deep: #4d4d4d;
+    --cyb-lines: #1c1c1c;
+    --cyb-deck-bg: #050505;
+    --cyb-panel: #0c0c0c;
+    --cyb-blk: #1f1f1f;
+    --cyb-btn: #2b2b2b;
+    --cyb-num: #262626;
+    --cyb-track-bg: #101010;
+    --cyb-track: #2a2a2a;
+    --cyb-field: #080808;
+    --cyb-border: #242424;
+    --cyb-g1: #ff3b5c;
+    --cyb-g2: #00e5ff;
+    background: var(--cyb-bg);
+    color: var(--cyb-fg);
+    font-family: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  /* 10 variaciones de color del neon */
+  .t-cyb.cyb-verde { --cyb-neon: #00ff9d; --cyb-neon-rgb: 0, 255, 157; }
+  .t-cyb.cyb-blanco { --cyb-neon: #f2f2f2; --cyb-neon-rgb: 242, 242, 242; }
+  /* blanco neón: los marcadores del calendario y el LED SYS.OK vuelven al verde ácido */
+  .t-cyb.cyb-blanco .led:not(.amber):not(.red) { background: #00ff9d; box-shadow: 0 0 6px #00ff9d; }
+  .t-cyb.cyb-blanco .cell .seg i.g { background: #00ff9d; }
+  .t-cyb.cyb-blanco .cell.today .numwrap { background: #00ff9d; border-color: #00ff9d; box-shadow: 0 0 8px rgba(0, 255, 157, .45); }
+  .t-cyb.cyb-cian { --cyb-neon: #00e0ff; --cyb-neon-rgb: 0, 224, 255; }
+  .t-cyb.cyb-ambar { --cyb-neon: #ffb020; --cyb-neon-rgb: 255, 176, 32; }
+  .t-cyb.cyb-rojo { --cyb-neon: #ff3b5c; --cyb-neon-rgb: 255, 59, 92; }
+  .t-cyb.cyb-fucsia { --cyb-neon: #ff4fd8; --cyb-neon-rgb: 255, 79, 216; }
+  .t-cyb.cyb-violeta { --cyb-neon: #b26bff; --cyb-neon-rgb: 178, 107, 255; }
+  .t-cyb.cyb-azul { --cyb-neon: #4d8fff; --cyb-neon-rgb: 77, 143, 255; }
+  .t-cyb.cyb-amarillo { --cyb-neon: #ffd21e; --cyb-neon-rgb: 255, 210, 30; }
+  .t-cyb.cyb-naranja { --cyb-neon: #ff7a2e; --cyb-neon-rgb: 255, 122, 46; }
+  .t-cyb::before { content: ""; position: fixed; inset: 0; z-index: 5; pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(255,255,255,.045) 0 1px, transparent 1px 3px); }
+  .t-cyb::after { content: ""; position: fixed; inset: 0; z-index: 6; pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 58%, rgba(0,0,0,.55) 100%); }
+  .t-cyb .cyb-stage { position: relative; z-index: 8; max-width: 860px; margin: 0 auto; padding: 18px 18px 60px; }
+  .t-cyb .cyb-deck { position: sticky; top: var(--ctl-h); z-index: 30; display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+    padding: 12px 16px; border: 1px solid var(--cyb-lines); border-top: 2px solid var(--cyb-neon); background: var(--cyb-deck-bg); }
+  .t-cyb .cyb-logo { color: var(--cyb-neon); font-weight: 700; letter-spacing: 1px; font-size: 14px; }
+  .t-cyb .cyb-logo::before { content: "> "; color: var(--cyb-fg); }
+  .t-cyb .cyb-clock { background: var(--cyb-panel); border: 1px solid var(--cyb-border); padding: 4px 9px; color: var(--cyb-fg); font-size: 13px; }
+  .t-cyb .cyb-clock u { color: var(--cyb-neon); text-decoration: none; animation: blk 1s steps(1) infinite; }
+  @keyframes blk { 50% { opacity: 0; } }
+  .t-cyb .cyb-tags { display: flex; gap: 12px; align-items: center; font-size: 10px; color: var(--cyb-mut); text-transform: uppercase; letter-spacing: 1px; }
+  .t-cyb .led { width: 7px; height: 7px; border-radius: 50%; background: var(--cyb-neon); box-shadow: 0 0 6px var(--cyb-neon); display: inline-block; margin-right: 5px; }
+  .t-cyb .led.amber { background: #ffe14a; box-shadow: 0 0 6px #ffe14a; }
+  .t-cyb .led.red { background: var(--cyb-g1); box-shadow: 0 0 6px var(--cyb-g1); }
+  .t-cyb .cyb-nav { margin-left: auto; display: flex; gap: 14px; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; }
+  .t-cyb .cyb-nav a { color: var(--cyb-mut); text-decoration: none; }
+  .t-cyb .cyb-nav a:hover { color: var(--cyb-neon); }
+  .t-cyb .cyb-nav a.salir { color: var(--cyb-g1); }
+  .t-cyb .cyb-ticker { overflow: hidden; white-space: nowrap; border: 1px solid var(--cyb-lines); border-top: 0; background: var(--cyb-neon); color: var(--cyb-bg); font-weight: 700; font-size: 11px; }
+  .t-cyb .cyb-ticker span { display: inline-block; padding: 6px 0 6px 100%; animation: cymar 16s linear infinite; }
+  @keyframes cymar { to { transform: translateX(-100%); } }
+  .t-cyb .cyb-blocks { display: flex; flex-direction: column; gap: 16px; margin-top: 18px; }
+  .t-cyb .blk { position: relative; border: 1px solid var(--cyb-blk); background: rgba(var(--cyb-neon-rgb), .035); padding: 16px; }
+  .t-cyb .blk::before, .t-cyb .blk::after { content: ""; position: absolute; width: 16px; height: 16px; }
+  .t-cyb .blk::before { top: -1px; left: -1px; border-top: 2px solid var(--cyb-neon); border-left: 2px solid var(--cyb-neon); }
+  .t-cyb .blk::after { bottom: -1px; right: -1px; border-bottom: 2px solid var(--cyb-neon); border-right: 2px solid var(--cyb-neon); }
+  .t-cyb .blk-tag { font-size: 10px; color: var(--cyb-neon); letter-spacing: 2px; text-transform: uppercase; display: block; margin-bottom: 10px; }
+  .t-cyb .blk-tag::before { content: "// "; }
+  .t-cyb .cyb-two { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (min-width: 720px) { .t-cyb .cyb-two { grid-template-columns: 1fr 1fr; } }
+  .t-cyb .cal-head .btn, .t-cyb .cal-month .btn { border: 1px solid var(--cyb-btn); border-radius: 0; color: var(--cyb-fg); background: transparent; }
+  .t-cyb .cal-head .btn:hover, .t-cyb .cal-month .btn:hover { border-color: var(--cyb-neon); color: var(--cyb-neon); }
+  .t-cyb .cal-grid .wd { color: var(--cyb-dim); }
+  .t-cyb .cell .numwrap { border: 1px solid var(--cyb-num); border-radius: 0; height: 24px; min-width: 24px; }
+  .t-cyb .cell.today .numwrap { background: var(--cyb-neon); border-color: var(--cyb-neon); box-shadow: 0 0 8px rgba(var(--cyb-neon-rgb), .45); }
+  .t-cyb .cell.today .num { color: var(--cyb-bg); font-weight: 700; }
+  .t-cyb .cell.stripe .num { color: #fff; font-weight: 600; text-shadow: 0 0 4px rgba(0,0,0,.8); }
+  .t-cyb .cell .seg i.g { background: var(--cyb-neon); }
+  .t-cyb .cell .seg i.a { background: #ffe14a; }
+  .t-cyb .cell .seg i.r { background: var(--cyb-g1); }
+  .t-cyb .glitch { position: relative; font-size: 22px; line-height: 1.4; margin: 6px 0 4px; color: var(--cyb-fg); }
+  .t-cyb .glitch::before, .t-cyb .glitch::after { content: attr(data-text); position: absolute; left: 0; top: 0; width: 100%; background: var(--cyb-bg); overflow: hidden; pointer-events: none; }
+  .t-cyb .glitch::before { color: var(--cyb-g1); transform: translate(-2px, 0); clip-path: inset(10% 0 55% 0); animation: cygA 2.3s infinite steps(1); }
+  .t-cyb .glitch::after { color: var(--cyb-g2); transform: translate(2px, 0); clip-path: inset(60% 0 8% 0); animation: cygB 1.9s infinite steps(1); }
+  @keyframes cygA { 0%,100% { clip-path: inset(10% 0 55% 0); transform: translate(-2px,0); }
+    20% { clip-path: inset(45% 0 18% 0); transform: translate(2px,0); }
+    40% { clip-path: inset(72% 0 4% 0); transform: translate(-3px,0); }
+    60% { clip-path: inset(0 0 82% 0); transform: translate(1px,0); }
+    80% { clip-path: inset(30% 0 38% 0); transform: translate(-2px,0); } }
+  @keyframes cygB { 0%,100% { clip-path: inset(60% 0 8% 0); transform: translate(2px,0); }
+    25% { clip-path: inset(5% 0 70% 0); transform: translate(-2px,0); }
+    50% { clip-path: inset(40% 0 25% 0); transform: translate(3px,0); }
+    75% { clip-path: inset(75% 0 2% 0); transform: translate(-1px,0); } }
+  .t-cyb .cyb-qfoot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 12px; font-size: 12px; }
+  .t-cyb .cyb-qfoot cite { font-style: normal; color: var(--cyb-mut); }
+  .t-cyb .cyb-qfoot cite::before { content: "→ "; color: var(--cyb-neon); }
+  .t-cyb .cyb-qfoot button { background: transparent; border: 0; cursor: pointer; font-family: inherit; font-size: 11px; color: var(--cyb-neon); }
+  .t-cyb .cyb-qfoot .ok { color: var(--cyb-neon); }
+  .t-cyb .cyb-obj { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+  .t-cyb .cyb-obj label { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
+  .t-cyb .cyb-obj input { width: 15px; height: 15px; appearance: none; border: 1px solid var(--cyb-neon); border-radius: 0; margin: 1px 0 0; background: transparent; position: relative; cursor: pointer; }
+  .t-cyb .cyb-obj input:checked { background: var(--cyb-neon); box-shadow: 0 0 6px rgba(var(--cyb-neon-rgb), .6); }
+  .t-cyb .cyb-obj input:checked::after { content: "✕"; position: absolute; top: -2px; left: 1px; color: var(--cyb-bg); font-size: 12px; font-weight: 700; }
+  .t-cyb .cyb-obj .done { text-decoration: line-through; color: var(--cyb-dim); }
+  .t-cyb .cyb-obj .desc { display: block; font-size: 12px; color: var(--cyb-dim); }
+  .t-cyb .cyb-metas { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 11px; }
+  .t-cyb .cyb-metas .mrow { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .t-cyb .cyb-metas .gbar { flex: 1; height: 10px; background: var(--cyb-track-bg); border: 1px solid var(--cyb-track); }
+  .t-cyb .cyb-metas .gbar i { display: block; height: 100%; background: var(--cyb-neon); box-shadow: 0 0 8px rgba(var(--cyb-neon-rgb), .55); }
+  .t-cyb .cyb-metas .gpct { font-size: 12px; width: 42px; text-align: right; color: var(--cyb-neon); }
+  .t-cyb .cyb-entries { list-style: none; padding: 0; margin: 0 0 12px; display: flex; flex-direction: column; gap: 11px; }
+  .t-cyb .cyb-entries .enrow { border: 1px solid var(--cyb-blk); background: rgba(0,0,0,.3); padding: 10px; }
+  .t-cyb .cyb-entries .enrow p { margin: 0 0 6px; font-size: 13px; line-height: 1.45; }
+  .t-cyb .cyb-entries .enrow .enfoot { display: flex; justify-content: space-between; font-size: 11px; }
+  .t-cyb .cyb-entries .enrow .enfoot time { color: var(--cyb-dim); }
+  .t-cyb .cyb-entries .enrow .enfoot .del { background: none; border: 0; cursor: pointer; font-family: inherit; font-size: 11px; color: var(--cyb-g1); text-decoration: underline; }
+  .t-cyb .cyb-input textarea { width: 100%; font-family: "Geist Mono", monospace; font-size: 13px; padding: 9px; resize: vertical; background: var(--cyb-field); color: var(--cyb-fg); border: 1px solid var(--cyb-track); outline: none; caret-color: var(--cyb-neon); border-radius: 0; }
+  .t-cyb .cyb-input textarea::placeholder { color: var(--cyb-faint); }
+  .t-cyb .cyb-input .send { margin-top: 8px; padding: 7px 16px; font-family: "Geist Mono", monospace; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; background: transparent; color: var(--cyb-neon); border: 1px solid var(--cyb-neon); box-shadow: inset 0 0 0 1px transparent; }
+  .t-cyb .cyb-input .send:disabled { opacity: .45; }
+  .t-cyb .empty { font-size: 12px; color: var(--cyb-faint); margin-bottom: 10px; }
+  .t-cyb .cyb-foot { margin-top: 22px; font-size: 11px; letter-spacing: 1px; color: var(--cyb-deep); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  .t-cyb .cyb-foot b { color: var(--cyb-neon); font-weight: 400; }
+</style>
+</head>
+<body>
+
+<div class="ctl">
+  <b>MAQUETAS</b>&nbsp;bitácora
+  <span class="ctl-name" id="ctlName">Papel · 1/6</span>
+  <span class="spacer"></span>
+  <button id="btnPrev" aria-label="Estilo anterior" title="Anterior">‹</button>
+  <div class="dots" id="dots"></div>
+  <button id="btnNext" aria-label="Siguiente estilo" title="Siguiente">›</button>
+  <button id="btnPlay" aria-label="Reproducir/pausar" title="Reproducir/pausar">❚❚</button>
+</div>
+
+<div class="stage" id="stage">
+
+  <!-- ================= 1 · PAPEL ================= -->
+  <section class="mock t-papel active" data-name="1 · Papel">
+    <div class="frame">
+      <header class="m-header">
+        <div class="brand">
+          <span class="logo">La BitAK0R4_ de Ezequiel</span>
+          <span class="badge">Local · sin DB</span>
+        </div>
+        <nav class="m-nav">
+          <a href="#">Hoy</a><a href="#">Ajustes</a><a href="#">Stats</a><a href="#">Salir</a>
+        </nav>
+      </header>
+
+      <div class="m-body">
+        <nav class="card cal">
+          <div class="cal-head">
+            <button class="btn">←</button>
+            <span class="day">martes 8 de septiembre de 2026</span>
+            <button class="btn">→</button>
+          </div>
+          <div class="cal-month">
+            <button class="btn">‹</button>
+            <strong>septiembre de 2026</strong>
+            <button class="btn">›</button>
+          </div>
+          <div class="cal-grid">
+            <span class="wd">L</span><span class="wd">M</span><span class="wd">Mi</span><span class="wd">J</span><span class="wd">V</span><span class="wd">S</span><span class="wd">D</span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">01</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">02</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">03</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">04</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">05</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">06</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">07</span></span></span>
+            <span class="cell stripe today"><span class="numwrap"><span class="seg"><i class="g"></i><i class="a"></i></span><span class="num">*08</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">09</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">10</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">11</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">12</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">13</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">14</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">15</span></span></span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">17</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">18</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">19</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">20</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">21</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">22</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">23</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">24</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">25</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">26</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">27</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">28</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">29</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">30</span></span></span>
+            <span></span>
+          </div>
+        </nav>
+
+        <blockquote class="card quote">
+          <p>No cuentes los días: hacé que los días cuenten.</p>
+          <div class="quote-foot">
+            <cite>Muhammad Ali, boxeador estadounidense</cite>
+            <button type="button">↻ Otra frase</button>
+          </div>
+        </blockquote>
+
+        <section class="card">
+          <h2>Objetivos del día <span class="count">(2/3)</span></h2>
+          <ul class="objlist">
+            <li><label><input type="checkbox" checked /><span><span class="title done">Escribir 1000 palabras del libro</span></span></label></li>
+            <li><label><input type="checkbox" checked /><span><span class="title done">Salir a caminar 30 minutos</span></span></label></li>
+            <li><label><input type="checkbox" /><span><span class="title">Leer 20 páginas</span><span class="desc">Pendiente para la noche</span></span></label></li>
+          </ul>
+        </section>
+
+        <section class="card">
+          <h2>Metas temporales</h2>
+          <ul class="goallist">
+            <li class="goal"><span>Terminar el año con el hábito</span><span class="gbar"><i style="width:70%"></i></span><span class="gpct">70%</span></li>
+            <li class="goal"><span>Ahorrar para el viaje</span><span class="gbar"><i style="width:35%"></i></span><span class="gpct">35%</span></li>
+          </ul>
+        </section>
+
+        <div class="cols">
+          <section class="card">
+            <h2>Notas del día <span class="count">(2)</span></h2>
+            <ul class="enlist">
+              <li class="entry"><p>Primera entrada a las 09:12, arrancando la rutina con la cita del día.</p>
+                <div class="entry-foot"><time>09:12</time><button class="del">Eliminar</button></div></li>
+              <li class="entry"><p>Recordar preparar todo antes de las 21 para no cortar el hábito.</p>
+                <div class="entry-foot"><time>20:40</time><button class="del">Eliminar</button></div></li>
+            </ul>
+            <div class="einput">
+              <textarea rows="3" placeholder="Escribí una nota para dejar en este día..."></textarea>
+              <div style="margin-top:8px"><button class="send" disabled>Agregar nota</button></div>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2>Aprendizajes <span class="count">(1)</span></h2>
+            <ul class="enlist">
+              <li class="entry"><p>La constancia pesa más que la motivación: el hábito se mantiene solo.</p>
+                <div class="entry-foot"><time>18:05</time><button class="del">Eliminar</button></div></li>
+            </ul>
+            <p class="empty">Todavía no hay más aprendizajes para este día.</p>
+          </section>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 2 · CARBONILLA ================= -->
+  <section class="mock t-carbon" data-name="2 · Carbonilla">
+    <div class="frame">
+      <header class="m-header">
+        <div class="brand">
+          <span class="logo">La BitAK0R4_ de Ezequiel</span>
+          <span class="badge">Local · sin DB</span>
+        </div>
+        <nav class="m-nav">
+          <a href="#">Hoy</a><a href="#">Ajustes</a><a href="#">Stats</a><a href="#">Salir</a>
+        </nav>
+      </header>
+
+      <div class="m-body">
+        <nav class="card cal">
+          <div class="cal-head">
+            <button class="btn">←</button>
+            <span class="day">martes 8 de septiembre de 2026</span>
+            <button class="btn">→</button>
+          </div>
+          <div class="cal-month">
+            <button class="btn">‹</button>
+            <strong>septiembre de 2026</strong>
+            <button class="btn">›</button>
+          </div>
+          <div class="cal-grid">
+            <span class="wd">L</span><span class="wd">M</span><span class="wd">Mi</span><span class="wd">J</span><span class="wd">V</span><span class="wd">S</span><span class="wd">D</span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">01</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">02</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">03</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">04</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">05</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">06</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">07</span></span></span>
+            <span class="cell stripe today"><span class="numwrap"><span class="seg"><i class="g"></i><i class="a"></i></span><span class="num">*08</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">09</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">10</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">11</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">12</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">13</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">14</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">15</span></span></span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">17</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">18</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">19</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">20</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">21</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">22</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">23</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">24</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">25</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">26</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">27</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">28</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">29</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">30</span></span></span>
+            <span></span>
+          </div>
+        </nav>
+
+        <blockquote class="card quote">
+          <p>La excelencia no es un acto, sino un hábito.</p>
+          <div class="quote-foot">
+            <cite>Aristóteles, filósofo griego</cite>
+            <button type="button">↻ Otra frase</button>
+          </div>
+        </blockquote>
+
+        <section class="card">
+          <h2>Objetivos del día <span class="count">(2/3)</span></h2>
+          <ul class="objlist">
+            <li><label><input type="checkbox" checked /><span><span class="title done">Escribir 1000 palabras del libro</span></span></label></li>
+            <li><label><input type="checkbox" checked /><span><span class="title done">Salir a caminar 30 minutos</span></span></label></li>
+            <li><label><input type="checkbox" /><span><span class="title">Leer 20 páginas</span><span class="desc">Pendiente para la noche</span></span></label></li>
+          </ul>
+        </section>
+
+        <section class="card">
+          <h2>Metas temporales</h2>
+          <ul class="goallist">
+            <li class="goal"><span>Terminar el año con el hábito</span><span class="gbar"><i style="width:70%"></i></span><span class="gpct">70%</span></li>
+            <li class="goal"><span>Ahorrar para el viaje</span><span class="gbar"><i style="width:35%"></i></span><span class="gpct">35%</span></li>
+          </ul>
+        </section>
+
+        <div class="cols">
+          <section class="card">
+            <h2>Notas del día <span class="count">(2)</span></h2>
+            <ul class="enlist">
+              <li class="entry"><p>Primera entrada a las 09:12, arrancando la rutina con la cita del día.</p>
+                <div class="entry-foot"><time>09:12</time><button class="del">Eliminar</button></div></li>
+              <li class="entry"><p>Recordar preparar todo antes de las 21 para no cortar el hábito.</p>
+                <div class="entry-foot"><time>20:40</time><button class="del">Eliminar</button></div></li>
+            </ul>
+            <div class="einput">
+              <textarea rows="3" placeholder="Escribí una nota para dejar en este día..."></textarea>
+              <div style="margin-top:8px"><button class="send" disabled>Agregar nota</button></div>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2>Aprendizajes <span class="count">(1)</span></h2>
+            <ul class="enlist">
+              <li class="entry"><p>La constancia pesa más que la motivación: el hábito se mantiene solo.</p>
+                <div class="entry-foot"><time>18:05</time><button class="del">Eliminar</button></div></li>
+            </ul>
+            <p class="empty">Todavía no hay más aprendizajes para este día.</p>
+          </section>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 3 · AL ÓLEO — GALERÍA ================= -->
+  <section class="mock t-oleo" data-name="3 · Al óleo · galería">
+    <div class="oleo-stage">
+      <header class="oleo-top">
+        <span class="oleo-plaque-title">Galería personal · Sala 08</span>
+        <span class="oleo-brand">La BitAK0R4_ de Ezequiel</span>
+        <span class="oleo-badge">Local · sin DB</span>
+      </header>
+
+      <div class="oleo-wall">
+        <div class="paint-row a">
+          <div class="paint paint-cal">
+            <div class="paint-frame">
+              <div class="paint-canvas">
+                <div class="cal-head">
+                  <button class="btn">←</button>
+                  <span class="day">martes 8 de septiembre de 2026</span>
+                  <button class="btn">→</button>
+                </div>
+                <div class="cal-month">
+                  <button class="btn">‹</button>
+                  <strong>septiembre de 2026</strong>
+                  <button class="btn">›</button>
+                </div>
+                <div class="cal-grid">
+                  <span class="wd">L</span><span class="wd">M</span><span class="wd">Mi</span><span class="wd">J</span><span class="wd">V</span><span class="wd">S</span><span class="wd">D</span>
+                  <span></span>
+                  <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">01</span></span></span>
+                  <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">02</span></span></span>
+                  <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">03</span></span></span>
+                  <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">04</span></span></span>
+                  <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">05</span></span></span>
+                  <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">06</span></span></span>
+                  <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">07</span></span></span>
+                  <span class="cell stripe today"><span class="numwrap"><span class="seg"><i class="g"></i><i class="a"></i></span><span class="num">*08</span></span></span>
+                  <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">09</span></span></span>
+                  <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">10</span></span></span>
+                  <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">11</span></span></span>
+                  <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">12</span></span></span>
+                  <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">13</span></span></span>
+                  <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">14</span></span></span>
+                  <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">15</span></span></span>
+                  <span></span>
+                  <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">17</span></span></span>
+                  <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">18</span></span></span>
+                  <span class="cell"><span class="numwrap"><span class="num">19</span></span></span>
+                  <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">20</span></span></span>
+                  <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">21</span></span></span>
+                  <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">22</span></span></span>
+                  <span class="cell"><span class="numwrap"><span class="num">23</span></span></span>
+                  <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">24</span></span></span>
+                  <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">25</span></span></span>
+                  <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">26</span></span></span>
+                  <span class="cell"><span class="numwrap"><span class="num">27</span></span></span>
+                  <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">28</span></span></span>
+                  <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">29</span></span></span>
+                  <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">30</span></span></span>
+                  <span></span>
+                </div>
+              </div>
+            </div>
+            <div class="plaque"><span>Calendario · Diario</span><em>óleo sobre lienzo · 2026</em></div>
+          </div>
+
+          <div class="paint paint-quote">
+            <div class="paint-frame">
+              <div class="paint-canvas">
+                <p class="otext">Un viaje de mil millas comienza con un solo paso.</p>
+                <div class="ofoot">
+                  <cite>Lao Tse, filósofo chino</cite>
+                  <button type="button">↻ Otra frase</button>
+                </div>
+              </div>
+            </div>
+            <div class="plaque"><span>La cita del día</span><em>óleo sobre lienzo · 2026</em></div>
+          </div>
+        </div>
+
+        <div class="paint-row b">
+          <div class="paint paint-obj">
+            <div class="paint-frame">
+              <div class="paint-canvas">
+                <h3 class="otitle">Objetivos del día (2/3)</h3>
+                <ul class="objlist">
+                  <li><label><input type="checkbox" checked /><span><span class="done">Escribir 1000 palabras del libro</span></span></label></li>
+                  <li><label><input type="checkbox" checked /><span><span class="done">Salir a caminar 30 minutos</span></span></label></li>
+                  <li><label><input type="checkbox" /><span><span>Leer 20 páginas</span><span class="desc">Pendiente para la noche</span></span></label></li>
+                </ul>
+              </div>
+            </div>
+            <div class="plaque"><span>Votos del día</span><em>óleo sobre lienzo · 2026</em></div>
+          </div>
+
+          <div class="paint paint-metas">
+            <div class="paint-frame">
+              <div class="paint-canvas">
+                <h3 class="otitle">Metas temporales</h3>
+                <ul class="goallist">
+                  <li class="goal"><span>Terminar el año con el hábito</span><span class="gbar"><i style="width:70%"></i></span><span class="gpct">70%</span></li>
+                  <li class="goal"><span>Ahorrar para el viaje</span><span class="gbar"><i style="width:35%"></i></span><span class="gpct">35%</span></li>
+                </ul>
+              </div>
+            </div>
+            <div class="plaque"><span>Progresos</span><em>óleo sobre lienzo · 2026</em></div>
+          </div>
+        </div>
+
+        <div class="paint-row c">
+          <div class="paint paint-notas">
+            <div class="paint-frame">
+              <div class="paint-canvas">
+                <h3 class="otitle">Notas del día (2)</h3>
+                <ul class="enlist">
+                  <li class="entry"><p>Primera entrada a las 09:12, arrancando la rutina con la cita del día.</p>
+                    <div class="entry-foot"><time>09:12</time><button class="del">Eliminar</button></div></li>
+                  <li class="entry"><p>Recordar preparar todo antes de las 21 para no cortar el hábito.</p>
+                    <div class="entry-foot"><time>20:40</time><button class="del">Eliminar</button></div></li>
+                </ul>
+                <div class="einput">
+                  <textarea rows="3" placeholder="Escribí una nota para dejar en este día..."></textarea>
+                  <div style="margin-top:8px"><button class="send" disabled>Agregar nota</button></div>
+                </div>
+              </div>
+            </div>
+            <div class="plaque"><span>Notas</span><em>óleo sobre lienzo · 2026</em></div>
+          </div>
+
+          <div class="paint paint-apren">
+            <div class="paint-frame">
+              <div class="paint-canvas">
+                <h3 class="otitle">Aprendizajes (1)</h3>
+                <ul class="enlist">
+                  <li class="entry"><p>La constancia pesa más que la motivación: el hábito se mantiene solo.</p>
+                    <div class="entry-foot"><time>18:05</time><button class="del">Eliminar</button></div></li>
+                </ul>
+                <p class="empty">Todavía no hay más aprendizajes para este día.</p>
+              </div>
+            </div>
+            <div class="plaque"><span>Aprendizajes</span><em>óleo sobre lienzo · 2026</em></div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="oleo-foot">Muestra nº 08 · Septiembre de 2026 — «La constancia»</footer>
+    </div>
+  </section>
+
+  <!-- ================= 4 · RENACIMIENTO — FRONTISPICIO ================= -->
+  <section class="mock t-rena" data-name="4 · Renacimiento">
+    <div class="ren-wrap">
+      <header class="ren-front">
+        <div class="ren-ped">❖ el libreto de la constancia ❖</div>
+        <h1 class="ren-title">La BitAK0R4_ de Ezequiel</h1>
+        <div class="ren-sub">Local · sin DB · MMXXVI</div>
+        <nav class="ren-nav">
+          <a href="#">Hoy</a><a href="#">Ajustes</a><a href="#">Estadística</a><a href="#">Salir</a>
+        </nav>
+      </header>
+
+      <div class="ren-grid">
+        <div class="ren-stone ren-cal">
+          <h2 class="ren-label">El mes · Septiembre</h2>
+          <div class="cal-head">
+            <button class="btn">←</button>
+            <span class="day">martes 8 de septiembre de 2026</span>
+            <button class="btn">→</button>
+          </div>
+          <div class="cal-month">
+            <button class="btn">‹</button>
+            <strong>septiembre de 2026</strong>
+            <button class="btn">›</button>
+          </div>
+          <div class="cal-grid">
+            <span class="wd">L</span><span class="wd">M</span><span class="wd">Mi</span><span class="wd">J</span><span class="wd">V</span><span class="wd">S</span><span class="wd">D</span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">01</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">02</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">03</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">04</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">05</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">06</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">07</span></span></span>
+            <span class="cell stripe today"><span class="numwrap"><span class="seg"><i class="g"></i><i class="a"></i></span><span class="num">*08</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">09</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">10</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">11</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">12</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">13</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">14</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">15</span></span></span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">17</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">18</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">19</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">20</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">21</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">22</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">23</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">24</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">25</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">26</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">27</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">28</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">29</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">30</span></span></span>
+            <span></span>
+          </div>
+        </div>
+
+        <div class="ren-plaque ren-quote">
+          <h2 class="ren-label">La cita</h2>
+          <p>La vida es lo que te pasa mientras estás ocupado haciendo otros planes.</p>
+          <div class="ren-qfoot">
+            <cite>John Lennon, músico británico</cite>
+            <button type="button">↻ Otra</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="ren-grid">
+        <div class="ren-stone">
+          <h2 class="ren-label">Los votos del día (2/3)</h2>
+          <ul class="ren-votos">
+            <li class="voto done"><span class="rn">I</span><span class="voto-label"><a>Escribir 1000 palabras del libro</a></span></li>
+            <li class="voto done"><span class="rn">II</span><span class="voto-label"><a>Salir a caminar 30 minutos</a></span></li>
+            <li class="voto"><span class="rn">III</span><span class="voto-label"><a>Leer 20 páginas</a><span class="desc">Pendiente para la noche</span></span></li>
+          </ul>
+        </div>
+
+        <div class="ren-stone">
+          <h2 class="ren-label">Los progresos</h2>
+          <ul class="ren-metas">
+            <li class="ren-goal-row"><span>El hábito anual</span><span class="gbar"><i style="width:70%"></i></span><span class="gpct">70%</span></li>
+            <li class="ren-goal-row"><span>El viaje</span><span class="gbar"><i style="width:35%"></i></span><span class="gpct">35%</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="ren-grid">
+        <div class="ren-folio">
+          <h2 class="ren-label">Las notas del día (2)</h2>
+          <ul class="enlist">
+            <li class="entry"><p>Primera entrada a las 09:12, arrancando la rutina con la cita del día.</p>
+              <div class="entry-foot"><time>09:12</time><button class="del">Eliminar</button></div></li>
+            <li class="entry"><p>Recordar preparar todo antes de las 21 para no cortar el hábito.</p>
+              <div class="entry-foot"><time>20:40</time><button class="del">Eliminar</button></div></li>
+          </ul>
+          <div class="einput">
+            <textarea rows="3" placeholder="Escribí una nota para dejar en este día..."></textarea>
+            <div style="margin-top:8px"><button class="send" disabled>Agregar nota</button></div>
+          </div>
+        </div>
+
+        <div class="ren-folio">
+          <h2 class="ren-label">Los aprendizajes (1)</h2>
+          <ul class="enlist">
+            <li class="entry"><p>La constancia pesa más que la motivación: el hábito se mantiene solo.</p>
+              <div class="entry-foot"><time>18:05</time><button class="del">Eliminar</button></div></li>
+          </ul>
+          <p class="empty">Todavía no hay más aprendizajes para este día.</p>
+        </div>
+      </div>
+
+      <footer class="ren-foot">Liberto VII · De la constancia · Año MMXXVI</footer>
+    </div>
+  </section>
+
+  <!-- ================= 5 · VERDE FTALO — EDITORIAL ================= -->
+  <section class="mock t-ed" data-name="5 · Verde ftalo · editorial">
+    <div class="ed-wrap">
+      <header class="ed-mast">
+        <h1>La BitAK0R4_ de Ezequiel</h1>
+        <div class="ed-dateline">Martes 8 de septiembre de 2026 · Local · sin DB</div>
+        <div class="ed-rule"></div>
+      </header>
+
+      <div class="ed-hero">
+        <span class="ed-big">08<sub>·</sub></span>
+        <div class="ed-hero-side">
+          <span class="ed-leg">Día vigente</span>
+          <div class="ed-meta">
+            septiembre 2026 — 2/3 objetivos completados — hábito al 70%<br />
+            dos notas y un aprendizaje registrados hoy.
+          </div>
+        </div>
+      </div>
+
+      <div class="ed-quote">
+        <p style="margin:0">No fracasé: encontré mil maneras que no funcionan.</p>
+        <div class="ed-qfoot">
+          <cite>Thomas Edison, inventor estadounidense</cite>
+          <button type="button">↻ Otra frase</button>
+        </div>
+      </div>
+
+      <div class="ed-grid">
+        <div class="ed-col">
+          <h2>Calendario</h2>
+          <div class="cal-head">
+            <button class="btn">←</button><span class="day">martes 8 de septiembre de 2026</span><button class="btn">→</button>
+          </div>
+          <div class="cal-month">
+            <button class="btn">‹</button><strong>septiembre de 2026</strong><button class="btn">›</button>
+          </div>
+          <div class="cal-grid">
+            <span class="wd">L</span><span class="wd">M</span><span class="wd">Mi</span><span class="wd">J</span><span class="wd">V</span><span class="wd">S</span><span class="wd">D</span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">01</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">02</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">03</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">04</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">05</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">06</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">07</span></span></span>
+            <span class="cell stripe today"><span class="numwrap"><span class="seg"><i class="g"></i><i class="a"></i></span><span class="num">*08</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">09</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">10</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">11</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">12</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">13</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">14</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">15</span></span></span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">17</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">18</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">19</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">20</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">21</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">22</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">23</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">24</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">25</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">26</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">27</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">28</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">29</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">30</span></span></span>
+            <span></span>
+          </div>
+        </div>
+
+        <div class="ed-col">
+          <h2>Objetivos <span class="count">(2/3)</span></h2>
+          <ul class="ed-objlist">
+            <li><label><input type="checkbox" checked /><span><span class="done">Escribir 1000 palabras del libro</span></span></label></li>
+            <li><label><input type="checkbox" checked /><span><span class="done">Salir a caminar 30 minutos</span></span></label></li>
+            <li><label><input type="checkbox" /><span><span>Leer 20 páginas</span><span class="desc">Pendiente para la noche</span></span></label></li>
+          </ul>
+
+          <h2 style="margin-top:28px">Metas temporales</h2>
+          <ul class="ed-metas">
+            <li class="mrow"><span>El hábito anual</span><span class="gbar"><i style="width:70%"></i></span><span class="gpct">70%</span></li>
+            <li class="mrow"><span>El viaje</span><span class="gbar"><i style="width:35%"></i></span><span class="gpct">35%</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="ed-grid">
+        <div class="ed-col">
+          <h2>Notas del día <span class="count">(2)</span></h2>
+          <ul class="ed-entries">
+            <li class="enrow"><p>Primera entrada a las 09:12, arrancando la rutina con la cita del día.</p>
+              <div class="enfoot"><time>09:12</time><button class="del">Eliminar</button></div></li>
+            <li class="enrow"><p>Recordar preparar todo antes de las 21 para no cortar el hábito.</p>
+              <div class="enfoot"><time>20:40</time><button class="del">Eliminar</button></div></li>
+          </ul>
+          <div class="ed-input">
+            <textarea rows="3" placeholder="Escribí una nota para dejar en este día..."></textarea>
+            <div style="margin-top:8px"><button class="send" disabled>Agregar nota</button></div>
+          </div>
+        </div>
+
+        <div class="ed-col">
+          <h2>Aprendizajes <span class="count">(1)</span></h2>
+          <ul class="ed-entries">
+            <li class="enrow"><p>La constancia pesa más que la motivación: el hábito se mantiene solo.</p>
+              <div class="enfoot"><time>18:05</time><button class="del">Eliminar</button></div></li>
+          </ul>
+          <p class="empty">Todavía no hay más aprendizajes para este día.</p>
+        </div>
+      </div>
+
+      <footer class="ed-foot">
+        <span>Bitácora personal · La BitAK0R4_</span>
+        <span>ed. Septiembre 2026</span>
+      </footer>
+    </div>
+  </section>
+
+  <!-- ================= 6 · CYBERPUNK — HUD RETRO (verde ácido) ================= -->
+  <section class="mock t-cyb cyb-verde" data-name="6 · Cyberpunk · verde ácido">
+    <div class="cyb-stage">
+      <header class="cyb-deck">
+        <span class="cyb-logo">LA_BITAK0R4_</span>
+        <span class="cyb-clock">21:47:<u>12</u></span>
+        <span class="cyb-tags">
+          <span><i class="led"></i>SYS.OK</span>
+          <span><i class="led amber"></i>LOCAL</span>
+          <span><i class="led red"></i>NO-DB</span>
+        </span>
+        <nav class="cyb-nav">
+          <a href="#">Hoy</a><a href="#">Ajustes</a><a href="#">Stats</a><a href="#" class="salir">Salir</a>
+        </nav>
+      </header>
+
+      <div class="cyb-ticker">
+        <span>— ACCESO PERMITIDO · SESIÓN LOCAL · SIN DB · HÁBITO AL 70% · SE DETECTÓ ESCRITURA · QUEDAN 3 VOTOS PENDIENTES · —</span>
+      </div>
+
+      <div class="cyb-blocks">
+        <div class="blk blk-cal">
+          <span class="blk-tag">Agenda_q2_2026-09</span>
+          <div class="cal-head">
+            <button class="btn">←</button>
+            <span class="day">martes 8 de septiembre de 2026</span>
+            <button class="btn">→</button>
+          </div>
+          <div class="cal-month">
+            <button class="btn">‹</button>
+            <strong>septiembre de 2026</strong>
+            <button class="btn">›</button>
+          </div>
+          <div class="cal-grid">
+            <span class="wd">L</span><span class="wd">M</span><span class="wd">Mi</span><span class="wd">J</span><span class="wd">V</span><span class="wd">S</span><span class="wd">D</span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">01</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">02</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">03</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">04</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">05</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">06</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">07</span></span></span>
+            <span class="cell stripe today"><span class="numwrap"><span class="seg"><i class="g"></i><i class="a"></i></span><span class="num">*08</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">09</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">10</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">11</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">12</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">13</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">14</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">15</span></span></span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">17</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">18</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">19</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">20</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">21</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">22</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">23</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">24</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">25</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">26</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">27</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">28</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">29</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">30</span></span></span>
+            <span></span>
+          </div>
+        </div>
+
+        <div class="blk blk-quote">
+          <span class="blk-tag">Cita_del_día</span>
+          <p class="glitch" data-text="No fracasé: encontré mil maneras que no funcionan.">No fracasé: encontré mil maneras que no funcionan.</p>
+          <div class="cyb-qfoot">
+            <cite>Thomas Edison <span class="ok">[verificado]</span></cite>
+            <button type="button">↻ otra</button>
+          </div>
+        </div>
+
+        <div class="cyb-two">
+          <div class="blk blk-obj">
+            <span class="blk-tag">Votos · 2/3</span>
+            <ul class="cyb-obj">
+              <li><label><input type="checkbox" checked /><span><span class="done">Escribir 1000 palabras del libro</span></span></label></li>
+              <li><label><input type="checkbox" checked /><span><span class="done">Salir a caminar 30 minutos</span></span></label></li>
+              <li><label><input type="checkbox" /><span><span>Leer 20 páginas</span><span class="desc">Pendiente para la noche</span></span></label></li>
+            </ul>
+          </div>
+
+          <div class="blk blk-metas">
+            <span class="blk-tag">Progreso_metas</span>
+            <ul class="cyb-metas">
+              <li class="mrow"><span>El hábito anual</span><span class="gbar"><i style="width:70%"></i></span><span class="gpct">70%</span></li>
+              <li class="mrow"><span>El viaje</span><span class="gbar"><i style="width:35%"></i></span><span class="gpct">35%</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="cyb-two">
+          <div class="blk blk-notes">
+            <span class="blk-tag">Notas_del_día · 2</span>
+            <ul class="cyb-entries">
+              <li class="enrow"><p>Primera entrada a las 09:12, arrancando la rutina con la cita del día.</p>
+                <div class="enfoot"><time>[09:12]</time><button class="del">elim.</button></div></li>
+              <li class="enrow"><p>Recordar preparar todo antes de las 21 para no cortar el hábito.</p>
+                <div class="enfoot"><time>[20:40]</time><button class="del">elim.</button></div></li>
+            </ul>
+            <div class="cyb-input">
+              <textarea rows="3" placeholder="escribí_una_nota_para_dejar_en_este_día..."></textarea>
+              <div style="margin-top:8px;font-size:12px;color:#8f8f8f">▸ <button class="send" disabled>Agregar nota</button></div>
+            </div>
+          </div>
+
+          <div class="blk blk-apren">
+            <span class="blk-tag">Aprendizajes · 1</span>
+            <ul class="cyb-entries">
+              <li class="enrow"><p>La constancia pesa más que la motivación: el hábito se mantiene solo.</p>
+                <div class="enfoot"><time>[18:05]</time><button class="del">elim.</button></div></li>
+            </ul>
+            <p class="empty">no_hay_más_aprendizajes_para_hoy</p>
+          </div>
+        </div>
+      </div>
+
+      <footer class="cyb-foot">
+        <span>ACB &gt; bitácora_0x2026_09_08</span>
+        <span>sesión: <b>EZEQUIEL.OUT</b> · señal: <b>▂▃▄▅▆▇▆▅▄ ok</b></span>
+      </footer>
+    </div>
+  </section>
+
+  <!-- ================= 7 · CYBERPUNK — BLANCO NEÓN ================= -->
+  <section class="mock t-cyb cyb-blanco" data-name="7 · Cyberpunk · blanco neón">
+    <div class="cyb-stage">
+      <header class="cyb-deck">
+        <span class="cyb-logo">LA_BITAK0R4_</span>
+        <span class="cyb-clock">21:47:<u>12</u></span>
+        <span class="cyb-tags">
+          <span><i class="led"></i>SYS.OK</span>
+          <span><i class="led amber"></i>LOCAL</span>
+          <span><i class="led red"></i>NO-DB</span>
+        </span>
+        <nav class="cyb-nav">
+          <a href="#">Hoy</a><a href="#">Ajustes</a><a href="#">Stats</a><a href="#" class="salir">Salir</a>
+        </nav>
+      </header>
+
+      <div class="cyb-ticker">
+        <span>— ACCESO PERMITIDO · SESIÓN LOCAL · SIN DB · HÁBITO AL 70% · SE DETECTÓ ESCRITURA · QUEDAN 3 VOTOS PENDIENTES · —</span>
+      </div>
+
+      <div class="cyb-blocks">
+        <div class="blk blk-cal">
+          <span class="blk-tag">Agenda_q2_2026-09</span>
+          <div class="cal-head">
+            <button class="btn">←</button>
+            <span class="day">martes 8 de septiembre de 2026</span>
+            <button class="btn">→</button>
+          </div>
+          <div class="cal-month">
+            <button class="btn">‹</button>
+            <strong>septiembre de 2026</strong>
+            <button class="btn">›</button>
+          </div>
+          <div class="cal-grid">
+            <span class="wd">L</span><span class="wd">M</span><span class="wd">Mi</span><span class="wd">J</span><span class="wd">V</span><span class="wd">S</span><span class="wd">D</span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">01</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">02</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">03</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">04</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">05</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">06</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">07</span></span></span>
+            <span class="cell stripe today"><span class="numwrap"><span class="seg"><i class="g"></i><i class="a"></i></span><span class="num">*08</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">09</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">10</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">11</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">12</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">13</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">14</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">15</span></span></span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">17</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">18</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">19</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">20</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">21</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">22</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">23</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">24</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">25</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">26</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">27</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">28</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">29</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">30</span></span></span>
+            <span></span>
+          </div>
+        </div>
+
+        <div class="blk blk-quote">
+          <span class="blk-tag">Cita_del_día</span>
+          <p class="glitch" data-text="No fracasé: encontré mil maneras que no funcionan.">No fracasé: encontré mil maneras que no funcionan.</p>
+          <div class="cyb-qfoot">
+            <cite>Thomas Edison <span class="ok">[verificado]</span></cite>
+            <button type="button">↻ otra</button>
+          </div>
+        </div>
+
+        <div class="cyb-two">
+          <div class="blk blk-obj">
+            <span class="blk-tag">Votos · 2/3</span>
+            <ul class="cyb-obj">
+              <li><label><input type="checkbox" checked /><span><span class="done">Escribir 1000 palabras del libro</span></span></label></li>
+              <li><label><input type="checkbox" checked /><span><span class="done">Salir a caminar 30 minutos</span></span></label></li>
+              <li><label><input type="checkbox" /><span><span>Leer 20 páginas</span><span class="desc">Pendiente para la noche</span></span></label></li>
+            </ul>
+          </div>
+
+          <div class="blk blk-metas">
+            <span class="blk-tag">Progreso_metas</span>
+            <ul class="cyb-metas">
+              <li class="mrow"><span>El hábito anual</span><span class="gbar"><i style="width:70%"></i></span><span class="gpct">70%</span></li>
+              <li class="mrow"><span>El viaje</span><span class="gbar"><i style="width:35%"></i></span><span class="gpct">35%</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="cyb-two">
+          <div class="blk blk-notes">
+            <span class="blk-tag">Notas_del_día · 2</span>
+            <ul class="cyb-entries">
+              <li class="enrow"><p>Primera entrada a las 09:12, arrancando la rutina con la cita del día.</p>
+                <div class="enfoot"><time>[09:12]</time><button class="del">elim.</button></div></li>
+              <li class="enrow"><p>Recordar preparar todo antes de las 21 para no cortar el hábito.</p>
+                <div class="enfoot"><time>[20:40]</time><button class="del">elim.</button></div></li>
+            </ul>
+            <div class="cyb-input">
+              <textarea rows="3" placeholder="escribí_una_nota_para_dejar_en_este_día..."></textarea>
+              <div style="margin-top:8px;font-size:12px;color:#8f8f8f">▸ <button class="send" disabled>Agregar nota</button></div>
+            </div>
+          </div>
+
+          <div class="blk blk-apren">
+            <span class="blk-tag">Aprendizajes · 1</span>
+            <ul class="cyb-entries">
+              <li class="enrow"><p>La constancia pesa más que la motivación: el hábito se mantiene solo.</p>
+                <div class="enfoot"><time>[18:05]</time><button class="del">elim.</button></div></li>
+            </ul>
+            <p class="empty">no_hay_más_aprendizajes_para_hoy</p>
+          </div>
+        </div>
+      </div>
+
+      <footer class="cyb-foot">
+        <span>ACB &gt; bitácora_0x2026_09_08</span>
+        <span>sesión: <b>EZEQUIEL.OUT</b> · señal: <b>▂▃▄▅▆▇▆▅▄ ok</b></span>
+      </footer>
+    </div>
+  </section>
+
+  <!-- ================= 8 · CYBERPUNK — CIAN ================= -->
+  <section class="mock t-cyb cyb-cian" data-name="8 · Cyberpunk · cian">
+    <div class="cyb-stage">
+      <header class="cyb-deck">
+        <span class="cyb-logo">LA_BITAK0R4_</span>
+        <span class="cyb-clock">21:47:<u>12</u></span>
+        <span class="cyb-tags">
+          <span><i class="led"></i>SYS.OK</span>
+          <span><i class="led amber"></i>LOCAL</span>
+          <span><i class="led red"></i>NO-DB</span>
+        </span>
+        <nav class="cyb-nav">
+          <a href="#">Hoy</a><a href="#">Ajustes</a><a href="#">Stats</a><a href="#" class="salir">Salir</a>
+        </nav>
+      </header>
+
+      <div class="cyb-ticker">
+        <span>— ACCESO PERMITIDO · SESIÓN LOCAL · SIN DB · HÁBITO AL 70% · SE DETECTÓ ESCRITURA · QUEDAN 3 VOTOS PENDIENTES · —</span>
+      </div>
+
+      <div class="cyb-blocks">
+        <div class="blk blk-cal">
+          <span class="blk-tag">Agenda_q2_2026-09</span>
+          <div class="cal-head">
+            <button class="btn">←</button>
+            <span class="day">martes 8 de septiembre de 2026</span>
+            <button class="btn">→</button>
+          </div>
+          <div class="cal-month">
+            <button class="btn">‹</button>
+            <strong>septiembre de 2026</strong>
+            <button class="btn">›</button>
+          </div>
+          <div class="cal-grid">
+            <span class="wd">L</span><span class="wd">M</span><span class="wd">Mi</span><span class="wd">J</span><span class="wd">V</span><span class="wd">S</span><span class="wd">D</span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">01</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">02</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">03</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">04</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">05</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">06</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">07</span></span></span>
+            <span class="cell stripe today"><span class="numwrap"><span class="seg"><i class="g"></i><i class="a"></i></span><span class="num">*08</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">09</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">10</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">11</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">12</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">13</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">14</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">15</span></span></span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">17</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">18</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">19</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">20</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">21</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">22</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">23</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">24</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">25</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">26</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">27</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">28</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">29</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">30</span></span></span>
+            <span></span>
+          </div>
+        </div>
+
+        <div class="blk blk-quote">
+          <span class="blk-tag">Cita_del_día</span>
+          <p class="glitch" data-text="No fracasé: encontré mil maneras que no funcionan.">No fracasé: encontré mil maneras que no funcionan.</p>
+          <div class="cyb-qfoot">
+            <cite>Thomas Edison <span class="ok">[verificado]</span></cite>
+            <button type="button">↻ otra</button>
+          </div>
+        </div>
+
+        <div class="cyb-two">
+          <div class="blk blk-obj">
+            <span class="blk-tag">Votos · 2/3</span>
+            <ul class="cyb-obj">
+              <li><label><input type="checkbox" checked /><span><span class="done">Escribir 1000 palabras del libro</span></span></label></li>
+              <li><label><input type="checkbox" checked /><span><span class="done">Salir a caminar 30 minutos</span></span></label></li>
+              <li><label><input type="checkbox" /><span><span>Leer 20 páginas</span><span class="desc">Pendiente para la noche</span></span></label></li>
+            </ul>
+          </div>
+
+          <div class="blk blk-metas">
+            <span class="blk-tag">Progreso_metas</span>
+            <ul class="cyb-metas">
+              <li class="mrow"><span>El hábito anual</span><span class="gbar"><i style="width:70%"></i></span><span class="gpct">70%</span></li>
+              <li class="mrow"><span>El viaje</span><span class="gbar"><i style="width:35%"></i></span><span class="gpct">35%</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="cyb-two">
+          <div class="blk blk-notes">
+            <span class="blk-tag">Notas_del_día · 2</span>
+            <ul class="cyb-entries">
+              <li class="enrow"><p>Primera entrada a las 09:12, arrancando la rutina con la cita del día.</p>
+                <div class="enfoot"><time>[09:12]</time><button class="del">elim.</button></div></li>
+              <li class="enrow"><p>Recordar preparar todo antes de las 21 para no cortar el hábito.</p>
+                <div class="enfoot"><time>[20:40]</time><button class="del">elim.</button></div></li>
+            </ul>
+            <div class="cyb-input">
+              <textarea rows="3" placeholder="escribí_una_nota_para_dejar_en_este_día..."></textarea>
+              <div style="margin-top:8px;font-size:12px;color:#8f8f8f">▸ <button class="send" disabled>Agregar nota</button></div>
+            </div>
+          </div>
+
+          <div class="blk blk-apren">
+            <span class="blk-tag">Aprendizajes · 1</span>
+            <ul class="cyb-entries">
+              <li class="enrow"><p>La constancia pesa más que la motivación: el hábito se mantiene solo.</p>
+                <div class="enfoot"><time>[18:05]</time><button class="del">elim.</button></div></li>
+            </ul>
+            <p class="empty">no_hay_más_aprendizajes_para_hoy</p>
+          </div>
+        </div>
+      </div>
+
+      <footer class="cyb-foot">
+        <span>ACB &gt; bitácora_0x2026_09_08</span>
+        <span>sesión: <b>EZEQUIEL.OUT</b> · señal: <b>▂▃▄▅▆▇▆▅▄ ok</b></span>
+      </footer>
+    </div>
+  </section>
+
+  <!-- ================= 9 · CYBERPUNK — ÁMBAR ================= -->
+  <section class="mock t-cyb cyb-ambar" data-name="9 · Cyberpunk · ámbar">
+    <div class="cyb-stage">
+      <header class="cyb-deck">
+        <span class="cyb-logo">LA_BITAK0R4_</span>
+        <span class="cyb-clock">21:47:<u>12</u></span>
+        <span class="cyb-tags">
+          <span><i class="led"></i>SYS.OK</span>
+          <span><i class="led amber"></i>LOCAL</span>
+          <span><i class="led red"></i>NO-DB</span>
+        </span>
+        <nav class="cyb-nav">
+          <a href="#">Hoy</a><a href="#">Ajustes</a><a href="#">Stats</a><a href="#" class="salir">Salir</a>
+        </nav>
+      </header>
+
+      <div class="cyb-ticker">
+        <span>— ACCESO PERMITIDO · SESIÓN LOCAL · SIN DB · HÁBITO AL 70% · SE DETECTÓ ESCRITURA · QUEDAN 3 VOTOS PENDIENTES · —</span>
+      </div>
+
+      <div class="cyb-blocks">
+        <div class="blk blk-cal">
+          <span class="blk-tag">Agenda_q2_2026-09</span>
+          <div class="cal-head">
+            <button class="btn">←</button>
+            <span class="day">martes 8 de septiembre de 2026</span>
+            <button class="btn">→</button>
+          </div>
+          <div class="cal-month">
+            <button class="btn">‹</button>
+            <strong>septiembre de 2026</strong>
+            <button class="btn">›</button>
+          </div>
+          <div class="cal-grid">
+            <span class="wd">L</span><span class="wd">M</span><span class="wd">Mi</span><span class="wd">J</span><span class="wd">V</span><span class="wd">S</span><span class="wd">D</span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">01</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">02</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">03</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">04</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">05</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">06</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">07</span></span></span>
+            <span class="cell stripe today"><span class="numwrap"><span class="seg"><i class="g"></i><i class="a"></i></span><span class="num">*08</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">09</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">10</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">11</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">12</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">13</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">14</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">15</span></span></span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">17</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">18</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">19</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">20</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">21</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">22</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">23</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">24</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">25</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">26</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">27</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">28</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">29</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">30</span></span></span>
+            <span></span>
+          </div>
+        </div>
+
+        <div class="blk blk-quote">
+          <span class="blk-tag">Cita_del_día</span>
+          <p class="glitch" data-text="No fracasé: encontré mil maneras que no funcionan.">No fracasé: encontré mil maneras que no funcionan.</p>
+          <div class="cyb-qfoot">
+            <cite>Thomas Edison <span class="ok">[verificado]</span></cite>
+            <button type="button">↻ otra</button>
+          </div>
+        </div>
+
+        <div class="cyb-two">
+          <div class="blk blk-obj">
+            <span class="blk-tag">Votos · 2/3</span>
+            <ul class="cyb-obj">
+              <li><label><input type="checkbox" checked /><span><span class="done">Escribir 1000 palabras del libro</span></span></label></li>
+              <li><label><input type="checkbox" checked /><span><span class="done">Salir a caminar 30 minutos</span></span></label></li>
+              <li><label><input type="checkbox" /><span><span>Leer 20 páginas</span><span class="desc">Pendiente para la noche</span></span></label></li>
+            </ul>
+          </div>
+
+          <div class="blk blk-metas">
+            <span class="blk-tag">Progreso_metas</span>
+            <ul class="cyb-metas">
+              <li class="mrow"><span>El hábito anual</span><span class="gbar"><i style="width:70%"></i></span><span class="gpct">70%</span></li>
+              <li class="mrow"><span>El viaje</span><span class="gbar"><i style="width:35%"></i></span><span class="gpct">35%</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="cyb-two">
+          <div class="blk blk-notes">
+            <span class="blk-tag">Notas_del_día · 2</span>
+            <ul class="cyb-entries">
+              <li class="enrow"><p>Primera entrada a las 09:12, arrancando la rutina con la cita del día.</p>
+                <div class="enfoot"><time>[09:12]</time><button class="del">elim.</button></div></li>
+              <li class="enrow"><p>Recordar preparar todo antes de las 21 para no cortar el hábito.</p>
+                <div class="enfoot"><time>[20:40]</time><button class="del">elim.</button></div></li>
+            </ul>
+            <div class="cyb-input">
+              <textarea rows="3" placeholder="escribí_una_nota_para_dejar_en_este_día..."></textarea>
+              <div style="margin-top:8px;font-size:12px;color:#8f8f8f">▸ <button class="send" disabled>Agregar nota</button></div>
+            </div>
+          </div>
+
+          <div class="blk blk-apren">
+            <span class="blk-tag">Aprendizajes · 1</span>
+            <ul class="cyb-entries">
+              <li class="enrow"><p>La constancia pesa más que la motivación: el hábito se mantiene solo.</p>
+                <div class="enfoot"><time>[18:05]</time><button class="del">elim.</button></div></li>
+            </ul>
+            <p class="empty">no_hay_más_aprendizajes_para_hoy</p>
+          </div>
+        </div>
+      </div>
+
+      <footer class="cyb-foot">
+        <span>ACB &gt; bitácora_0x2026_09_08</span>
+        <span>sesión: <b>EZEQUIEL.OUT</b> · señal: <b>▂▃▄▅▆▇▆▅▄ ok</b></span>
+      </footer>
+    </div>
+  </section>
+
+  <!-- ================= 10 · CYBERPUNK — ROJO ================= -->
+  <section class="mock t-cyb cyb-rojo" data-name="10 · Cyberpunk · rojo">
+    <div class="cyb-stage">
+      <header class="cyb-deck">
+        <span class="cyb-logo">LA_BITAK0R4_</span>
+        <span class="cyb-clock">21:47:<u>12</u></span>
+        <span class="cyb-tags">
+          <span><i class="led"></i>SYS.OK</span>
+          <span><i class="led amber"></i>LOCAL</span>
+          <span><i class="led red"></i>NO-DB</span>
+        </span>
+        <nav class="cyb-nav">
+          <a href="#">Hoy</a><a href="#">Ajustes</a><a href="#">Stats</a><a href="#" class="salir">Salir</a>
+        </nav>
+      </header>
+
+      <div class="cyb-ticker">
+        <span>— ACCESO PERMITIDO · SESIÓN LOCAL · SIN DB · HÁBITO AL 70% · SE DETECTÓ ESCRITURA · QUEDAN 3 VOTOS PENDIENTES · —</span>
+      </div>
+
+      <div class="cyb-blocks">
+        <div class="blk blk-cal">
+          <span class="blk-tag">Agenda_q2_2026-09</span>
+          <div class="cal-head">
+            <button class="btn">←</button>
+            <span class="day">martes 8 de septiembre de 2026</span>
+            <button class="btn">→</button>
+          </div>
+          <div class="cal-month">
+            <button class="btn">‹</button>
+            <strong>septiembre de 2026</strong>
+            <button class="btn">›</button>
+          </div>
+          <div class="cal-grid">
+            <span class="wd">L</span><span class="wd">M</span><span class="wd">Mi</span><span class="wd">J</span><span class="wd">V</span><span class="wd">S</span><span class="wd">D</span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">01</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">02</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">03</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">04</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">05</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">06</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">07</span></span></span>
+            <span class="cell stripe today"><span class="numwrap"><span class="seg"><i class="g"></i><i class="a"></i></span><span class="num">*08</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">09</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">10</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">11</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">12</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">13</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">14</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">15</span></span></span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">17</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">18</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">19</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">20</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">21</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">22</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">23</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">24</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">25</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">26</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">27</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">28</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">29</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">30</span></span></span>
+            <span></span>
+          </div>
+        </div>
+
+        <div class="blk blk-quote">
+          <span class="blk-tag">Cita_del_día</span>
+          <p class="glitch" data-text="No fracasé: encontré mil maneras que no funcionan.">No fracasé: encontré mil maneras que no funcionan.</p>
+          <div class="cyb-qfoot">
+            <cite>Thomas Edison <span class="ok">[verificado]</span></cite>
+            <button type="button">↻ otra</button>
+          </div>
+        </div>
+
+        <div class="cyb-two">
+          <div class="blk blk-obj">
+            <span class="blk-tag">Votos · 2/3</span>
+            <ul class="cyb-obj">
+              <li><label><input type="checkbox" checked /><span><span class="done">Escribir 1000 palabras del libro</span></span></label></li>
+              <li><label><input type="checkbox" checked /><span><span class="done">Salir a caminar 30 minutos</span></span></label></li>
+              <li><label><input type="checkbox" /><span><span>Leer 20 páginas</span><span class="desc">Pendiente para la noche</span></span></label></li>
+            </ul>
+          </div>
+
+          <div class="blk blk-metas">
+            <span class="blk-tag">Progreso_metas</span>
+            <ul class="cyb-metas">
+              <li class="mrow"><span>El hábito anual</span><span class="gbar"><i style="width:70%"></i></span><span class="gpct">70%</span></li>
+              <li class="mrow"><span>El viaje</span><span class="gbar"><i style="width:35%"></i></span><span class="gpct">35%</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="cyb-two">
+          <div class="blk blk-notes">
+            <span class="blk-tag">Notas_del_día · 2</span>
+            <ul class="cyb-entries">
+              <li class="enrow"><p>Primera entrada a las 09:12, arrancando la rutina con la cita del día.</p>
+                <div class="enfoot"><time>[09:12]</time><button class="del">elim.</button></div></li>
+              <li class="enrow"><p>Recordar preparar todo antes de las 21 para no cortar el hábito.</p>
+                <div class="enfoot"><time>[20:40]</time><button class="del">elim.</button></div></li>
+            </ul>
+            <div class="cyb-input">
+              <textarea rows="3" placeholder="escribí_una_nota_para_dejar_en_este_día..."></textarea>
+              <div style="margin-top:8px;font-size:12px;color:#8f8f8f">▸ <button class="send" disabled>Agregar nota</button></div>
+            </div>
+          </div>
+
+          <div class="blk blk-apren">
+            <span class="blk-tag">Aprendizajes · 1</span>
+            <ul class="cyb-entries">
+              <li class="enrow"><p>La constancia pesa más que la motivación: el hábito se mantiene solo.</p>
+                <div class="enfoot"><time>[18:05]</time><button class="del">elim.</button></div></li>
+            </ul>
+            <p class="empty">no_hay_más_aprendizajes_para_hoy</p>
+          </div>
+        </div>
+      </div>
+
+      <footer class="cyb-foot">
+        <span>ACB &gt; bitácora_0x2026_09_08</span>
+        <span>sesión: <b>EZEQUIEL.OUT</b> · señal: <b>▂▃▄▅▆▇▆▅▄ ok</b></span>
+      </footer>
+    </div>
+  </section>
+
+  <!-- ================= 11 · CYBERPUNK — FUCSIA ================= -->
+  <section class="mock t-cyb cyb-fucsia" data-name="11 · Cyberpunk · fucsia">
+    <div class="cyb-stage">
+      <header class="cyb-deck">
+        <span class="cyb-logo">LA_BITAK0R4_</span>
+        <span class="cyb-clock">21:47:<u>12</u></span>
+        <span class="cyb-tags">
+          <span><i class="led"></i>SYS.OK</span>
+          <span><i class="led amber"></i>LOCAL</span>
+          <span><i class="led red"></i>NO-DB</span>
+        </span>
+        <nav class="cyb-nav">
+          <a href="#">Hoy</a><a href="#">Ajustes</a><a href="#">Stats</a><a href="#" class="salir">Salir</a>
+        </nav>
+      </header>
+
+      <div class="cyb-ticker">
+        <span>— ACCESO PERMITIDO · SESIÓN LOCAL · SIN DB · HÁBITO AL 70% · SE DETECTÓ ESCRITURA · QUEDAN 3 VOTOS PENDIENTES · —</span>
+      </div>
+
+      <div class="cyb-blocks">
+        <div class="blk blk-cal">
+          <span class="blk-tag">Agenda_q2_2026-09</span>
+          <div class="cal-head">
+            <button class="btn">←</button>
+            <span class="day">martes 8 de septiembre de 2026</span>
+            <button class="btn">→</button>
+          </div>
+          <div class="cal-month">
+            <button class="btn">‹</button>
+            <strong>septiembre de 2026</strong>
+            <button class="btn">›</button>
+          </div>
+          <div class="cal-grid">
+            <span class="wd">L</span><span class="wd">M</span><span class="wd">Mi</span><span class="wd">J</span><span class="wd">V</span><span class="wd">S</span><span class="wd">D</span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">01</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">02</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">03</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">04</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">05</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">06</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">07</span></span></span>
+            <span class="cell stripe today"><span class="numwrap"><span class="seg"><i class="g"></i><i class="a"></i></span><span class="num">*08</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">09</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">10</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">11</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">12</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">13</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">14</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">15</span></span></span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">17</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">18</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">19</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">20</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">21</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">22</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">23</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">24</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">25</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">26</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">27</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">28</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">29</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">30</span></span></span>
+            <span></span>
+          </div>
+        </div>
+
+        <div class="blk blk-quote">
+          <span class="blk-tag">Cita_del_día</span>
+          <p class="glitch" data-text="No fracasé: encontré mil maneras que no funcionan.">No fracasé: encontré mil maneras que no funcionan.</p>
+          <div class="cyb-qfoot">
+            <cite>Thomas Edison <span class="ok">[verificado]</span></cite>
+            <button type="button">↻ otra</button>
+          </div>
+        </div>
+
+        <div class="cyb-two">
+          <div class="blk blk-obj">
+            <span class="blk-tag">Votos · 2/3</span>
+            <ul class="cyb-obj">
+              <li><label><input type="checkbox" checked /><span><span class="done">Escribir 1000 palabras del libro</span></span></label></li>
+              <li><label><input type="checkbox" checked /><span><span class="done">Salir a caminar 30 minutos</span></span></label></li>
+              <li><label><input type="checkbox" /><span><span>Leer 20 páginas</span><span class="desc">Pendiente para la noche</span></span></label></li>
+            </ul>
+          </div>
+
+          <div class="blk blk-metas">
+            <span class="blk-tag">Progreso_metas</span>
+            <ul class="cyb-metas">
+              <li class="mrow"><span>El hábito anual</span><span class="gbar"><i style="width:70%"></i></span><span class="gpct">70%</span></li>
+              <li class="mrow"><span>El viaje</span><span class="gbar"><i style="width:35%"></i></span><span class="gpct">35%</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="cyb-two">
+          <div class="blk blk-notes">
+            <span class="blk-tag">Notas_del_día · 2</span>
+            <ul class="cyb-entries">
+              <li class="enrow"><p>Primera entrada a las 09:12, arrancando la rutina con la cita del día.</p>
+                <div class="enfoot"><time>[09:12]</time><button class="del">elim.</button></div></li>
+              <li class="enrow"><p>Recordar preparar todo antes de las 21 para no cortar el hábito.</p>
+                <div class="enfoot"><time>[20:40]</time><button class="del">elim.</button></div></li>
+            </ul>
+            <div class="cyb-input">
+              <textarea rows="3" placeholder="escribí_una_nota_para_dejar_en_este_día..."></textarea>
+              <div style="margin-top:8px;font-size:12px;color:#8f8f8f">▸ <button class="send" disabled>Agregar nota</button></div>
+            </div>
+          </div>
+
+          <div class="blk blk-apren">
+            <span class="blk-tag">Aprendizajes · 1</span>
+            <ul class="cyb-entries">
+              <li class="enrow"><p>La constancia pesa más que la motivación: el hábito se mantiene solo.</p>
+                <div class="enfoot"><time>[18:05]</time><button class="del">elim.</button></div></li>
+            </ul>
+            <p class="empty">no_hay_más_aprendizajes_para_hoy</p>
+          </div>
+        </div>
+      </div>
+
+      <footer class="cyb-foot">
+        <span>ACB &gt; bitácora_0x2026_09_08</span>
+        <span>sesión: <b>EZEQUIEL.OUT</b> · señal: <b>▂▃▄▅▆▇▆▅▄ ok</b></span>
+      </footer>
+    </div>
+  </section>
+
+  <!-- ================= 12 · CYBERPUNK — VIOLETA ================= -->
+  <section class="mock t-cyb cyb-violeta" data-name="12 · Cyberpunk · violeta">
+    <div class="cyb-stage">
+      <header class="cyb-deck">
+        <span class="cyb-logo">LA_BITAK0R4_</span>
+        <span class="cyb-clock">21:47:<u>12</u></span>
+        <span class="cyb-tags">
+          <span><i class="led"></i>SYS.OK</span>
+          <span><i class="led amber"></i>LOCAL</span>
+          <span><i class="led red"></i>NO-DB</span>
+        </span>
+        <nav class="cyb-nav">
+          <a href="#">Hoy</a><a href="#">Ajustes</a><a href="#">Stats</a><a href="#" class="salir">Salir</a>
+        </nav>
+      </header>
+
+      <div class="cyb-ticker">
+        <span>— ACCESO PERMITIDO · SESIÓN LOCAL · SIN DB · HÁBITO AL 70% · SE DETECTÓ ESCRITURA · QUEDAN 3 VOTOS PENDIENTES · —</span>
+      </div>
+
+      <div class="cyb-blocks">
+        <div class="blk blk-cal">
+          <span class="blk-tag">Agenda_q2_2026-09</span>
+          <div class="cal-head">
+            <button class="btn">←</button>
+            <span class="day">martes 8 de septiembre de 2026</span>
+            <button class="btn">→</button>
+          </div>
+          <div class="cal-month">
+            <button class="btn">‹</button>
+            <strong>septiembre de 2026</strong>
+            <button class="btn">›</button>
+          </div>
+          <div class="cal-grid">
+            <span class="wd">L</span><span class="wd">M</span><span class="wd">Mi</span><span class="wd">J</span><span class="wd">V</span><span class="wd">S</span><span class="wd">D</span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">01</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">02</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">03</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">04</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">05</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">06</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">07</span></span></span>
+            <span class="cell stripe today"><span class="numwrap"><span class="seg"><i class="g"></i><i class="a"></i></span><span class="num">*08</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">09</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">10</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">11</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">12</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">13</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">14</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">15</span></span></span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">17</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">18</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">19</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">20</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">21</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">22</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">23</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">24</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">25</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">26</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">27</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">28</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">29</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">30</span></span></span>
+            <span></span>
+          </div>
+        </div>
+
+        <div class="blk blk-quote">
+          <span class="blk-tag">Cita_del_día</span>
+          <p class="glitch" data-text="No fracasé: encontré mil maneras que no funcionan.">No fracasé: encontré mil maneras que no funcionan.</p>
+          <div class="cyb-qfoot">
+            <cite>Thomas Edison <span class="ok">[verificado]</span></cite>
+            <button type="button">↻ otra</button>
+          </div>
+        </div>
+
+        <div class="cyb-two">
+          <div class="blk blk-obj">
+            <span class="blk-tag">Votos · 2/3</span>
+            <ul class="cyb-obj">
+              <li><label><input type="checkbox" checked /><span><span class="done">Escribir 1000 palabras del libro</span></span></label></li>
+              <li><label><input type="checkbox" checked /><span><span class="done">Salir a caminar 30 minutos</span></span></label></li>
+              <li><label><input type="checkbox" /><span><span>Leer 20 páginas</span><span class="desc">Pendiente para la noche</span></span></label></li>
+            </ul>
+          </div>
+
+          <div class="blk blk-metas">
+            <span class="blk-tag">Progreso_metas</span>
+            <ul class="cyb-metas">
+              <li class="mrow"><span>El hábito anual</span><span class="gbar"><i style="width:70%"></i></span><span class="gpct">70%</span></li>
+              <li class="mrow"><span>El viaje</span><span class="gbar"><i style="width:35%"></i></span><span class="gpct">35%</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="cyb-two">
+          <div class="blk blk-notes">
+            <span class="blk-tag">Notas_del_día · 2</span>
+            <ul class="cyb-entries">
+              <li class="enrow"><p>Primera entrada a las 09:12, arrancando la rutina con la cita del día.</p>
+                <div class="enfoot"><time>[09:12]</time><button class="del">elim.</button></div></li>
+              <li class="enrow"><p>Recordar preparar todo antes de las 21 para no cortar el hábito.</p>
+                <div class="enfoot"><time>[20:40]</time><button class="del">elim.</button></div></li>
+            </ul>
+            <div class="cyb-input">
+              <textarea rows="3" placeholder="escribí_una_nota_para_dejar_en_este_día..."></textarea>
+              <div style="margin-top:8px;font-size:12px;color:#8f8f8f">▸ <button class="send" disabled>Agregar nota</button></div>
+            </div>
+          </div>
+
+          <div class="blk blk-apren">
+            <span class="blk-tag">Aprendizajes · 1</span>
+            <ul class="cyb-entries">
+              <li class="enrow"><p>La constancia pesa más que la motivación: el hábito se mantiene solo.</p>
+                <div class="enfoot"><time>[18:05]</time><button class="del">elim.</button></div></li>
+            </ul>
+            <p class="empty">no_hay_más_aprendizajes_para_hoy</p>
+          </div>
+        </div>
+      </div>
+
+      <footer class="cyb-foot">
+        <span>ACB &gt; bitácora_0x2026_09_08</span>
+        <span>sesión: <b>EZEQUIEL.OUT</b> · señal: <b>▂▃▄▅▆▇▆▅▄ ok</b></span>
+      </footer>
+    </div>
+  </section>
+
+  <!-- ================= 13 · CYBERPUNK — AZUL ================= -->
+  <section class="mock t-cyb cyb-azul" data-name="13 · Cyberpunk · azul">
+    <div class="cyb-stage">
+      <header class="cyb-deck">
+        <span class="cyb-logo">LA_BITAK0R4_</span>
+        <span class="cyb-clock">21:47:<u>12</u></span>
+        <span class="cyb-tags">
+          <span><i class="led"></i>SYS.OK</span>
+          <span><i class="led amber"></i>LOCAL</span>
+          <span><i class="led red"></i>NO-DB</span>
+        </span>
+        <nav class="cyb-nav">
+          <a href="#">Hoy</a><a href="#">Ajustes</a><a href="#">Stats</a><a href="#" class="salir">Salir</a>
+        </nav>
+      </header>
+
+      <div class="cyb-ticker">
+        <span>— ACCESO PERMITIDO · SESIÓN LOCAL · SIN DB · HÁBITO AL 70% · SE DETECTÓ ESCRITURA · QUEDAN 3 VOTOS PENDIENTES · —</span>
+      </div>
+
+      <div class="cyb-blocks">
+        <div class="blk blk-cal">
+          <span class="blk-tag">Agenda_q2_2026-09</span>
+          <div class="cal-head">
+            <button class="btn">←</button>
+            <span class="day">martes 8 de septiembre de 2026</span>
+            <button class="btn">→</button>
+          </div>
+          <div class="cal-month">
+            <button class="btn">‹</button>
+            <strong>septiembre de 2026</strong>
+            <button class="btn">›</button>
+          </div>
+          <div class="cal-grid">
+            <span class="wd">L</span><span class="wd">M</span><span class="wd">Mi</span><span class="wd">J</span><span class="wd">V</span><span class="wd">S</span><span class="wd">D</span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">01</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">02</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">03</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">04</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">05</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">06</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">07</span></span></span>
+            <span class="cell stripe today"><span class="numwrap"><span class="seg"><i class="g"></i><i class="a"></i></span><span class="num">*08</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">09</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">10</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">11</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">12</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">13</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">14</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">15</span></span></span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">17</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">18</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">19</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">20</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">21</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">22</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">23</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">24</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">25</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">26</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">27</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">28</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">29</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">30</span></span></span>
+            <span></span>
+          </div>
+        </div>
+
+        <div class="blk blk-quote">
+          <span class="blk-tag">Cita_del_día</span>
+          <p class="glitch" data-text="No fracasé: encontré mil maneras que no funcionan.">No fracasé: encontré mil maneras que no funcionan.</p>
+          <div class="cyb-qfoot">
+            <cite>Thomas Edison <span class="ok">[verificado]</span></cite>
+            <button type="button">↻ otra</button>
+          </div>
+        </div>
+
+        <div class="cyb-two">
+          <div class="blk blk-obj">
+            <span class="blk-tag">Votos · 2/3</span>
+            <ul class="cyb-obj">
+              <li><label><input type="checkbox" checked /><span><span class="done">Escribir 1000 palabras del libro</span></span></label></li>
+              <li><label><input type="checkbox" checked /><span><span class="done">Salir a caminar 30 minutos</span></span></label></li>
+              <li><label><input type="checkbox" /><span><span>Leer 20 páginas</span><span class="desc">Pendiente para la noche</span></span></label></li>
+            </ul>
+          </div>
+
+          <div class="blk blk-metas">
+            <span class="blk-tag">Progreso_metas</span>
+            <ul class="cyb-metas">
+              <li class="mrow"><span>El hábito anual</span><span class="gbar"><i style="width:70%"></i></span><span class="gpct">70%</span></li>
+              <li class="mrow"><span>El viaje</span><span class="gbar"><i style="width:35%"></i></span><span class="gpct">35%</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="cyb-two">
+          <div class="blk blk-notes">
+            <span class="blk-tag">Notas_del_día · 2</span>
+            <ul class="cyb-entries">
+              <li class="enrow"><p>Primera entrada a las 09:12, arrancando la rutina con la cita del día.</p>
+                <div class="enfoot"><time>[09:12]</time><button class="del">elim.</button></div></li>
+              <li class="enrow"><p>Recordar preparar todo antes de las 21 para no cortar el hábito.</p>
+                <div class="enfoot"><time>[20:40]</time><button class="del">elim.</button></div></li>
+            </ul>
+            <div class="cyb-input">
+              <textarea rows="3" placeholder="escribí_una_nota_para_dejar_en_este_día..."></textarea>
+              <div style="margin-top:8px;font-size:12px;color:#8f8f8f">▸ <button class="send" disabled>Agregar nota</button></div>
+            </div>
+          </div>
+
+          <div class="blk blk-apren">
+            <span class="blk-tag">Aprendizajes · 1</span>
+            <ul class="cyb-entries">
+              <li class="enrow"><p>La constancia pesa más que la motivación: el hábito se mantiene solo.</p>
+                <div class="enfoot"><time>[18:05]</time><button class="del">elim.</button></div></li>
+            </ul>
+            <p class="empty">no_hay_más_aprendizajes_para_hoy</p>
+          </div>
+        </div>
+      </div>
+
+      <footer class="cyb-foot">
+        <span>ACB &gt; bitácora_0x2026_09_08</span>
+        <span>sesión: <b>EZEQUIEL.OUT</b> · señal: <b>▂▃▄▅▆▇▆▅▄ ok</b></span>
+      </footer>
+    </div>
+  </section>
+
+  <!-- ================= 14 · CYBERPUNK — AMARILLO ================= -->
+  <section class="mock t-cyb cyb-amarillo" data-name="14 · Cyberpunk · amarillo">
+    <div class="cyb-stage">
+      <header class="cyb-deck">
+        <span class="cyb-logo">LA_BITAK0R4_</span>
+        <span class="cyb-clock">21:47:<u>12</u></span>
+        <span class="cyb-tags">
+          <span><i class="led"></i>SYS.OK</span>
+          <span><i class="led amber"></i>LOCAL</span>
+          <span><i class="led red"></i>NO-DB</span>
+        </span>
+        <nav class="cyb-nav">
+          <a href="#">Hoy</a><a href="#">Ajustes</a><a href="#">Stats</a><a href="#" class="salir">Salir</a>
+        </nav>
+      </header>
+
+      <div class="cyb-ticker">
+        <span>— ACCESO PERMITIDO · SESIÓN LOCAL · SIN DB · HÁBITO AL 70% · SE DETECTÓ ESCRITURA · QUEDAN 3 VOTOS PENDIENTES · —</span>
+      </div>
+
+      <div class="cyb-blocks">
+        <div class="blk blk-cal">
+          <span class="blk-tag">Agenda_q2_2026-09</span>
+          <div class="cal-head">
+            <button class="btn">←</button>
+            <span class="day">martes 8 de septiembre de 2026</span>
+            <button class="btn">→</button>
+          </div>
+          <div class="cal-month">
+            <button class="btn">‹</button>
+            <strong>septiembre de 2026</strong>
+            <button class="btn">›</button>
+          </div>
+          <div class="cal-grid">
+            <span class="wd">L</span><span class="wd">M</span><span class="wd">Mi</span><span class="wd">J</span><span class="wd">V</span><span class="wd">S</span><span class="wd">D</span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">01</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">02</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">03</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">04</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">05</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">06</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">07</span></span></span>
+            <span class="cell stripe today"><span class="numwrap"><span class="seg"><i class="g"></i><i class="a"></i></span><span class="num">*08</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">09</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">10</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">11</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">12</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">13</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">14</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">15</span></span></span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">17</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">18</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">19</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">20</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">21</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">22</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">23</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">24</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">25</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">26</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">27</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">28</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">29</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">30</span></span></span>
+            <span></span>
+          </div>
+        </div>
+
+        <div class="blk blk-quote">
+          <span class="blk-tag">Cita_del_día</span>
+          <p class="glitch" data-text="No fracasé: encontré mil maneras que no funcionan.">No fracasé: encontré mil maneras que no funcionan.</p>
+          <div class="cyb-qfoot">
+            <cite>Thomas Edison <span class="ok">[verificado]</span></cite>
+            <button type="button">↻ otra</button>
+          </div>
+        </div>
+
+        <div class="cyb-two">
+          <div class="blk blk-obj">
+            <span class="blk-tag">Votos · 2/3</span>
+            <ul class="cyb-obj">
+              <li><label><input type="checkbox" checked /><span><span class="done">Escribir 1000 palabras del libro</span></span></label></li>
+              <li><label><input type="checkbox" checked /><span><span class="done">Salir a caminar 30 minutos</span></span></label></li>
+              <li><label><input type="checkbox" /><span><span>Leer 20 páginas</span><span class="desc">Pendiente para la noche</span></span></label></li>
+            </ul>
+          </div>
+
+          <div class="blk blk-metas">
+            <span class="blk-tag">Progreso_metas</span>
+            <ul class="cyb-metas">
+              <li class="mrow"><span>El hábito anual</span><span class="gbar"><i style="width:70%"></i></span><span class="gpct">70%</span></li>
+              <li class="mrow"><span>El viaje</span><span class="gbar"><i style="width:35%"></i></span><span class="gpct">35%</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="cyb-two">
+          <div class="blk blk-notes">
+            <span class="blk-tag">Notas_del_día · 2</span>
+            <ul class="cyb-entries">
+              <li class="enrow"><p>Primera entrada a las 09:12, arrancando la rutina con la cita del día.</p>
+                <div class="enfoot"><time>[09:12]</time><button class="del">elim.</button></div></li>
+              <li class="enrow"><p>Recordar preparar todo antes de las 21 para no cortar el hábito.</p>
+                <div class="enfoot"><time>[20:40]</time><button class="del">elim.</button></div></li>
+            </ul>
+            <div class="cyb-input">
+              <textarea rows="3" placeholder="escribí_una_nota_para_dejar_en_este_día..."></textarea>
+              <div style="margin-top:8px;font-size:12px;color:#8f8f8f">▸ <button class="send" disabled>Agregar nota</button></div>
+            </div>
+          </div>
+
+          <div class="blk blk-apren">
+            <span class="blk-tag">Aprendizajes · 1</span>
+            <ul class="cyb-entries">
+              <li class="enrow"><p>La constancia pesa más que la motivación: el hábito se mantiene solo.</p>
+                <div class="enfoot"><time>[18:05]</time><button class="del">elim.</button></div></li>
+            </ul>
+            <p class="empty">no_hay_más_aprendizajes_para_hoy</p>
+          </div>
+        </div>
+      </div>
+
+      <footer class="cyb-foot">
+        <span>ACB &gt; bitácora_0x2026_09_08</span>
+        <span>sesión: <b>EZEQUIEL.OUT</b> · señal: <b>▂▃▄▅▆▇▆▅▄ ok</b></span>
+      </footer>
+    </div>
+  </section>
+
+  <!-- ================= 15 · CYBERPUNK — NARANJA ================= -->
+  <section class="mock t-cyb cyb-naranja" data-name="15 · Cyberpunk · naranja">
+    <div class="cyb-stage">
+      <header class="cyb-deck">
+        <span class="cyb-logo">LA_BITAK0R4_</span>
+        <span class="cyb-clock">21:47:<u>12</u></span>
+        <span class="cyb-tags">
+          <span><i class="led"></i>SYS.OK</span>
+          <span><i class="led amber"></i>LOCAL</span>
+          <span><i class="led red"></i>NO-DB</span>
+        </span>
+        <nav class="cyb-nav">
+          <a href="#">Hoy</a><a href="#">Ajustes</a><a href="#">Stats</a><a href="#" class="salir">Salir</a>
+        </nav>
+      </header>
+
+      <div class="cyb-ticker">
+        <span>— ACCESO PERMITIDO · SESIÓN LOCAL · SIN DB · HÁBITO AL 70% · SE DETECTÓ ESCRITURA · QUEDAN 3 VOTOS PENDIENTES · —</span>
+      </div>
+
+      <div class="cyb-blocks">
+        <div class="blk blk-cal">
+          <span class="blk-tag">Agenda_q2_2026-09</span>
+          <div class="cal-head">
+            <button class="btn">←</button>
+            <span class="day">martes 8 de septiembre de 2026</span>
+            <button class="btn">→</button>
+          </div>
+          <div class="cal-month">
+            <button class="btn">‹</button>
+            <strong>septiembre de 2026</strong>
+            <button class="btn">›</button>
+          </div>
+          <div class="cal-grid">
+            <span class="wd">L</span><span class="wd">M</span><span class="wd">Mi</span><span class="wd">J</span><span class="wd">V</span><span class="wd">S</span><span class="wd">D</span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">01</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">02</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">03</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">04</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">05</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">06</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">07</span></span></span>
+            <span class="cell stripe today"><span class="numwrap"><span class="seg"><i class="g"></i><i class="a"></i></span><span class="num">*08</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">09</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">10</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">11</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">12</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">13</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">14</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">15</span></span></span>
+            <span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">17</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">18</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">19</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">20</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">21</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">22</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">23</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">24</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">25</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="a"></i></span><span class="num">26</span></span></span>
+            <span class="cell"><span class="numwrap"><span class="num">27</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">28</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="r"></i></span><span class="num">29</span></span></span>
+            <span class="cell stripe"><span class="numwrap"><span class="seg"><i class="g"></i></span><span class="num">30</span></span></span>
+            <span></span>
+          </div>
+        </div>
+
+        <div class="blk blk-quote">
+          <span class="blk-tag">Cita_del_día</span>
+          <p class="glitch" data-text="No fracasé: encontré mil maneras que no funcionan.">No fracasé: encontré mil maneras que no funcionan.</p>
+          <div class="cyb-qfoot">
+            <cite>Thomas Edison <span class="ok">[verificado]</span></cite>
+            <button type="button">↻ otra</button>
+          </div>
+        </div>
+
+        <div class="cyb-two">
+          <div class="blk blk-obj">
+            <span class="blk-tag">Votos · 2/3</span>
+            <ul class="cyb-obj">
+              <li><label><input type="checkbox" checked /><span><span class="done">Escribir 1000 palabras del libro</span></span></label></li>
+              <li><label><input type="checkbox" checked /><span><span class="done">Salir a caminar 30 minutos</span></span></label></li>
+              <li><label><input type="checkbox" /><span><span>Leer 20 páginas</span><span class="desc">Pendiente para la noche</span></span></label></li>
+            </ul>
+          </div>
+
+          <div class="blk blk-metas">
+            <span class="blk-tag">Progreso_metas</span>
+            <ul class="cyb-metas">
+              <li class="mrow"><span>El hábito anual</span><span class="gbar"><i style="width:70%"></i></span><span class="gpct">70%</span></li>
+              <li class="mrow"><span>El viaje</span><span class="gbar"><i style="width:35%"></i></span><span class="gpct">35%</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="cyb-two">
+          <div class="blk blk-notes">
+            <span class="blk-tag">Notas_del_día · 2</span>
+            <ul class="cyb-entries">
+              <li class="enrow"><p>Primera entrada a las 09:12, arrancando la rutina con la cita del día.</p>
+                <div class="enfoot"><time>[09:12]</time><button class="del">elim.</button></div></li>
+              <li class="enrow"><p>Recordar preparar todo antes de las 21 para no cortar el hábito.</p>
+                <div class="enfoot"><time>[20:40]</time><button class="del">elim.</button></div></li>
+            </ul>
+            <div class="cyb-input">
+              <textarea rows="3" placeholder="escribí_una_nota_para_dejar_en_este_día..."></textarea>
+              <div style="margin-top:8px;font-size:12px;color:#8f8f8f">▸ <button class="send" disabled>Agregar nota</button></div>
+            </div>
+          </div>
+
+          <div class="blk blk-apren">
+            <span class="blk-tag">Aprendizajes · 1</span>
+            <ul class="cyb-entries">
+              <li class="enrow"><p>La constancia pesa más que la motivación: el hábito se mantiene solo.</p>
+                <div class="enfoot"><time>[18:05]</time><button class="del">elim.</button></div></li>
+            </ul>
+            <p class="empty">no_hay_más_aprendizajes_para_hoy</p>
+          </div>
+        </div>
+      </div>
+
+      <footer class="cyb-foot">
+        <span>ACB &gt; bitácora_0x2026_09_08</span>
+        <span>sesión: <b>EZEQUIEL.OUT</b> · señal: <b>▂▃▄▅▆▇▆▅▄ ok</b></span>
+      </footer>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  var mocks = Array.prototype.slice.call(document.querySelectorAll(".mock"));
+  var nameEl = document.getElementById("ctlName");
+  var dotsEl = document.getElementById("dots");
+  var btnPrev = document.getElementById("btnPrev");
+  var btnNext = document.getElementById("btnNext");
+  var btnPlay = document.getElementById("btnPlay");
+  var idx = 0;
+  var playing = true;
+  var timer = null;
+  var DOTS = [];
+
+  mocks.forEach(function (_, i) {
+    var d = document.createElement("i");
+    d.onclick = function () { go(i); };
+    dotsEl.appendChild(d);
+    DOTS.push(d);
+  });
+
+  function go(n) {
+    idx = (n + mocks.length) % mocks.length;
+    mocks.forEach(function (m, i) {
+      m.classList.toggle("active", i === idx);
+    });
+    DOTS.forEach(function (d, i) {
+      d.classList.toggle("on", i === idx);
+    });
+    nameEl.textContent = mocks[idx].getAttribute("data-name") + " · " + (idx + 1) + "/" + mocks.length;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function next() { go(idx + 1); }
+  function prev() { go(idx - 1); }
+
+  function schedule() {
+    if (timer) clearInterval(timer);
+    if (!playing) return;
+    timer = setInterval(next, 8000);
+  }
+
+  btnNext.onclick = next;
+  btnPrev.onclick = prev;
+  btnPlay.onclick = function () {
+    playing = !playing;
+    btnPlay.textContent = playing ? "❚❚" : "▶";
+    schedule();
+  };
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowRight") next();
+    if (e.key === "ArrowLeft") prev();
+    if (e.key === " ") { e.preventDefault(); btnPlay.onclick(); }
+  });
+
+  go(0);
+  schedule();
+})();
+</script>
+</body>
+</html>

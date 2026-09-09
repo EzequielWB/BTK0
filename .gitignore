@@ -23,6 +23,8 @@
 # misc
 .DS_Store
 *.pem
+.idea/
+*.log
 
 # debug
 npm-debug.log*
@@ -35,6 +37,13 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# serwist (service worker generado)
+public/sw.js
+public/swe-worker*.js
+
+# base de datos local (modo sin Supabase)
+/.data/
 
 # typescript
 *.tsbuildinfo
