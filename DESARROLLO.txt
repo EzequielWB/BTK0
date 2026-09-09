@@ -604,3 +604,35 @@ NOTA (2026-09-09): BORRADO DE DIA POR TRIPLE TAP
     deletes encadenados: se borran daily_objectives por day_id ANTES de days).
   - globals.css: .cyb-modal-danger + .cyb-danger-btn / .cyb-danger-btn-fire.
   - Smoke nuevas checks (abre/cancela, no borra data real): TODO en verde.
+
+NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
+  - Nombre de app: manifest name/short_name -> "BitAK0R4_" y metadata
+    appleWebApp (iOS muestra "BitAK0R4_" bajo el icono).
+  - Logo: scripts/gen-icons.mjs ahora renderiza el ojo ASCII del login
+    (geometria de components/login/ascii-eye.tsx, estatico) como bloques
+    blancos/grises sobre cuadrado negro. Regenrados icon-192, icon-512 y
+    apple-touch-icon.png (180).
+  - Notificaciones push (web-push + VAPID):
+    * Env nuevas: NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY,
+      VAPID_SUBJECT, CRON_SECRET (en .env.local y .env.local.example).
+    * Dependencia: web-push (server-only).
+    * lib/push-client.ts (tipos PushPayload/StoredSubscription +
+      urlBase64ToUint8Array, cliente seguro) y lib/push.ts (server:
+      isPushConfigured, sendPush, dailyReviewPayload, reminderTomorrowPayload).
+    * app/sw.ts: handlers push (showNotification) y notificationclick
+      (navigate + focus / openWindow).
+    * lib/actions.ts: savePushSubscriptionAction (upsert on endpoint) y
+      deletePushSubscriptionAction.
+    * app/api/cron/notify/route.ts: autentica con Bearer CRON_SECRET (o
+      ?secret=), manda 1) push diario "revisá tu bitácora" y 2) push con los
+      recordatorios de MAÑANA (fecha AR). Borra suscripciones 404/410.
+    * vercel.json: cron diario "0 1 * * *" (01:00 UTC = 22:00 AR).
+    * components/notifications-toggle.tsx: seccion en Ajustes para activar/
+      desactivar (permiso + subscripcion). Maneja dev sin SW y permisos.
+    * supabase/schema.sql: tabla push_subscriptions (+RLS). En Supabase hay
+      que re-correr el schema (idempotente) para que exista la tabla.
+  - Verificacion: tsc, lint, build y smoke en verde. En dev el SW no corre
+    (serwist disable en development) -> el toggle avisa; el push real se
+    prueba en produccion.
+  - Tareas pendientes del deploy: correr schema.sql en Supabase; agregar las
+    4 env nuevas en Vercel + redeploy; en el celular re-instalar la PWA.

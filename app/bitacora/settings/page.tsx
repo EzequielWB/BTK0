@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { ChangePasswordForm } from "@/components/change-password-form";
 import { CompletionSettingsForm } from "@/components/completion-settings-form";
+import { NotificationsToggle } from "@/components/notifications-toggle";
 import { ObjectiveManager } from "@/components/objective-manager";
 import { TemporalGoalManager } from "@/components/temporal-goal-manager";
 import { isAuthenticated } from "@/lib/session";
@@ -26,6 +27,7 @@ export default async function SettingsPage() {
       <ObjectiveManager objectives={(objectives ?? []) as Objective[]} />
       <TemporalGoalManager goals={(goals ?? []) as TemporalGoal[]} />
       <CompletionSettingsForm settings={(settings ?? null) as Settings | null} />
+      <NotificationsToggle />
       <ChangePasswordForm />
     </div>
   );

@@ -22,6 +22,11 @@ export const metadata: Metadata = {
   title: "La BitAK0R4_ de Ezequiel",
   description: "Bitácora personal diaria",
   manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "BitAK0R4_",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export const viewport: Viewport = {

@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "La BitAK0R4_ de Ezequiel",
-    short_name: "BitAK0R4",
+    name: "BitAK0R4_",
+    short_name: "BitAK0R4_",
     description: "Bitácora personal diaria",
     id: "/",
     start_url: "/bitacora",

@@ -121,6 +121,20 @@ create table if not exists reminders (
 );
 
 -- ------------------------------------------------------------
+-- push_subscriptions: suscripciones de notificaciones push.
+-- El cron manda las notificaciones y borra las que expiran (404/410).
+-- ------------------------------------------------------------
+create table if not exists push_subscriptions (
+  id          uuid primary key default gen_random_uuid(),
+  endpoint    text not null unique,
+  keys_p256dh text not null,
+  keys_auth   text not null,
+  user_agent  text,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+
+-- ------------------------------------------------------------
 -- Índices útiles
 -- ------------------------------------------------------------
 create index if not exists idx_days_date on days(date);
@@ -145,5 +159,6 @@ alter table days enable row level security;
 alter table notes enable row level security;
 alter table learnings enable row level security;
 alter table reminders enable row level security;
+alter table push_subscriptions enable row level security;
 alter table daily_objectives enable row level security;
 alter table temporal_goals enable row level security;

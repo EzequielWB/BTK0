@@ -166,6 +166,18 @@ const { chromium } = require("playwright-core");
     await page.waitForSelector("text=Ajustes guardados.", { timeout: 10000 });
     console.log("Ajustes guardados (count>=1): yes");
 
+    // 2b) Notificaciones push: sección presente con toggle (SW inactivo en dev)
+    await page.waitForSelector("text=Notificaciones_push", { timeout: 10000 });
+    console.log(
+      "Sección Notificaciones_push presente:",
+      (await page.locator("h2:has-text('Notificaciones_push')").count()) === 1
+    );
+    const notifEnabled = (await page.locator("button:has-text('Activar notificaciones')").count()) === 1;
+    console.log(
+      "Botón Activar notificaciones presente:",
+      notifEnabled
+    );
+
     // 3) Volver al día y verificar segmentos de colores (verde/amarillo/rojo)
     await page.goto(todayUrl, { waitUntil: "networkidle" });
     await page.waitForSelector("h2:has-text('Objetivos')", { timeout: 15000 });

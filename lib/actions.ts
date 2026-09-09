@@ -550,3 +550,48 @@ export async function deleteReminderAction(
   if (error) return { error: "No se pudo borrar el recordatorio." };
   return { success: "Recordatorio eliminado." };
 }
+
+// ---------------------------------------------------------------------------
+// Notificaciones push
+// ---------------------------------------------------------------------------
+
+export async function savePushSubscriptionAction(subscription: {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+}): Promise<ActionResult> {
+  await requireAuth();
+
+  if (!subscription.endpoint) {
+    return { error: "La suscripción no es válida." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("push_subscriptions")
+    .upsert(
+      {
+        endpoint: subscription.endpoint,
+        keys_p256dh: subscription.keys.p256dh ?? "",
+        keys_auth: subscription.keys.auth ?? "",
+      },
+      { onConflict: "endpoint" }
+    );
+
+  if (error) return { error: "No se pudo guardar la suscripción." };
+  return { success: "Notificaciones activadas." };
+}
+
+export async function deletePushSubscriptionAction(
+  endpoint: string
+): Promise<ActionResult> {
+  await requireAuth();
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("push_subscriptions")
+    .delete()
+    .eq("endpoint", endpoint);
+
+  if (error) return { error: "No se pudo desactivar la suscripción." };
+  return { success: "Notificaciones desactivadas." };
+}
