@@ -768,3 +768,28 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
     resumen mensual funcionó de punta a punta con texto real (vía Groq cuando
     OpenRouter se saturó): en el smoke entró y devolvió "RESUMEN ... 2 días
     (06%)...". Server de producción reiniciado en http://localhost:3000.
+
+[2026-09-09] VOCES DE LOS DINO: MÁS PERSONALIDAD + RIO PLATENSE FUERTE
+  - FIX BUG: la personalidad del anquilosaurio nunca cargaba. El registro usa
+    id "ank" pero el archivo era lib/dinos/4nky.md -> readPersonality(id)
+    devolvía "" y entraba con reglas genéricas nomás. git mv 4nky.md -> ank.md.
+  - lib/dino-prompt.ts (GLOBAL_RULES reforzado):
+    * Voseo explícito: imperativos -á/-é/-í; prohibido español neutro (tú,
+      usted, vosotros, haz, hazlo, recuerda, puedes, "ten en cuenta",
+      "sin embargo", "por lo tanto", "no dudes en").
+    * Léxico rioplatense natural sin amontonar: che, dale, bancá, re-, ¿viste?,
+      ta, ni en pedo, de onda, pila de, tranqui/cortito. Prohibido deformar
+      palabras.
+    * Cierre del prompt (resumen): "usá el registro de los ejemplos de TU VOZ".
+  - 6 .md reescritos con formato común: TU VOZ (rasgos léxicos + frase fetiche)
+    + REGLA DE ORO + 3 EJEMPLOS few-shot (dueño -> dino) en rioplatense.
+    Distintivos: TYrA_ seco/imperativo + "boludo" esporádico; N0d-0 cálido,
+    sin boludo; 4nky monolito de 1-2 frases, sin jerga fuerte; V3L0 chispa +
+    "¿Esperar? Ni en pedo, boludo"; BR4ch0 pausa/panorama, sin jerga fuerte;
+    Tr1l0_ orden/listas de 3 pasos, sin jerga fuerte. Se conservan rol y
+    especie.
+  - Verificacion: tsc, lint, build, smoke TODO VERDE sin errores JS.
+  - Auditoria por voz (script temporal node -> /api/chat con cookie calculada):
+    los 6 suenan distinto y en rioplatense, tirando contexto real del día
+    (ej. ank: "No hay que correr. Aguantá: a las veinte y cuarenta y tres
+    tenés una meta cumplida..."). Server reiniciado.
