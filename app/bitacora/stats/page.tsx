@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { StatsCharts } from "@/components/stats-charts";
+import { MonthlySummary } from "@/components/monthly-summary";
 import { statusOf, statusValue } from "@/lib/completion";
 import { isAuthenticated } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
@@ -126,6 +127,7 @@ export default async function StatsPage() {
       <section className="blk">
         <h2 className="blk-tag">Estadísticas</h2>
         <StatsCharts data={chartData} />
+        <MonthlySummary />
       </section>
 
       <section>

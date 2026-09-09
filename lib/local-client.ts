@@ -11,8 +11,6 @@ type ExecResult = {
 
 const DB_FILE = join(process.cwd(), ".data", "local-db.json");
 
-let store: Store | null = null;
-
 const TABLES = [
   "password_config",
   "settings",
@@ -73,33 +71,29 @@ function defaultSeed(): Store {
 }
 
 function load(): Store {
-  if (!store) {
-    if (existsSync(DB_FILE)) {
-      try {
-        store = JSON.parse(readFileSync(DB_FILE, "utf8")) as Store;
-      } catch {
-        store = defaultSeed();
-      }
-    } else {
-      store = defaultSeed();
-    }
-    for (const table of TABLES) {
-      if (!store[table]) store[table] = [];
-    }
-    // settings es una tabla singleton (id=1): siempre debe existir la fila.
-    const seed = defaultSeed();
-    if (!store.settings || store.settings.length === 0) {
-      store.settings = seed.settings;
+  let db: Store = {};
+  if (existsSync(DB_FILE)) {
+    try {
+      db = JSON.parse(readFileSync(DB_FILE, "utf8")) as Store;
+    } catch {
+      db = {};
     }
   }
-  return store;
+  for (const table of TABLES) {
+    if (!db[table]) db[table] = [];
+  }
+  // settings es una tabla singleton (id=1): siempre debe existir la fila.
+  const seed = defaultSeed();
+  if (!db.settings || db.settings.length === 0) {
+    db.settings = seed.settings;
+  }
+  return db;
 }
 
-function save(): void {
-  if (!store) return;
+function save(db: Store): void {
   const dir = dirname(DB_FILE);
   mkdirSync(dir, { recursive: true });
-  writeFileSync(DB_FILE, JSON.stringify(store, null, 2));
+  writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
 }
 
 class LocalQuery {
@@ -268,7 +262,7 @@ class LocalQuery {
       resultRows = [];
     }
 
-    if (this.op !== "select") save();
+    if (this.op !== "select") save(db);
 
     const projected = resultRows.map((row) => this.project(row));
 

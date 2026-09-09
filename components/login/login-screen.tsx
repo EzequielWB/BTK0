@@ -51,7 +51,7 @@ export function LoginScreen({
   return (
     <>
       <RainBackdrop />
-      <div className="relative z-10 flex flex-col items-center gap-7 text-center">
+      <div className="relative z-10 flex flex-col items-center gap-5 text-center sm:gap-7">
         <AsciiEye stare={phase === "wrong" || phase === "flash"} />
         <h1 className="font-pixel text-sm leading-relaxed whitespace-pre-line text-zinc-200 [text-shadow:0_0_8px_rgba(255,255,255,0.35)] sm:text-base">
           {phrase}

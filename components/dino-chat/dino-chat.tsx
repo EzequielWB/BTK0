@@ -30,11 +30,12 @@ function loadStore(): Store {
   return {};
 }
 
-function currentMonthValue(): string {
-  const now = new Date();
-  return `${String(now.getMonth() + 1).padStart(2, "0")}/${String(
-    now.getFullYear()
-  ).slice(-2)}`;
+function currentMonth(): string {
+  return String(new Date().getMonth() + 1).padStart(2, "0");
+}
+
+function currentYearYY(): string {
+  return String(new Date().getFullYear()).slice(-2);
 }
 
 export default function DinoChat() {
@@ -45,7 +46,8 @@ export default function DinoChat() {
   const [busy, setBusy] = useState(false);
   const [received, setReceived] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [monthVal, setMonthVal] = useState(currentMonthValue);
+  const [monthPart, setMonthPart] = useState(currentMonth);
+  const [yearPart, setYearPart] = useState(currentYearYY);
   const [askingMonth, setAskingMonth] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const monthRef = useRef<HTMLInputElement>(null);
@@ -107,32 +109,35 @@ export default function DinoChat() {
 
   function askMonth() {
     if (busy) return;
-    setMonthVal(currentMonthValue());
+    setMonthPart(currentMonth());
+    setYearPart(currentYearYY());
     setError(null);
     setAskingMonth(true);
   }
 
   function confirmMonth(e: { preventDefault: () => void }) {
     e.preventDefault();
-    const m = /^(\d{1,2})\/(\d{2})$/.exec(monthVal.trim());
-    if (!m) {
-      setError("Mes en formato mm/yy, ej. 09/26");
+    const mm = monthPart.trim();
+    const aa = yearPart.trim();
+    if (mm.length === 0 || !/^\d{2}$/.test(aa)) {
+      setError("Mes en formato mm/aa, ej. 09/26");
       return;
     }
-    const month = Number(m[1]);
-    const year = 2000 + Number(m[2]);
+    const month = Number(mm);
+    const year = 2000 + Number(aa);
     if (month < 1 || month > 12) {
       setError("El mes va de 01 a 12, ej. 09/26");
       return;
     }
-    const value = monthVal.trim();
+    const value = `${mm}/${aa}`;
     setAskingMonth(false);
     void send(`¿Cómo va el mes (${value})?`, { kind: "month", month, year });
   }
 
   function cancelMonth() {
     setAskingMonth(false);
-    setMonthVal(currentMonthValue());
+    setMonthPart(currentMonth());
+    setYearPart(currentYearYY());
     setError(null);
   }
 
@@ -258,15 +263,31 @@ export default function DinoChat() {
                   <span className="cyb-dchat-month-label">MES</span>
                   <input
                     ref={monthRef}
-                    value={monthVal}
+                    value={monthPart}
                     onChange={(e) => {
-                      setMonthVal(e.target.value);
+                      setMonthPart(
+                        e.target.value.replace(/\D/g, "").slice(0, 2)
+                      );
                       setError(null);
                     }}
-                    placeholder="mm/yy"
+                    placeholder="mm"
                     inputMode="numeric"
-                    maxLength={5}
-                    aria-label="Mes (mm/yy)"
+                    maxLength={2}
+                    aria-label="Mes (mm)"
+                  />
+                  <span aria-hidden className="cyb-dchat-month-label">/</span>
+                  <input
+                    value={yearPart}
+                    onChange={(e) => {
+                      setYearPart(
+                        e.target.value.replace(/\D/g, "").slice(0, 2)
+                      );
+                      setError(null);
+                    }}
+                    placeholder="aa"
+                    inputMode="numeric"
+                    maxLength={2}
+                    aria-label="Año (aa)"
                   />
                   <button type="submit" disabled={busy}>
                     OK

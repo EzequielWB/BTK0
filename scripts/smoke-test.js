@@ -294,130 +294,32 @@ const { chromium } = require("playwright-core");
     await page.waitForSelector("text=Estadísticas", { timeout: 10000 });
     console.log("Stats carga: yes");
 
-    // 7) Dino chat: dock, 6 contactos, cambiar de dino y enviar mensaje (streaming)
-    await page.waitForTimeout(400);
-    const dock = page.locator(".cyb-dock");
-    console.log("Dock flotante abajo a la derecha:", (await dock.count()) === 1);
-    await dock.click();
-    await page.waitForSelector(".cyb-dchat", { timeout: 8000 });
+    // 7) Chat de dinos deshabilitado (se retomará más adelante)
     console.log(
-      "Panel de chat abierto con 6 dinos:",
-      (await page.locator(".cyb-dchat-item").count()) === 6
-    );
-    console.log(
-      "Dock desaparece con el panel abierto:",
-      (await page.locator(".cyb-dock").count()) === 0
-    );
-    console.log(
-      "Cada contacto con cabeza ASCII:",
-      (await page.locator(".cyb-dchat-item pre").count()) === 6
-    );
-    await page.locator(".cyb-dchat-item", { hasText: "TYrA_" }).click();
-    await page.waitForTimeout(300);
-    console.log(
-      "Cambio a TYrA_ en el header:",
-      (await page.locator("h2", { hasText: "TYrA_" }).count()) === 1
+      "Chat de dinos deshabilitado (sin dock ni panel):",
+      (await page.locator(".cyb-dock").count()) === 0 &&
+        (await page.locator(".cyb-dchat").count()) === 0
     );
 
-    const chatInput = page.locator(".cyb-dchat-input input");
-    await chatInput.fill("Arrancamos la fase uno del proyecto. Que conste.");
-    await chatInput.press("Enter");
-
-    const firstDinoMsg = page.locator(".cyb-msg.dino", {
-      hasText: /TYrA_/,
-    });
-    let streamed = false;
-    try {
-      await firstDinoMsg.first().waitFor({ timeout: 90000 });
-      await page.waitForFunction(
-        () =>
-          [...document.querySelectorAll(".cyb-msg.dino")].some((el) => {
-            const txt = el.textContent || "";
-            return txt.length > 10 && !txt.includes("TRANSMITIENDO");
-          }),
-        { timeout: 90000 }
-      );
-      const reply = await page
-        .locator(".cyb-msg.dino")
-        .last()
-        .innerText();
-      console.log(
-        "Respuesta de TYrA_ con streaming (texto):",
-        reply.length > 0 ? reply.replace(/\s+/g, " ").slice(0, 120) : "VACÍA"
-      );
-      streamed = reply.length > 0;
-    } catch (e) {
-      console.log("El modelo gratuito no respondió a tiempo (se sigue verificando el resto):", e.message);
-    }
-    console.log("Streaming recibido:", streamed ? "yes" : "no");
-
-    const stored = await page.evaluate(() =>
-      sessionStorage.getItem("db_dino_chat_v1")
-    );
-    console.log("Conversación en sessionStorage:", stored ? "yes" : "no");
-
-    // 7b) Botones "cómo va el día / mes" (contexto en memoria por request)
-    const quickRow = page.locator(".cyb-dchat-quick");
+    // 7b) Resumen mensual con IA, justo debajo de los gráficos
+    const monthBtn = page.locator("button:has-text('¿Cómo estuvo el mes?')");
     console.log(
-      "Botones CÓMO VA EL DÍA / MES presentes:",
-      (await quickRow.locator("button").count()) === 2
+      "Botón '¿Cómo estuvo el mes?' presente:",
+      (await monthBtn.count()) === 1
     );
-    const mmInput = page.locator(
-      ".cyb-dchat-quick input[aria-label='Mes (mm/yy)']"
-    );
+    await monthBtn.click();
+    await page.waitForSelector("text=Analizando el mes", { timeout: 10000 });
+    console.log("Estado 'Analizando el mes...' aparece: yes");
+    await page.waitForSelector(".cyb-month-summary", { timeout: 120000 });
+    const summaryText = (
+      await page.locator(".cyb-month-summary").innerText()
+    ).trim();
     console.log(
-      "Sin input mm/yy visible hasta pedir el mes:",
-      (await mmInput.count()) === 0
+      "El resumen mensual llegó (texto):",
+      summaryText.length > 20
+        ? summaryText.replace(/\s+/g, " ").slice(0, 140)
+        : "VACÍO"
     );
-
-    const dinoBeforeDay = await page.locator(".cyb-msg.dino").count();
-    await page.locator(".cyb-dchat-quick button:has-text('VA EL DÍA')").click();
-    let dayReplied = false;
-    try {
-      await page.waitForFunction(
-        (n) => document.querySelectorAll(".cyb-msg.dino").length >= n + 1,
-        dinoBeforeDay,
-        { timeout: 90000 }
-      );
-      dayReplied = true;
-    } catch (e) {
-      console.log("El bot no respondió al día a tiempo:", e.message);
-    }
-    console.log("Botón 'Cómo va el día' responde:", dayReplied ? "yes" : "no");
-
-    await page.locator(".cyb-dchat-quick button:has-text('VA EL MES')").click();
-    await page.waitForTimeout(200);
-    console.log(
-      "Al apretar el mes aparece el input mm/yy:",
-      (await mmInput.count()) === 1
-    );
-    console.log(
-      "mm/yy precargado con el mes actual:",
-      /^\d{2}\/\d{2}$/.test(await mmInput.inputValue())
-    );
-
-    const dinoBeforeMonth = await page.locator(".cyb-msg.dino").count();
-    await mmInput.press("Enter");
-    let monthReplied = false;
-    try {
-      await page.waitForFunction(
-        (n) => document.querySelectorAll(".cyb-msg.dino").length >= n + 1,
-        dinoBeforeMonth,
-        { timeout: 90000 }
-      );
-      monthReplied = true;
-    } catch (e) {
-      console.log("El bot no respondió al mes a tiempo:", e.message);
-    }
-    console.log("Botón 'Cómo va el mes' responde:", monthReplied ? "yes" : "no");
-    console.log(
-      "El input se oculta tras preguntar el mes:",
-      (await mmInput.count()) === 0
-    );
-
-    await page.locator(".cyb-dchat-close").click();
-    await page.waitForTimeout(300);
-    console.log("Panel se cierra con ✕:", (await page.locator(".cyb-dchat").count()) === 0);
 
     // 8) Días futuros: vista solo lectura
     const iso = (d) =>
@@ -556,7 +458,15 @@ const { chromium } = require("playwright-core");
     const mm = String(next2.getMonth() + 1).padStart(2, "0");
     const yy = String(next2.getFullYear()).slice(-2);
     await modal.locator("textarea").first().fill(farText);
-    await modal.locator('input[aria-label="Fecha del recordatorio"]').fill(`${dd}/${mm}/${yy}`);
+    await modal
+      .locator('input[aria-label="Día del recordatorio (dd)"]')
+      .fill(dd);
+    await modal
+      .locator('input[aria-label="Mes del recordatorio (mm)"]')
+      .fill(mm);
+    await modal
+      .locator('input[aria-label="Año del recordatorio (aa)"]')
+      .fill(yy);
     await modal.locator("button:has-text('Agregar recordatorio')").click();
     await modal.getByText(farText).first().waitFor({ timeout: 10000 });
     console.log("REC+ con fecha propia (dd/mm/aa) guarda correctamente: yes");

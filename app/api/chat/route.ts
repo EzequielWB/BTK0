@@ -12,7 +12,6 @@ const DEFAULT_MODELS = [
   "google/gemma-4-31b-it:free",
   "google/gemma-4-26b-a4b-it:free",
   "dots-studio/dots-3-note-preview:free",
-  "thinkingmachines/inkling-small:free",
 ];
 
 const MODELS = (() => {
@@ -101,7 +100,9 @@ async function completeWithFallback(
     lastMessage = `OpenRouter ${status} ${detail}`.trim();
 
     if (status === 429) sawRateLimit = true;
-    if (status !== 429 && status !== 404 && status < 500) {
+    // 403 también se intenta saltar: hay modelos gratuito que solo corren en
+    // "agentic harnesses" o exigen pago y responden 403 por HTTP normal.
+    if (status !== 429 && status !== 403 && status !== 404 && status < 500) {
       return { type: "error", status, message: lastMessage };
     }
 

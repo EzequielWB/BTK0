@@ -284,7 +284,7 @@ export function AsciiEye({ stare = false }: { stare?: boolean }) {
       ref={canvasRef}
       aria-hidden
       className="mx-auto block"
-      style={{ width: "min(92vw, 832px)", height: "auto" }}
+      style={{ width: "min(86vw, 832px)", height: "auto" }}
     />
   );
 }

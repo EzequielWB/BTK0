@@ -11,7 +11,7 @@ export default async function Home() {
   }
 
   return (
-    <main className="relative flex min-h-screen flex-1 items-center justify-center overflow-hidden bg-black p-4">
+    <main className="relative flex min-h-dvh flex-1 items-center justify-center overflow-x-hidden bg-black p-4">
       <LoginScreen showDefaultHint={isLocalMode()} />
     </main>
   );

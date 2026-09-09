@@ -58,3 +58,11 @@ export function reminderTomorrowPayload(
     url,
   };
 }
+
+export function testPushPayload(): PushPayload {
+  return {
+    title: "BitAK0R4_ · Prueba",
+    body: "Si ves esto, las notificaciones push funcionan.",
+    url: "/bitacora",
+  };
+}

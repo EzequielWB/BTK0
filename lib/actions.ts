@@ -6,6 +6,8 @@ import { redirect } from "next/navigation";
 import { AUTH_COOKIE, generateSalt, hashPassword, isAuthenticated } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { isValidISODate, todayISO } from "@/lib/utils";
+import { sendPush, testPushPayload } from "@/lib/push";
+import type { StoredSubscription } from "@/lib/push-client";
 
 export type ActionResult = { error?: string; success?: string };
 
@@ -594,4 +596,24 @@ export async function deletePushSubscriptionAction(
 
   if (error) return { error: "No se pudo desactivar la suscripción." };
   return { success: "Notificaciones desactivadas." };
+}
+
+export async function sendTestPushAction(
+  subscription: StoredSubscription
+): Promise<ActionResult> {
+  await requireAuth();
+
+  if (!subscription.endpoint) {
+    return { error: "La suscripción no es válida." };
+  }
+
+  const result = await sendPush(subscription, testPushPayload());
+  if (!result.ok) {
+    return {
+      error: result.statusCode
+        ? `El push de prueba falló (HTTP ${result.statusCode}).`
+        : "VAPID no está configurado en el servidor.",
+    };
+  }
+  return { success: "Push de prueba enviado." };
 }

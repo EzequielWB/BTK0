@@ -114,12 +114,6 @@ body {
 .cyb-clock u {
   color: var(--cyb-neon);
   text-decoration: none;
-  animation: blk 1s steps(1) infinite;
-}
-@keyframes blk {
-  50% {
-    opacity: 0;
-  }
 }
 .cyb-tags {
   display: flex;
@@ -863,11 +857,18 @@ body {
   align-items: center;
   gap: 6px;
   width: 100%;
+  flex-wrap: wrap;
+}
+.cyb-dchat-month input {
+  width: 34px;
+  min-width: 0;
+  text-align: center;
 }
 .cyb-dchat-month-label {
   font-size: 8px;
   letter-spacing: 1px;
   color: var(--cyb-dim);
+  line-height: 1;
 }
 .cyb-dchat-quick button {
   border: 1px solid var(--cyb-fg);

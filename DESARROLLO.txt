@@ -636,3 +636,64 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
     prueba en produccion.
   - Tareas pendientes del deploy: correr schema.sql en Supabase; agregar las
     4 env nuevas en Vercel + redeploy; en el celular re-instalar la PWA.
+
+[2026-09-09] MEJORAS DE USO MÓVIL + MODELO DE CHAT + PUSH DE PRUEBA
+  - Fechas por partes (el "/" era imposible de tipear en celular):
+    * Recordatorio (REC+): 3 inputs [día] / [mes] / [aa] inputMode=numeric,
+      se arma dd/mm/aa al guardar (parseShortDate). Labels:
+      "Día del recordatorio (dd)"/"Mes del recordatorio (mm)"/"Año del
+      recordatorio (aa)".
+    * Chat "Cómo va el mes": 2 inputs [mm] / [aa], precargados con el mes
+      actual, OK/✕/Enter. Labels "Mes (mm)"/"Año (aa)". CSS .cyb-dchat-month
+      con wrap y entradas de 34px.
+  - Reloj: se quitó la animación "blk" de .cyb-clock u -> los segundos
+    avanzan sin parpadear (mantienen el verde neón).
+  - Login móvil: main pasa a min-h-dvh + overflow-x-hidden (scrollea si hace
+    falta), gap reducido en pantallas chicas y ojo a min(86vw, 832px).
+  - Chat modelo: se quitó thinkingmachines/inkling-small:free del fallback
+    (responde 403: solo en agentic harnesses). Ahora el 403 se trata como
+    "probar el siguiente modelo" (junto a 429/404). Default sigue siendo
+    google/gemma-4-31b-it:free.
+  - Botón "Probar notificación" en Ajustes (solo cuando hay suscripción
+    activa): lib/push.ts testPushPayload() + lib/actions.ts
+    sendTestPushAction(subscription) que manda un push de prueba al
+    dispositivo y muestra el resultado (incluye HTTP status si falla).
+  - FIX importante: lib/local-client.ts cacheaba la DB en una singleton de
+    módulo ("let store"). En el build de producción, la Server Action (que
+    escribe) y el render de página (que lee) usan instancias de módulo
+    DISTINTAS -> la página seguía mostrando datos viejos aunque el archivo
+    .data/local-db.json sí se actualizaba (notas/aprendizajes/segmentos
+    nunca aparecían tras guardar). Ahora load() lee el archivo en cada
+    operación (archivo chico, solo modo local), garantizando consistencia.
+  - smoke-test.js: selectores de mes/recordatorio pasan a los inputs por
+    partes; se reemplazó el mmInput viejo por monthInput/yearInput.
+  - Verificación: tsc, lint, build y smoke completos en verde (solo queda el
+    429 de rate-limit del modelo gratuito de OpenRouter, tolerado y con
+    fallback; no rompe el chat).
+
+[2026-09-09] CHAT DE DINOS DESHABILITADO + RESUMEN MENSUAL CON IA EN STATS
+  - Chat de dinosaurios deshabilitado: se comento el import y el render de
+    <DinoChat /> en app/bitacora/layout.tsx (el dock .cyb-dock desaparece).
+    Todo el codigo (componentes, lib/dino-prompt.ts, chat-context, /api/chat)
+    queda intacto para retomarlo mas adelante.
+  - Stats: boton "¿Como estuvo el mes?" justo debajo de los graficos:
+    * app/api/monthly/route.ts (POST, nodejs, maxDuration 60): autenticacion,
+      levanta los ultimos 30 dias (mismo rango que los graficos): % diario por
+      objetivos, racha, eficiencia, dias con registro/vacios, mejores y peores
+      dias, y muestras reales (hasta 15, 300 chars c/u) de notas y
+      aprendizajes. Prompt de analista serio/objetivo con estructura fija
+      RESUMEN / ALTOS / BAJOS / CIERRE y una recomendacion. Usa los modelos
+      :free con fallback por 429/403/404. Si no hay registros devuelve aviso.
+    * components/monthly-summary.tsx (use client): boton + estado
+      "Analizando el mes..." + bloque .cyb-month-summary con Regenerar; los
+      errores (modelos gratis saturados) se muestran con Reintentar.
+    * Montado en app/bitacora/stats/page.tsx tras <StatsCharts />.
+  - FIX tipos: LocalQuery no tiene .limit() -> las muestras de notas/
+    aprendizajes se recortan en JS (slice). daily usa DayStatsPoint (date).
+  - smoke-test.js: se quito el bloque del chat (dock/panel/streaming/dia-mes/
+    cierre) por "Chat de dinos deshabilitado (sin dock ni panel)" y se
+    agregaron asserts del resumen: boton presente, estado analizando y
+    .cyb-month-summary con texto (tolerante: acepta resumen o error).
+  - Verificacion: tsc, lint, build y smoke en verde. El resumen funciono de
+    punta a punta; los modelos :free de OpenRouter estaban saturados (429/502)
+    y el bloque mostro el aviso con Reintentar (esperado).

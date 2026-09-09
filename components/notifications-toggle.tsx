@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import {
   deletePushSubscriptionAction,
   savePushSubscriptionAction,
+  sendTestPushAction,
 } from "@/lib/actions";
 import { urlBase64ToUint8Array } from "@/lib/push-client";
 
@@ -11,6 +12,7 @@ export function NotificationsToggle() {
   const [ready, setReady] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -105,6 +107,7 @@ export function NotificationsToggle() {
 
   async function handleDisable() {
     setMessage(null);
+    setNotice(null);
     startTransition(async () => {
       try {
         const registration = await navigator.serviceWorker.ready;
@@ -121,6 +124,41 @@ export function NotificationsToggle() {
         setSubscribed(false);
       } catch {
         setMessage("No se pudieron desactivar las notificaciones.");
+      }
+    });
+  }
+
+  async function handleTest() {
+    setMessage(null);
+    setNotice(null);
+    startTransition(async () => {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        if (!subscription) {
+          setMessage("No hay suscripción activa en este dispositivo.");
+          return;
+        }
+        const json = subscription.toJSON() as {
+          endpoint: string;
+          keys?: { p256dh?: string; auth?: string };
+        };
+        const result = await sendTestPushAction({
+          endpoint: json.endpoint,
+          keys: {
+            p256dh: json.keys?.p256dh ?? "",
+            auth: json.keys?.auth ?? "",
+          },
+        });
+        if (result.error) {
+          setMessage(result.error);
+          return;
+        }
+        setNotice(
+          "Push de prueba enviado. Revisá la notificación en tu dispositivo."
+        );
+      } catch {
+        setMessage("No se pudo enviar el push de prueba.");
       }
     });
   }
@@ -158,6 +196,23 @@ export function NotificationsToggle() {
         <p className="text-sm text-[#00ff9d] mt-2" role="status">
           Notificaciones activadas.
         </p>
+      ) : null}
+      {subscribed ? (
+        <div className="mt-2 flex flex-col items-start gap-1">
+          <button
+            type="button"
+            onClick={handleTest}
+            disabled={pending}
+            className="cyb-link disabled:opacity-40"
+          >
+            {pending ? "Enviando..." : "Probar notificación"}
+          </button>
+          {notice ? (
+            <p className="text-sm text-[#00ff9d]" role="status">
+              {notice}
+            </p>
+          ) : null}
+        </div>
       ) : null}
       {Notification.permission === "denied" ? (
         <p className="text-sm text-[#ff3b5c] mt-2">
