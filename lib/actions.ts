@@ -553,6 +553,54 @@ export async function deleteReminderAction(
   return { success: "Recordatorio eliminado." };
 }
 
+export async function toggleReminderCompleteAction(
+  id: string,
+  date: string,
+  completed: boolean
+): Promise<ActionResult> {
+  await requireAuth();
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("reminders")
+    .update({ completed_at: completed ? new Date().toISOString() : null })
+    .eq("id", id);
+
+  revalidatePath(`/bitacora/${date}`);
+
+  if (error) return { error: "No se pudo actualizar el recordatorio." };
+  return { success: completed ? "Recordatorio completado." : "Recordatorio desmarcado." };
+}
+
+// ---------------------------------------------------------------------------
+// Días destacados (anillo dorado en el calendario)
+// ---------------------------------------------------------------------------
+
+export async function toggleDayFlagAction(date: string): Promise<ActionResult> {
+  await requireAuth();
+  if (!isValidISODate(date)) return { error: "La fecha es inválida." };
+
+  const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("day_flags")
+    .select("date")
+    .eq("date", date)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await supabase.from("day_flags").delete().eq("date", date);
+    if (error) return { error: "No se pudo quitar el destacado." };
+  } else {
+    const { error } = await supabase.from("day_flags").insert({ date });
+    if (error) return { error: "No se pudo destacar el día." };
+  }
+
+  revalidatePath(`/bitacora/${date}`);
+  revalidatePath("/bitacora");
+  return { success: existing ? "Destacado quitado." : "Día destacado." };
+}
+
 // ---------------------------------------------------------------------------
 // Notificaciones push
 // ---------------------------------------------------------------------------

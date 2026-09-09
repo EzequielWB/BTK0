@@ -624,8 +624,8 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
     * lib/actions.ts: savePushSubscriptionAction (upsert on endpoint) y
       deletePushSubscriptionAction.
     * app/api/cron/notify/route.ts: autentica con Bearer CRON_SECRET (o
-      ?secret=), manda 1) push diario "revis� tu bit�cora" y 2) push con los
-      recordatorios de MA�ANA (fecha AR). Borra suscripciones 404/410.
+      ?secret=), manda 1) push diario "revis� tu bit�cora" y 2) push con los
+      recordatorios de MA�ANA (fecha AR). Borra suscripciones 404/410.
     * vercel.json: cron diario "0 1 * * *" (01:00 UTC = 22:00 AR).
     * components/notifications-toggle.tsx: seccion en Ajustes para activar/
       desactivar (permiso + subscripcion). Maneja dev sin SW y permisos.
@@ -694,6 +694,77 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
     cierre) por "Chat de dinos deshabilitado (sin dock ni panel)" y se
     agregaron asserts del resumen: boton presente, estado analizando y
     .cyb-month-summary con texto (tolerante: acepta resumen o error).
-  - Verificacion: tsc, lint, build y smoke en verde. El resumen funciono de
+- Verificacion: tsc, lint, build y smoke en verde. El resumen funciono de
     punta a punta; los modelos :free de OpenRouter estaban saturados (429/502)
     y el bloque mostro el aviso con Reintentar (esperado).
+
+[2026-09-09] CHAT DE NUEVO + RECORDATORIOS COMPLETOS + DÍAS DESTACADOS
+  - Chat de dinosaurios REHABILITADO: se descomentaron el import y el
+    <DinoChat /> en app/bitacora/layout.tsx (vuelve el dock y el panel).
+    Modelo sigue gratis a pedido del usuario; se agrega "openrouter/free"
+    como ULTIMO respaldo en app/api/chat/route.ts y app/api/monthly/route.ts
+    (router gratuito que deriva a cualquier modelo :free disponible -> absorbe
+    la saturación/intermitencia del tier sin pagar).
+  - Recordatorios "completo":
+    * supabase/schema.sql: reminders ganó completed_at timestamptz (en el
+      create + alter table add column if not exists para DB ya creada).
+      lib/types.ts: Reminder.completed_at?: string | null.
+    * lib/actions.ts: toggleReminderCompleteAction(id, date, completed).
+    * components/reminder-panel.tsx: botón "✓ Completar"/"Desmarcar" por ítem
+      (optimista, aria-label), los completos se tachan (.cyb-rem-done).
+    * Calendario: el recuadro rojo ahora cuenta SOLO recordatorios pendientes
+      (app/bitacora/[date]/page.tsx arma pendingRemindersByDate filtrando
+      completed_at; calendar-nav recibe pendingReminders).
+    * Cron de push: los recordatorios de mañana excluyen los completados
+      (.is("completed_at", null)). lib/local-client.ts: se agregó el filtro
+      .is() (null y undefined cuentan igual).
+  - Día destacado (anillo dorado):
+    * supabase/schema.sql: tabla day_flags (date pk, created_at) + RLS +
+      índice. lib/local-client.ts: "day_flags" en TABLES.
+    * lib/actions.ts: toggleDayFlagAction(date) (upsert/delete + revalidate).
+    * components/day-flag-button.tsx (nuevo): botón "★ Destacar"/"Destacado ✓"
+      en la cabecera del bloque Agenda de la vista del día.
+    * calendar-nav.tsx: prop flaggedDates -> .cyb-num.has-flag (anillo dorado
+      amber, convive con hoy/recordatorio/futuro) + tooltip "Día destacado".
+    * globals.css: .cyb-num.has-flag (+ combos con today/has-reminder/future),
+      .cyb-flag-btn (.on dorado) y .cyb-rem-done (tachado).
+  - Banner de días futuros: se quitó "Podés mirarlo en gris y" -> queda
+    "Podés dejar recordatorios" (se mantiene el aviso de solo lectura).
+  - smoke-test.js: chat reactivado (dock -> panel -> 6 dinos -> cierra),
+    banner sin "en gris", marcar/desmarcar completo (rojo desaparece/vuelve),
+    destacar/quitar (anillo dorado aparece, persiste al reload y desaparece).
+  - Verificacion: tsc, lint, build y smoke en verde. El único error JS es el
+    502 esperado del resumen mensual (modelos gratis saturados -> aviso con
+    Reintentar). Server de producción reiniciado en http://localhost:3000.
+  - Deploy pendiente: re-correr supabase/schema.sql en Supabase (crea
+    day_flags y agrega completed_at a reminders) + redeploy. Sin env nuevas.
+
+[2026-09-09] PROVEEDOR DE RESPALDO: GROQ (fallback cuando OpenRouter se satura)
+  - El usuario eligió no pagar; mantiene OpenRouter como principal y suma Groq
+    gratis como respaldo. No se pierde nada: se conservan los modelos :free +
+    openrouter/free.
+  - lib/llm.ts (nuevo, server-only): chatWithFallback() unifica la lógica que
+    estaba duplicada en /api/chat y /api/monthly:
+    * Orden de intentos: 1) OpenRouter (env + :free + router gratuito),
+      2) Groq (openai/gpt-oss-120b) si hay GROQ_API_KEY. Si ambos se agotan
+      (429/403/404/5xx) -> mensaje "Los modelos gratis están saturados".
+    * Soporta streaming SSE (chat, stream:true -> pipe de deltas) y respuesta
+      completa (resumen mensual, stream:false -> parsea choices[0].message.
+      content; respuesta vacía -> intenta el siguiente proveedor).
+    * Sin ninguna clave -> 503 con aviso.
+  - app/api/chat/route.ts: queda fino (auth, validación, dataQuery, prompt) y
+    delega en chatWithFallback{stream:true, temp 0.5, max 800}.
+  - app/api/monthly/route.ts: se eliminaron DEFAULT_MODELS/MODELS/fetch/
+    summarize; el POST llama a chatWithFallback{stream:false, temp 0.3,
+    max 700} y devuelve {text} o {error} (502/503).
+  - env: .env.local suma GROQ_API_KEY (real; .env.* está gitignored, nunca se
+    commitea). .env.local.example: placeholder GROQ_API_KEY=. Para Vercel:
+    agregar GROQ_API_KEY como secret.
+  - Ojo modelo Groq 2026: "llama-3.3-70b-versatile" ya no existe en Groq
+    (model_not_found). Se probaron los disponibles y funcionales:
+    openai/gpt-oss-120b (200) y qwen/qwen3.6-27b (429 por OTPM). Se usa
+    openai/gpt-oss-120b (verificado: 200 + streaming SSE con deltas).
+  - Verificacion: tsc, lint, build y smoke PASANDO TODO sin errores JS. El
+    resumen mensual funcionó de punta a punta con texto real (vía Groq cuando
+    OpenRouter se saturó): en el smoke entró y devolvió "RESUMEN ... 2 días
+    (06%)...". Server de producción reiniciado en http://localhost:3000.

@@ -21,10 +21,14 @@ export function CalendarNav({
   date,
   marks = {},
   reminders = {},
+  pendingReminders,
+  flaggedDates = [],
 }: {
   date: string;
   marks?: Record<string, DayMark>;
   reminders?: Record<string, Reminder[]>;
+  pendingReminders?: Record<string, Reminder[]>;
+  flaggedDates?: string[];
 }) {
   const parsed = parseISODate(date);
   const [year, setYear] = useState(parsed.getFullYear());
@@ -145,17 +149,20 @@ export function CalendarNav({
           ].filter((className): className is string => Boolean(className));
 
           const isFuture = cell > today;
-          // Recuadro rojo: cualquier recordatorio que no haya expirado
-          // (hoy, o en el futuro). Los días pasados quedan en su historia
-          // pero sin marcar el calendario.
+          // Recuadro rojo: solo recordatorios PENDIENTES (sin completar)
+          // de hoy o futuro. Los completados y los vencidos quedan en la
+          // tarjeta del día pero sin marcar el calendario.
           const hasReminder =
-            cell >= today && (reminders[cell]?.length ?? 0) > 0;
+            cell >= today &&
+            ((pendingReminders ?? reminders)[cell]?.length ?? 0) > 0;
+          const isFlagged = flaggedDates.includes(cell);
 
           const numClass = ["cyb-num"]
             .concat(cell === date ? "today" : "")
             .concat(segs.length > 0 ? "has-segs" : "")
             .concat(isFuture ? "future" : "")
             .concat(hasReminder ? "has-reminder" : "")
+            .concat(isFlagged ? "has-flag" : "")
             .join(" ");
 
           const onPointerDown = (boy: React.PointerEvent) => {
@@ -180,15 +187,17 @@ export function CalendarNav({
               key={cell}
               href={`/bitacora/${cell}`}
               title={
-                hasReminder
-                  ? "Hay recordatorio"
-                  : isFuture
-                    ? "Vista futura (solo lectura)"
-                    : mark?.complete
-                      ? "Día cumplido"
-                      : mark?.note || mark?.learn
-                        ? "Día registrado"
-                        : undefined
+                isFlagged
+                  ? "Día destacado"
+                  : hasReminder
+                    ? "Hay recordatorio"
+                    : isFuture
+                      ? "Vista futura (solo lectura)"
+                      : mark?.complete
+                        ? "Día cumplido"
+                        : mark?.note || mark?.learn
+                          ? "Día registrado"
+                          : undefined
               }
               className="py-1 flex items-center justify-center rounded hover:bg-zinc-800/50"
               onPointerDown={onPointerDown}

@@ -21,6 +21,7 @@ const TABLES = [
   "notes",
   "learnings",
   "reminders",
+  "day_flags",
 ];
 
 function defaultSeed(): Store {
@@ -117,6 +118,12 @@ class LocalQuery {
 
   eq(column: string, value: unknown) {
     this.filters.push((row) => row[column] === value);
+    return this;
+  }
+
+  is(column: string, value: unknown) {
+    // null/undefined se tratan igual (columnas opcionales ausentes en local).
+    this.filters.push((row) => (row[column] ?? null) === value);
     return this;
   }
 

@@ -5,6 +5,7 @@ import { useOptimistic } from "react";
 import {
   createReminderAction,
   deleteReminderAction,
+  toggleReminderCompleteAction,
   updateReminderAction,
 } from "@/lib/actions";
 import type { Reminder } from "@/lib/types";
@@ -45,9 +46,24 @@ export function ReminderPanel({
     initialReminders,
     (
       state: Reminder[],
-      action: { type: "add" | "update" | "delete"; reminder: Reminder }
+      action:
+        | { type: "add"; reminder: Reminder }
+        | { type: "update"; reminder: Reminder }
+        | { type: "complete"; reminder: Reminder; completed: boolean }
+        | { type: "delete"; reminder: Reminder }
     ) => {
       if (action.type === "add") return [...state, action.reminder];
+      if (action.type === "complete")
+        return state.map((r) =>
+          r.id === action.reminder.id
+            ? {
+                ...r,
+                completed_at: action.completed
+                  ? new Date().toISOString()
+                  : null,
+              }
+            : r
+        );
       if (action.type === "update")
         return state.map((r) =>
           r.id === action.reminder.id ? action.reminder : r
@@ -118,6 +134,20 @@ export function ReminderPanel({
     });
   }
 
+  function handleToggleComplete(reminder: Reminder) {
+    if (pending) return;
+    const completed = !(reminder.completed_at ?? null);
+    startTransition(async () => {
+      mutate({ type: "complete", reminder, completed });
+      const result = await toggleReminderCompleteAction(
+        reminder.id,
+        reminder.date,
+        completed
+      );
+      if (result?.error) setMessage({ kind: "error", text: result.error });
+    });
+  }
+
   return (
     <div className="space-y-3">
       {optimistic.length === 0 ? (
@@ -127,7 +157,10 @@ export function ReminderPanel({
       ) : (
         <ul className="space-y-2">
           {optimistic.map((reminder) => (
-            <li key={reminder.id} className="enrow">
+            <li
+              key={reminder.id}
+              className={reminder.completed_at ? "enrow cyb-rem-done" : "enrow"}
+            >
               {editingId === reminder.id ? (
                 <textarea
                   value={editValue}
@@ -165,17 +198,33 @@ export function ReminderPanel({
                       </button>
                     </>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingId(reminder.id);
-                        setEditValue(reminder.content);
-                      }}
-                      disabled={pending}
-                      className="cyb-link disabled:opacity-40"
-                    >
-                      Editar
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingId(reminder.id);
+                          setEditValue(reminder.content);
+                        }}
+                        disabled={pending}
+                        className="cyb-link disabled:opacity-40"
+                      >
+                        Editar
+                      </button>
+                      {" · "}
+                      <button
+                        type="button"
+                        onClick={() => handleToggleComplete(reminder)}
+                        disabled={pending}
+                        aria-label={
+                          reminder.completed_at
+                            ? "Desmarcar como pendiente"
+                            : "Marcar recordatorio como completo"
+                        }
+                        className="cyb-link disabled:opacity-40"
+                      >
+                        {reminder.completed_at ? "Desmarcar" : "✓ Completar"}
+                      </button>
+                    </>
                   )}
                   <span className="mx-2 opacity-30">|</span>
                   <button

@@ -69,7 +69,8 @@ export async function GET(request: NextRequest) {
   const { data: tomorrowReminders } = await supabase
     .from("reminders")
     .select("content")
-    .eq("date", tomorrow);
+    .eq("date", tomorrow)
+    .is("completed_at", null);
   const contents = ((tomorrowReminders ?? []) as { content: string }[]).map(
     (row) => row.content
   );

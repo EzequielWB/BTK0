@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { CalendarNav } from "@/components/calendar-nav";
+import { DayFlagButton } from "@/components/day-flag-button";
 import { LearningsEditor } from "@/components/learnings-editor";
 import { MotivationalQuote } from "@/components/motivational-quote";
 import { NotesEditor } from "@/components/notes-editor";
@@ -141,6 +142,7 @@ export default async function DayPage({
     { data: notesInMonth },
     { data: learningsInMonth },
     { data: remindersInMonth },
+    { data: flagsInMonth },
   ] = await Promise.all([
     supabase.from("days").select("id, date"),
     supabase.from("daily_objectives").select("*"),
@@ -160,16 +162,31 @@ export default async function DayPage({
       .gte("date", monthStart)
       .lte("date", monthEnd)
       .order("created_at"),
+    supabase
+      .from("day_flags")
+      .select("date")
+      .gte("date", monthStart)
+      .lte("date", monthEnd),
   ]);
 
   // Recordatorios del mes. El calendario pinta el recuadro rojo solo para
-  // días activos (date <= hoy); los futuros se pueden ver/editar/borrar
-  // desde el modal pero todavía no marcan el calendario, y los vencidos
-  // quedan en la tarjeta del día sin recuadro.
+  // días activos (date <= hoy) con recordatorios PENDIENTES; los futuros se
+  // pueden ver/editar/borrar desde el modal pero todavía no marcan el
+  // calendario, y los vencidos/completados quedan en la tarjeta del día
+  // sin recuadro.
   const remindersByDate: Record<string, Reminder[]> = {};
+  const pendingRemindersByDate: Record<string, Reminder[]> = {};
   for (const row of (remindersInMonth ?? []) as Reminder[]) {
     (remindersByDate[row.date] ??= []).push(row);
+    if (!(row.completed_at ?? null)) {
+      (pendingRemindersByDate[row.date] ??= []).push(row);
+    }
   }
+
+  const flaggedDates = ((flagsInMonth ?? []) as { date: string }[]).map(
+    (row) => row.date
+  );
+  const isFlagged = flaggedDates.includes(date);
 
   const completedDates = new Set<string>();
   if (config.mode !== "off" && checklistItems.length > 0) {
@@ -226,19 +243,28 @@ export default async function DayPage({
   return (
     <div className="space-y-4">
       <div className="blk">
-        <span className="blk-tag">
-          Agenda · {monthLabel(parsed.getFullYear(), parsed.getMonth())}
-        </span>
-        <CalendarNav date={date} marks={marks} reminders={remindersByDate} />
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <span className="blk-tag">
+            Agenda · {monthLabel(parsed.getFullYear(), parsed.getMonth())}
+          </span>
+          <DayFlagButton date={date} flagged={isFlagged} />
+        </div>
+        <CalendarNav
+          date={date}
+          marks={marks}
+          reminders={remindersByDate}
+          pendingReminders={pendingRemindersByDate}
+          flaggedDates={flaggedDates}
+        />
       </div>
 
       {isFuture && (
         <div className="blk future-blk">
           <span className="blk-tag">Vista futura</span>
           <p className="cyb-hint text-sm">
-            Todavía no llegó este día. Podés mirarlo en gris y dejar
-            recordatorios, pero las notas, los objetivos y los aprendizajes se
-            habilitan cuando llegue la fecha.
+            Todavía no llegó este día. Podés dejar recordatorios, pero las
+            notas, los objetivos y los aprendizajes se habilitan cuando llegue
+            la fecha.
           </p>
         </div>
       )}

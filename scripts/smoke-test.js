@@ -294,11 +294,26 @@ const { chromium } = require("playwright-core");
     await page.waitForSelector("text=Estadísticas", { timeout: 10000 });
     console.log("Stats carga: yes");
 
-    // 7) Chat de dinos deshabilitado (se retomará más adelante)
+    // 7) Chat de dinosaurios: dock + panel + 6 dinos
+    await page.waitForSelector(".cyb-dock", { timeout: 10000 });
+    console.log("Dock del chat presente (.cyb-dock): yes");
+    await page.locator('button[aria-label="Abrir chat de dinosaurios"]').click();
+    await page.waitForSelector('section[aria-label="Chat de dinosaurios"]', {
+      timeout: 10000,
+    });
+    console.log("Panel del chat se abre: yes");
     console.log(
-      "Chat de dinos deshabilitado (sin dock ni panel):",
-      (await page.locator(".cyb-dock").count()) === 0 &&
-        (await page.locator(".cyb-dchat").count()) === 0
+      "Lista de 6 dinos:",
+      (await page.locator(".cyb-dchat-item").count()) === 6
+    );
+    await page.locator(".cyb-dchat-close").first().click();
+    await page.waitForSelector('section[aria-label="Chat de dinosaurios"]', {
+      state: "detached",
+      timeout: 10000,
+    });
+    console.log(
+      "El panel se cierra y vuelve el dock:",
+      (await page.locator(".cyb-dock").count()) === 1
     );
 
     // 7b) Resumen mensual con IA, justo debajo de los gráficos
@@ -334,6 +349,14 @@ const { chromium } = require("playwright-core");
     await page.goto(base + "/bitacora/" + tomorrowIso, { waitUntil: "networkidle" });
     await page.waitForSelector(".future-blk", { timeout: 10000 });
     console.log("Vista futura (banner solo lectura): yes");
+    const futureBanner = (
+      await page.locator(".future-blk").innerText()
+    ).toLowerCase();
+    console.log(
+      "Banner futuro sin 'en gris' y con 'podés dejar recordatorios':",
+      !futureBanner.includes("en gris") &&
+        futureBanner.includes("podés dejar recordatorios")
+    );
     console.log(
       "Día futuro sin editores (Objetivos/Notas/Aprendizajes):",
       (await page.locator("h2:has-text('Objetivos')").count()) === 0 &&
@@ -431,6 +454,47 @@ const { chromium } = require("playwright-core");
     await modal.locator("button[aria-label='Cerrar']").click();
     await page.waitForTimeout(300);
 
+    // 9b) Marcar recordatorio como completo -> rojo desaparece; desmarcar -> vuelve
+    await longPress(todayLink);
+    await modal
+      .locator("button[aria-label='Marcar recordatorio como completo']")
+      .first()
+      .click();
+    await modal
+      .locator("li.cyb-rem-done", { hasText: remText2 })
+      .waitFor({ timeout: 10000 });
+    console.log("Recordatorio marcado como completo (tachado): yes");
+    await modal.locator("button[aria-label='Cerrar']").click();
+    await page.waitForTimeout(300);
+    await page.waitForFunction(
+      (num) => {
+        const link = [...document.querySelectorAll("nav a")].find((l) =>
+          l.textContent.includes("*" + num)
+        );
+        return Boolean(link && !link.querySelector(".has-reminder"));
+      },
+      todayIso.slice(-2),
+      { timeout: 10000 }
+    );
+    console.log("Recuadro rojo desaparece al completar: yes");
+
+    await longPress(todayLink);
+    await modal
+      .locator("button[aria-label='Desmarcar como pendiente']")
+      .first()
+      .click();
+    await modal
+      .locator("li.enrow:not(.cyb-rem-done)", { hasText: remText2 })
+      .waitFor({ timeout: 10000 });
+    console.log("Desmarcar (vuelve a pendiente): yes");
+    await modal.locator("button[aria-label='Cerrar']").click();
+    await page.waitForTimeout(300);
+    await page.waitForSelector(
+      `nav a[href="/bitacora/${todayIso}"] .cyb-num.has-reminder`,
+      { timeout: 10000 }
+    );
+    console.log("Recuadro rojo vuelve al desmarcar: yes");
+
     // Borrar
     await longPress(todayLink);
     await modal.locator("button:has-text('Borrar')").first().click();
@@ -503,6 +567,33 @@ const { chromium } = require("playwright-core");
       (await modal.getByText(farText).count()) === 0
     );
     await modal.locator("button[aria-label='Cerrar']").click();
+
+    // 11b) Día destacado: botón ★ en la vista del día + anillo dorado en el calendario
+    await page.goto(base + `/bitacora/${todayIso}`, { waitUntil: "networkidle" });
+    await page.waitForSelector("button[aria-label='Destacar este día']", {
+      timeout: 10000,
+    });
+    await page.locator("button[aria-label='Destacar este día']").click();
+    await page.waitForSelector(
+      `nav a[href="/bitacora/${todayIso}"] .cyb-num.has-flag`,
+      { timeout: 10000 }
+    );
+    console.log("Destacar día -> anillo dorado en el calendario: yes");
+    await page.waitForSelector("button[aria-label='Quitar día destacado']", {
+      timeout: 10000,
+    });
+    console.log("El botón pasa a estado 'Destacado ✓': yes");
+    await page.reload({ waitUntil: "networkidle" });
+    await page.waitForSelector(
+      `nav a[href="/bitacora/${todayIso}"] .cyb-num.has-flag`,
+      { timeout: 10000 }
+    );
+    console.log("Anillo dorado persiste tras reload: yes");
+    await page.locator("button[aria-label='Quitar día destacado']").click();
+    await page.waitForFunction(() => !document.querySelector(".cyb-num.has-flag"), {
+      timeout: 10000,
+    });
+    console.log("Quitar destacado -> anillo desaparece: yes");
 
     // Triple tap sobre el día de hoy -> modal rojo de borrado (doble OK)
     // Por seguridad solo se abre y se cancela (no borra data real).

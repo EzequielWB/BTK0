@@ -112,11 +112,25 @@ on conflict (id) do nothing;
 -- reminders: recordatorios ("recuerdos") atados a una fecha.
 -- Activos mientras date >= hoy; al pasar la fecha quedan en el
 -- historial del día pero dejan de marcar el calendario.
+-- completed_at: cuando se marca "completo" (null = pendiente).
 -- ------------------------------------------------------------
 create table if not exists reminders (
-  id         uuid primary key default gen_random_uuid(),
-  date       date not null,
-  content    text not null,
+  id           uuid primary key default gen_random_uuid(),
+  date         date not null,
+  content      text not null,
+  completed_at timestamptz,
+  created_at   timestamptz not null default now()
+);
+-- Para DB ya existentes (idempotente): agrega la columna si falta.
+alter table reminders add column if not exists completed_at timestamptz;
+
+-- ------------------------------------------------------------
+-- day_flags: días "destacados" por el usuario (anillo dorado en
+-- el calendario). Independiente de la tabla days (se puede
+-- destacar cualquier fecha, incluso futura).
+-- ------------------------------------------------------------
+create table if not exists day_flags (
+  date       date primary key,
   created_at timestamptz not null default now()
 );
 
@@ -144,6 +158,7 @@ create index if not exists idx_reminders_date on reminders(date);
 create index if not exists idx_daily_objectives_day on daily_objectives(day_id);
 create index if not exists idx_daily_objectives_objective on daily_objectives(objective_id);
 create index if not exists idx_temporal_goals_range on temporal_goals(start_date, end_date);
+create index if not exists idx_day_flags_date on day_flags(date);
 
 -- ------------------------------------------------------------
 -- Row Level Security:
@@ -160,5 +175,6 @@ alter table notes enable row level security;
 alter table learnings enable row level security;
 alter table reminders enable row level security;
 alter table push_subscriptions enable row level security;
+alter table day_flags enable row level security;
 alter table daily_objectives enable row level security;
 alter table temporal_goals enable row level security;

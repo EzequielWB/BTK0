@@ -1,9 +1,8 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { CybClock } from "@/components/cyb-clock";
+import DinoChat from "@/components/dino-chat/dino-chat";
 import { LogoffButton } from "@/components/logoff-button";
-// Chat de dinosaurios deshabilitado (se retomará más adelante).
-// import DinoChat from "@/components/dino-chat/dino-chat";
 import { ReminderFab } from "@/components/reminder-fab";
 import { isLocalMode } from "@/lib/supabase/server";
 
@@ -43,7 +42,7 @@ export default function BitacoraLayout({ children }: { children: ReactNode }) {
         <div className="cyb-stage">{children}</div>
       </main>
 
-      {/* DinoChat deshabilitado: no se muestra el dock ni el panel. */}
+      <DinoChat />
       <ReminderFab />
     </div>
   );

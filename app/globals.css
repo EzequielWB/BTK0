@@ -502,6 +502,63 @@ body {
   color: #fff;
 }
 
+/* Día destacado: anillo dorado (amber) alrededor del número */
+.cyb-num.has-flag {
+  border-color: var(--cyb-amber);
+  box-shadow: 0 0 8px rgba(255, 225, 74, 0.5);
+}
+.cyb-num.has-flag.today {
+  box-shadow: 0 0 8px rgba(255, 225, 74, 0.6), 0 0 8px rgba(0, 255, 157, 0.45);
+}
+.cyb-num.has-flag.has-reminder {
+  box-shadow: 0 0 8px rgba(255, 225, 74, 0.55), 0 0 8px rgba(255, 59, 92, 0.4);
+}
+.cyb-num.has-flag.has-reminder.today {
+  box-shadow: 0 0 8px rgba(255, 225, 74, 0.6), 0 0 8px rgba(255, 59, 92, 0.6), 0 0 8px rgba(0, 255, 157, 0.45);
+}
+/* Un día futuro destacado se ve (no queda apagado) */
+.cyb-num.future.has-flag {
+  opacity: 1;
+  color: #fff;
+}
+
+/* Botón "★ Destacar" de la vista del día */
+.cyb-flag-btn {
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 1px;
+  line-height: 1;
+  padding: 6px 9px;
+  color: var(--cyb-mut);
+  border: 1px solid var(--cyb-num);
+  background: transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cyb-flag-btn:hover {
+  color: var(--cyb-fg);
+  border-color: var(--cyb-amber);
+}
+.cyb-flag-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.cyb-flag-btn.on {
+  color: var(--cyb-bg);
+  background: var(--cyb-amber);
+  border-color: var(--cyb-amber);
+  box-shadow: 0 0 8px rgba(255, 225, 74, 0.45);
+}
+
+/* Recordatorio completo: tachado y apagado */
+.cyb-rem-done p {
+  text-decoration: line-through;
+}
+.cyb-rem-done .cyb-hint {
+  color: var(--cyb-dim);
+  text-decoration: line-through;
+}
+
 /* Grilla del calendario: sin selección de texto y gesto de presión firme */
 .cyb-cal-grid {
   -webkit-user-select: none;

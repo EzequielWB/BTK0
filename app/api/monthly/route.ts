@@ -2,6 +2,7 @@ import { isAuthenticated } from "@/lib/session";
 import { statusOf, statusValue } from "@/lib/completion";
 import { createClient } from "@/lib/supabase/server";
 import { addDays, todayISO } from "@/lib/utils";
+import { chatWithFallback } from "@/lib/llm";
 import type {
   DailyObjective,
   Day,
@@ -17,23 +18,6 @@ export const maxDuration = 60;
 const RANGE_DAYS = 30;
 const MAX_SAMPLES = 15;
 const SAMPLE_CHARS = 300;
-
-const DEFAULT_MODELS = [
-  "google/gemma-4-31b-it:free",
-  "google/gemma-4-26b-a4b-it:free",
-  "dots-studio/dots-3-note-preview:free",
-];
-
-const MODELS = (() => {
-  const env = process.env.OPENROUTER_MODEL?.trim();
-  if (!env) return DEFAULT_MODELS;
-  return [env, ...DEFAULT_MODELS.filter((m) => m !== env)];
-})();
-
-const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const ATTEMPT_TIMEOUT_MS = 22_000;
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function json(message: unknown, status = 200): Response {
   return new Response(JSON.stringify(message), {
@@ -267,79 +251,9 @@ function buildPrompt(f: Fact): string {
   return lines.join("\n");
 }
 
-async function summarize(
-  system: string
-): Promise<{ type: "ok"; text: string } | { type: "error"; message: string }> {
-  let sawRateLimit = false;
-  let lastMessage = "";
-
-  for (const model of MODELS) {
-    let res: Response;
-    try {
-      res = await fetch(OPENROUTER_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          "HTTP-Referer": process.env.SITE_URL || "http://localhost:3000",
-          "X-Title": "LA_BITAK0R4_",
-        },
-        body: JSON.stringify({
-          model,
-          max_tokens: 700,
-          temperature: 0.3,
-          stream: false,
-          messages: [{ role: "system", content: system }],
-        }),
-        signal: AbortSignal.timeout(ATTEMPT_TIMEOUT_MS),
-      });
-    } catch (e) {
-      lastMessage = `Fuera de alcance: ${e instanceof Error ? e.message : String(e)}`;
-      continue;
-    }
-
-    if (res.ok) {
-      let data: { choices?: Array<{ message?: { content?: string } }> };
-      try {
-        data = (await res.json()) as typeof data;
-      } catch {
-        lastMessage = "Respuesta inválida de OpenRouter.";
-        continue;
-      }
-      const text = (data.choices?.[0]?.message?.content ?? "").trim();
-      if (text) return { type: "ok", text };
-      lastMessage = "El modelo devolvió una respuesta vacía.";
-      continue;
-    }
-
-    const status = res.status;
-    const detail = (await res.text().catch(() => "")).slice(0, 300);
-    lastMessage = `OpenRouter ${status} ${detail}`.trim();
-
-    if (status === 429) sawRateLimit = true;
-    if (status !== 429 && status !== 403 && status !== 404 && status < 500) {
-      return { type: "error", message: lastMessage };
-    }
-
-    if (MODELS.length > 1) await sleep(900);
-  }
-
-  const message = sawRateLimit
-    ? "Los modelos gratis están saturados en este momento. Esperá un rato y volvé a intentarlo."
-    : lastMessage || "Sin respuesta de OpenRouter.";
-  return { type: "error", message };
-}
-
 export async function POST(): Promise<Response> {
   if (!(await isAuthenticated())) {
     return json({ error: "Fuera de alcance. 401." }, 401);
-  }
-
-  if (!process.env.OPENROUTER_API_KEY) {
-    return json(
-      { error: "Falta OPENROUTER_API_KEY en el entorno. Sin clave no hay resumen." },
-      503
-    );
   }
 
   const facts = await buildFacts();
@@ -350,10 +264,15 @@ export async function POST(): Promise<Response> {
     });
   }
 
-  const result = await summarize(buildPrompt(facts));
+  const result = await chatWithFallback({
+    system: buildPrompt(facts),
+    maxTokens: 700,
+    temperature: 0.3,
+    stream: false,
+  });
 
   if (result.type === "error") {
-    return json({ error: result.message }, 502);
+    return json({ error: result.message }, result.status === 503 ? 503 : 502);
   }
 
   return json({ text: result.text });
