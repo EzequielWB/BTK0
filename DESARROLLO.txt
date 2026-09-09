@@ -1,5 +1,5 @@
 ================================================================================
- LA BITAK0R4_ DE EZEQUIEL - LOG DE DESARROLLO
+ LA BITAK0R4_ DE EZEQUIEL - LOG DE DESARROLLO.
  Registro paso a paso de todo lo que se va construyendo.
 ================================================================================
 
@@ -519,7 +519,7 @@ FASE 11 (2026-09-08):
     Sin errores JS.
 
 NOTA FASE 11 (ajuste de visual):
-  - Votos rediseñados como 3 casillas tipo checkbox VACIAS (28x28, borde 2px):
+  - Votos rediseï¿½ados como 3 casillas tipo checkbox VACIAS (28x28, borde 2px):
     se marca la que quieras; al tocarla aparece el simbolo en su color (X roja,
     '-' amarillo, tick verde) con fondo y glow de ese color. El simbolo solo se
     ve en la casilla elegida.
@@ -539,10 +539,10 @@ FASE 12 (2026-09-08):
     isDayFulfilled ahora compara PUNTOS: modo "count" = puntos >= umbral
     (un "a medias" aporta 0.5 asi el dia verde no es tan severo), modo
     "percent" = %(puntos/total) >= umbral.
-  - Dia: el header muestra "Objetivos · 2/3 · 67%". El marcado verde por dia
+  - Dia: el header muestra "Objetivos ï¿½ 2/3 ï¿½ 67%". El marcado verde por dia
     del mes acumula puntos (statusValue) por fecha.
   - Stats: el % por dia se calcula con puntos sobre el total de objetivos
-    activos; nueva metrica "Eficiencia · 30 dias" = sum(dia/puntos objetivos)
+    activos; nueva metrica "Eficiencia ï¿½ 30 dias" = sum(dia/puntos objetivos)
     => cada dia aporta 0..1, % = puntos/30. Ej: 20 pts en 30 dias = 66%.
     Grilla del Resumen pasa a 6 celdas.
   - Ajustes: textos actualizados (hecho=1, a medias=0.5, valor en puntos o %).
@@ -550,10 +550,10 @@ FASE 12 (2026-09-08):
     PASANDO TODO. tsc + lint + next build OK. Sin errores JS.
 
 FASE 13 (2026-09-08):
-  - Chat: botones "CÓMO VA EL DÍA" y "CÓMO VA EL MES" (+ input mm/yy
+  - Chat: botones "Cï¿½MO VA EL Dï¿½A" y "Cï¿½MO VA EL MES" (+ input mm/yy
     precargado con el mes actual, editable) sobre el input del chat.
   - Slot de contexto en memoria por request (lib/chat-context.ts):
-    buildDayContext() arma un texto plano compacto del día actual (hora,
+    buildDayContext() arma un texto plano compacto del dï¿½a actual (hora,
     objetivos con ?/-/? y %, cant. de notas con la ultima truncada,
     aprendizajes y recordatorios, cap ~700 chars); buildMonthContext(mm, yy)
     arma el resumen del mes literal (dias con registro, puntos, eficiencia %,
@@ -564,13 +564,13 @@ FASE 13 (2026-09-08):
     validado) e inyecta el snapshot como mensaje system de contexto entre el
     prompt y el historial, con instruccion de comentar sin repetir ni enumerar.
   - Cliente: send() suma dataQuery; los botones mandan el mensaje visible
-    ("¿Cómo va el día?" / "¿Cómo va el mes (mm/yy)?") + el contexto oculto.
+    ("ï¿½Cï¿½mo va el dï¿½a?" / "ï¿½Cï¿½mo va el mes (mm/yy)?") + el contexto oculto.
     CSS .cyb-dchat-quick (fila de botones + input mm/yy).
   - Smoke extendido (botones presentes, mm/yy precargado, ambos responden con
     streaming) PASANDO TODO. tsc + lint + build OK. Sin errores JS.
 
 NOTA FASE 13 (2026-09-09):
-  - Los botones CÓMO VA EL DÍA / MES (+ input mm/yy) pasaron a la cabecera del
+  - Los botones Cï¿½MO VA EL Dï¿½A / MES (+ input mm/yy) pasaron a la cabecera del
     panel, recien debajo de la fila del nombre del dino (.cyb-dchat-head en
     columna + .cyb-dchat-head-top). Se quito la fila de arriba del input.
   - La hora del snapshot del dia ahora se calcula forzando la zona horaria de
@@ -586,9 +586,9 @@ NOTA PRE-DEPLOY (2026-09-09):
     futuros, calendario) queda consistente aunque el server corra en UTC
     (Vercel). chat-context.ts reutiliza arNow() en vez de su helper propio.
   - Arte de dinos redisenado (poses mixtas frontales/perfil) en dinosaurs.ts.
-  - Boton CÓMO VA EL MES ahora pide el mes al apretar: aparece un mini-form
+  - Boton Cï¿½MO VA EL MES ahora pide el mes al apretar: aparece un mini-form
     inline mm/yy precargado (autofocus) + OK/?, Enter envia la pregunta y se
-    oculta. Flujo "cómo va el día" directo. Verificado con smoke completo.
+    oculta. Flujo "cï¿½mo va el dï¿½a" directo. Verificado con smoke completo.
   - Mobile: @media (max-width:640px) agrega body { zoom: 0.8 } (todo al 80%).
   - Build (webpack)+lint+tsc y smoke al 100% en verde.
 
