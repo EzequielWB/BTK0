@@ -793,3 +793,37 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
     los 6 suenan distinto y en rioplatense, tirando contexto real del día
     (ej. ank: "No hay que correr. Aguantá: a las veinte y cuarenta y tres
     tenés una meta cumplida..."). Server reiniciado.
+
+[2026-09-09] FRASES MOTIVACIONALES: POOL GRANDE (REALES + JUEGOS + ANIME) + GLITCH MÁS LENTO
+  - lib/quotes.ts reescrito: 123 frases en total.
+    * Reales (~73): se quitaron 8 sobrantes repetidas/planas (dup de Jobs,
+      Churchill, Einstein y Confucio, + Wooden, Rohn, Ziglar, Ward) y se sumó
+      variedad de gente/países: Cortázar (ARG), Facundo Cabral (ARG), Galeano
+      (URY), Coelho (BRA), Neruda (CHL), García Márquez (COL), Kahlo (MEX),
+      Bolívar (VEN), Marco Aurelio (ROM), Tolstói (RUS), Rumi (PERS), Gibran
+      (LBN), Mandela (ZAF), Sun Tzu (CHN), Teresa de Calcuta, Dante, Ana Frank,
+      Buda, Picasso, Wilde, Tagore. Se quedan los 2 proverbios chinos, 2 anónimas
+      súper conocidas (se sacó SOLO «Todo lo que siempre quisiste está al otro
+      lado del miedo» y los 13 refranes populares.
+    * Juegos (25): Paarthurnax, Geralt, Kratos, Viejo Sabio (Zelda), Andrew Ryan,
+      G-Man, Ezio, Deckard Cain, Vaas, Narrador Fallout, Arthur Morgan, Pod 042
+      (NieR), "Aguantá y sobreviví", Cave Johnson, Zhongli, hoguera de Dark Souls
+      ("no te atrevas a volverte hueco"), Sora, Undertale ("a pesar de todo seguís
+      siendo vos"), Elizabeth, Solid Snake, Joel, Leon, Kane, Nathan Drake, Master
+      Chief.
+    * Anime (25): Geto, Gojo, Yuji, Itachi, Luffy, Zoro, Saitama, Naruto, Kakashi,
+      Rock Lee, Armin, Rengoku, Thorfinn, Nanami, Spike, Hanamichi, Kamina, Goku,
+      Gon, Tanjiro, All Might, Eren, Edward Elric, Kenny, Plus Ultra.
+  - Cada una con rol (autor, contexto de obra) como las reales; sin tag de
+    categoría en la UI. Textos adaptados a rioplatense cuando lo permite la frase.
+  - Verificación por web de las citas de ficción antes de escribirlas (sustituidas
+    las no verificables, ej. el quote de 2B que era nihilista -> Pod 042 "el futuro
+    no se te regala"; Goku usa la del cap. 228 del manga "hasta el de más humilde
+    origen puede superar a la elite"; Kamina usa la del ep. 8 "creé en el vos que
+    cree en vos mismo"; Eren la del tema de la libertad "nacemos libres... al diablo
+    con ellos"; Nanami la de la temp 1 ep 9 sobre las pequeñas desilusiones).
+  - Glitch de la cita 2x más lento para que se lea: cygA 2.3s -> 4.6s y cygB 1.9s -> 5.7s
+    (app/globals.css, .glitch::before/::after).
+  - Verificación: count script (73 reales + 25 juegos + 25 anime = 123), tsc, lint y
+    build en verde. Server de producción reiniciado en http://localhost:3000 (smoke
+    completo no corrido: el cambio es solo de datos frases + animación CSS).

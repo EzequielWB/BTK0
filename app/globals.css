@@ -345,13 +345,13 @@ body {
   color: var(--cyb-g1);
   transform: translate(-2px, 0);
   clip-path: inset(10% 0 55% 0);
-  animation: cygA 2.3s infinite steps(1);
+  animation: cygA 4.6s infinite steps(1);
 }
 .glitch::after {
   color: var(--cyb-g2);
   transform: translate(2px, 0);
   clip-path: inset(60% 0 8% 0);
-  animation: cygB 1.9s infinite steps(1);
+  animation: cygB 5.7s infinite steps(1);
 }
 @keyframes cygA {
   0%,
