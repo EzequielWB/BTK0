@@ -63,15 +63,16 @@ create table if not exists learnings (
 
 -- ------------------------------------------------------------
 -- daily_objectives: estado por día de cada objetivo.
--- status: none (no hecho), partial (a medias), done (hecho). Antes
--- era boolean "completed"; filas viejas se migran leyendo status.
+-- status: none (no hecho), partial (a medias), done (hecho),
+-- ignored (excluido del día: no cuenta en % ni en métricas).
+-- Antes era boolean "completed"; filas viejas se migran leyendo status.
 -- ------------------------------------------------------------
 create table if not exists daily_objectives (
   id           uuid primary key default gen_random_uuid(),
   day_id       uuid not null references days(id) on delete cascade,
   objective_id uuid not null references objectives(id) on delete cascade,
   status       text not null default 'none'
-    check (status in ('none', 'partial', 'done')),
+    check (status in ('none', 'partial', 'done', 'ignored')),
   unique (day_id, objective_id)
 );
 
@@ -135,20 +136,6 @@ create table if not exists day_flags (
 );
 
 -- ------------------------------------------------------------
--- push_subscriptions: suscripciones de notificaciones push.
--- El cron manda las notificaciones y borra las que expiran (404/410).
--- ------------------------------------------------------------
-create table if not exists push_subscriptions (
-  id          uuid primary key default gen_random_uuid(),
-  endpoint    text not null unique,
-  keys_p256dh text not null,
-  keys_auth   text not null,
-  user_agent  text,
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now()
-);
-
--- ------------------------------------------------------------
 -- Índices útiles
 -- ------------------------------------------------------------
 create index if not exists idx_days_date on days(date);
@@ -174,7 +161,6 @@ alter table days enable row level security;
 alter table notes enable row level security;
 alter table learnings enable row level security;
 alter table reminders enable row level security;
-alter table push_subscriptions enable row level security;
 alter table day_flags enable row level security;
 alter table daily_objectives enable row level security;
 alter table temporal_goals enable row level security;

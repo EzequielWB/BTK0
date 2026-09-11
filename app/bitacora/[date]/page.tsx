@@ -9,6 +9,7 @@ import { ReminderPanel } from "@/components/reminder-panel";
 import { TemporalGoalsSection } from "@/components/temporal-goals-section";
 import {
   completionConfigFromRow,
+  countedItems,
   dayPercent,
   isDayFulfilled,
   statusOf,
@@ -116,12 +117,10 @@ export default async function DayPage({
     })
   );
 
-  const completedCount = checklistItems.filter(
+  const counted = countedItems(checklistItems);
+  const completedCount = counted.filter(
     (item) => item.status === "done"
   ).length;
-
-  // Marcado de días cumplidos en el calendario (según Ajustes).
-  // total = objetivos activos actuales; completed = cant. registrada por día.
   const { data: settingsRow } = await supabase
     .from("settings")
     .select("id, completion_mode, threshold")
@@ -189,7 +188,8 @@ export default async function DayPage({
   const isFlagged = flaggedDates.includes(date);
 
   const completedDates = new Set<string>();
-  if (config.mode !== "off" && checklistItems.length > 0) {
+  const activeTotal = countedItems(checklistItems).length;
+  if (config.mode !== "off" && activeTotal > 0) {
     const dateByDayId = new Map(
       ((allDays ?? []) as { id: string; date: string }[]).map((row) => [
         row.id,
@@ -197,10 +197,16 @@ export default async function DayPage({
       ])
     );
     const completedByDate = new Map<string, number>();
+    const ignoredByDate = new Map<string, number>();
     for (const entry of (allDailyObjectives ?? []) as DailyObjective[]) {
       const entryDate = dateByDayId.get(entry.day_id);
       if (!entryDate) continue;
-      const entryPoints = statusValue(statusOf(entry));
+      const entryStatus = statusOf(entry);
+      if (entryStatus === "ignored") {
+        ignoredByDate.set(entryDate, (ignoredByDate.get(entryDate) ?? 0) + 1);
+        continue;
+      }
+      const entryPoints = statusValue(entryStatus);
       if (entryPoints > 0) {
         completedByDate.set(
           entryDate,
@@ -210,7 +216,8 @@ export default async function DayPage({
     }
 
     for (const [entryDate, points] of completedByDate) {
-      if (isDayFulfilled(config, checklistItems.length, points)) {
+      const totalForDate = Math.max(0, activeTotal - (ignoredByDate.get(entryDate) ?? 0));
+      if (isDayFulfilled(config, totalForDate, points)) {
         completedDates.add(entryDate);
       }
     }
@@ -275,10 +282,10 @@ export default async function DayPage({
         <section className="blk">
           <h2 className="blk-tag">
             Objetivos ·
-            {checklistItems.length > 0 && (
+            {counted.length > 0 && (
               <span className="normal-case tracking-normal text-xs opacity-80">
                 {" "}
-                {completedCount}/{checklistItems.length} · {dayPercent(checklistItems)}%
+                {completedCount}/{counted.length} · {dayPercent(checklistItems)}%
               </span>
             )}
           </h2>

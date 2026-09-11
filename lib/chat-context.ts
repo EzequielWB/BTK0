@@ -12,6 +12,7 @@ function statusChar(status: { status?: string; completed?: boolean }): string {
   const state = statusOf(status);
   if (state === "done") return "✓";
   if (state === "partial") return "−";
+  if (state === "ignored") return "⊘";
   return "✕";
 }
 
@@ -82,8 +83,9 @@ export async function buildDayContext(): Promise<string> {
       .map((o) => `${statusChar(statusById.get(o.id) ?? {})}${o.title}`)
       .join(" · ");
     const pts = items.reduce((sum, item) => sum + statusValue(item.status), 0);
-    objectivesLine = `OBJETIVOS (${items.length}): ${marks} → ${pts}/${
-      items.length
+    const counted = items.filter((item) => item.status !== "ignored").length;
+    objectivesLine = `OBJETIVOS (${counted}): ${marks} → ${pts}/${
+      counted
     } = ${dayPercent(items)}%`;
   }
 
@@ -168,12 +170,18 @@ export async function buildMonthContext(
   for (const day of dayRows) {
     const date = day.date;
     const entries = byDayId.get(day.id) ?? [];
+    const ignoredCount = entries.filter(
+      (entry) => statusOf(entry) === "ignored"
+    ).length;
+    // Los ignorados del día no cuentan ni en el numerador ni en el
+    // denominador; si el día quedó sin objetivos en cuenta es neutro.
+    const denominator = Math.max(0, totalObjectives - ignoredCount);
     const pts = entries.reduce(
       (sum, entry) => sum + statusValue(statusOf(entry)),
       0
     );
-    const frac = totalObjectives > 0 ? pts / totalObjectives : 0;
-    const pct = totalObjectives > 0 ? Math.round(frac * 100) : 0;
+    const frac = denominator > 0 ? pts / denominator : 0;
+    const pct = denominator > 0 ? Math.round(frac * 100) : 0;
     const n = noteCount.get(date) ?? 0;
     const a = learningCount.get(date) ?? 0;
 
@@ -181,13 +189,13 @@ export async function buildMonthContext(
       bestFrac = frac;
       bestDate = date;
     }
-    periodPoints += frac;
+    if (denominator > 0) periodPoints += frac;
 
     if (entries.length === 0 && n === 0 && a === 0) continue;
 
     const bits = [`${date.slice(8, 10)}/${mm}`];
     if (entries.length > 0) {
-      bits.push(`${pts.toFixed(1)}/${totalObjectives} ${pct}%`);
+      bits.push(`${pts.toFixed(1)}/${denominator} ${pct}%`);
     }
     if (n > 0) bits.push(`n${n}`);
     if (a > 0) bits.push(`a${a}`);

@@ -156,6 +156,68 @@ const { chromium } = require("playwright-core");
     );
     console.log("Warning optimista:", optimisticWarn.length ? "SIGUE HABIENDO" : "no");
 
+    // 1b) Ignorar objetivo: segundo toque confirma y saca del denominador
+    const headerCounts = async () => {
+      const header = page.locator("h2:has-text('Objetivos')").first();
+      const m = (await header.innerText()).match(/(\d+)\/(\d+) · (\d+)%$/);
+      return m
+        ? { done: parseInt(m[1], 10), total: parseInt(m[2], 10), pct: parseInt(m[3], 10) }
+        : null;
+    };
+    const beforeIgnore = await headerCounts();
+    const ignoreBtn = page.locator("button:has-text('ignorar')").first();
+    await ignoreBtn.click();
+    console.log(
+      "Ignorar -> arma '¿Seguro?':",
+      (await page.locator("button[aria-label^='Confirmar ignorar']").count()) === 1
+    );
+    await page.locator("button[aria-label='Cancelar ignorar objetivo']").click();
+    await page.waitForTimeout(300);
+    console.log(
+      "Cancelar desarma (vuelve a 'ignorar'):",
+      (await page.locator("button[aria-label^='Confirmar ignorar']").count()) === 0
+    );
+    await ignoreBtn.click();
+    await page.locator("button[aria-label^='Confirmar ignorar']").click();
+    await page.waitForTimeout(1200);
+    const afterIgnore = await headerCounts();
+    console.log(
+      "Ignorar resta uno al denominador del header:",
+      Boolean(
+        beforeIgnore &&
+          afterIgnore &&
+          beforeIgnore.total >= 2 &&
+          afterIgnore.total === beforeIgnore.total - 1
+      )
+    );
+    console.log(
+      "Fila queda atenuada ('ignorado · quitar'):",
+      (await page.locator("button:has-text('ignorado · quitar')").count()) === 1
+    );
+    await page.reload({ waitUntil: "networkidle" });
+    await page.waitForSelector("h2:has-text('Objetivos')", { timeout: 15000 });
+    const afterReload = await headerCounts();
+    console.log(
+      "Ignorado persiste tras reload:",
+      Boolean(
+        beforeIgnore &&
+          afterReload &&
+          beforeIgnore.total >= 2 &&
+          afterReload.total === beforeIgnore.total - 1
+      )
+    );
+    await page.locator("button:has-text('ignorado · quitar')").click();
+    await page.waitForTimeout(1200);
+    const restored = await headerCounts();
+    console.log(
+      "Quitar ignorado restaura el total:",
+      Boolean(
+        beforeIgnore && restored && restored.total === beforeIgnore.total
+      )
+    );
+    await firstObj.locator('button[aria-label="Completado"]').click();
+    await page.waitForTimeout(800);
+
     // 2) Ajustes HUD: definir marcado por cantidad (>=1) y guardar
     await page.goto(base + "/bitacora/settings", { waitUntil: "networkidle" });
     await page.waitForSelector(".cyb-in", { timeout: 10000 });
@@ -166,16 +228,14 @@ const { chromium } = require("playwright-core");
     await page.waitForSelector("text=Ajustes guardados.", { timeout: 10000 });
     console.log("Ajustes guardados (count>=1): yes");
 
-    // 2b) Notificaciones push: sección presente con toggle (SW inactivo en dev)
-    await page.waitForSelector("text=Notificaciones_push", { timeout: 10000 });
+    // 2b) Stack de notificaciones push eliminado: no hay sección ni botones
     console.log(
-      "Sección Notificaciones_push presente:",
-      (await page.locator("h2:has-text('Notificaciones_push')").count()) === 1
+      "Sin sección Notificaciones_push:",
+      (await page.locator("h2:has-text('Notificaciones_push')").count()) === 0
     );
-    const notifEnabled = (await page.locator("button:has-text('Activar notificaciones')").count()) === 1;
     console.log(
-      "Botón Activar notificaciones presente:",
-      notifEnabled
+      "Sin 'Activar notificaciones':",
+      (await page.getByText("Activar notificaciones", { exact: false }).count()) === 0
     );
 
     // 3) Volver al día y verificar segmentos de colores (verde/amarillo/rojo)
@@ -578,9 +638,11 @@ const { chromium } = require("playwright-core");
     );
     console.log("Anillo dorado persiste tras reload: yes");
     await page.locator("button[aria-label='Quitar día destacado']").click();
-    await page.waitForFunction(() => !document.querySelector(".cyb-num.has-flag"), {
-      timeout: 10000,
-    });
+    await page.waitForFunction(
+      (iso) => !document.querySelector(`nav a[href="/bitacora/${iso}"] .cyb-num.has-flag`),
+      todayIso,
+      { timeout: 15000 }
+    );
     console.log("Quitar destacado -> anillo desaparece: yes");
 
     // Triple tap sobre el día de hoy -> modal rojo de borrado (doble OK)

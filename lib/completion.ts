@@ -8,7 +8,8 @@ export function statusOf(entry: {
   if (
     entry.status === "none" ||
     entry.status === "partial" ||
-    entry.status === "done"
+    entry.status === "done" ||
+    entry.status === "ignored"
   ) {
     return entry.status;
   }
@@ -16,6 +17,7 @@ export function statusOf(entry: {
 }
 
 // Valor de cada estado para la "Compleción": ✕ = 0, − = 0.5, ✓ = 1.
+// "ignored" no cuenta ni a favor ni en contra (excluye el objetivo del día).
 export function statusValue(status: ChecklistStatus): number {
   if (status === "done") return 1;
   if (status === "partial") return 0.5;
@@ -28,9 +30,18 @@ export function dayScore(
   return items.reduce((sum, item) => sum + statusValue(item.status), 0);
 }
 
+// Ítems que entran en la cuenta del día (los ignorados quedan afuera del
+// numerador y del denominador).
+export function countedItems(items: { status: ChecklistStatus }[]): {
+  status: ChecklistStatus;
+}[] {
+  return items.filter((item) => item.status !== "ignored");
+}
+
 export function dayPercent(items: { status: ChecklistStatus }[]): number {
-  if (items.length <= 0) return 0;
-  return Math.round((dayScore(items) / items.length) * 100);
+  const counted = countedItems(items);
+  if (counted.length <= 0) return 0;
+  return Math.round((dayScore(counted) / counted.length) * 100);
 }
 
 export type CompletionConfig = {

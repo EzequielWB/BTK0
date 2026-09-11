@@ -1,4 +1,4 @@
-================================================================================
+﻿================================================================================
  LA BITAK0R4_ DE EZEQUIEL - LOG DE DESARROLLO.
  Registro paso a paso de todo lo que se va construyendo.
 ================================================================================
@@ -6,23 +6,23 @@
 [2026-09-07] FASE 1 - ESTRUCTURA COMPLETA
   - Scaffold con create-next-app@latest:
     * Next.js 16.3.4, React 19, TypeScript, Tailwind CSS v4, ESLint, App Router
-    * El proyecto se creó en la subcarpeta "bitakra/" (npm no permite mayúsculas
-      en el nombre del paquete) y se movió todo a la raíz E:\PROYECTO_BitAK0RA
+    * El proyecto se creÃ³ en la subcarpeta "bitakra/" (npm no permite mayÃºsculas
+      en el nombre del paquete) y se moviÃ³ todo a la raÃ­z E:\PROYECTO_BitAK0RA
   - Dependencias instaladas:
-    * @supabase/ssr + @supabase/supabase-js -> conexión con Supabase
+    * @supabase/ssr + @supabase/supabase-js -> conexiÃ³n con Supabase
     * @serwist/next + serwist -> PWA (service worker, offline)
-    * recharts -> gráficos de estadísticas
-  - Git: repositorio inicializado por create-next-app en la raíz.
+    * recharts -> grÃ¡ficos de estadÃ­sticas
+  - Git: repositorio inicializado por create-next-app en la raÃ­z.
 
   - Base de datos (Supabase):
     * supabase/schema.sql -> tablas: password_config, objectives, days,
-      daily_objectives, temporal_goals. RLS habilitado sin políticas: solo el
+      daily_objectives, temporal_goals. RLS habilitado sin polÃ­ticas: solo el
       service role key (backend) puede acceder.
-    * supabase/seed.sql -> contraseña inicial "bitakra" + 3 objetivos de ejemplo.
+    * supabase/seed.sql -> contraseÃ±a inicial "bitakra" + 3 objetivos de ejemplo.
 
-  - Configuración:
+  - ConfiguraciÃ³n:
     * next.config.ts -> envoltura conSerwist (PWA). swSrc app/sw.ts, swDest
-      public/sw.js, cacheOnNavigation, register automático, deshabilitado en dev.
+      public/sw.js, cacheOnNavigation, register automÃ¡tico, deshabilitado en dev.
     * scripts: dev = "next dev --turbopack", build = "next build --webpack"
       (Serwist requiere webpack en build).
     * tsconfig: lib webworker + types "@serwist/next/typings" y "node".
@@ -32,70 +32,70 @@
        SUPABASE_SERVICE_ROLE_KEY).
 
   - PWA:
-    * app/manifest.ts -> manifest.webmanifest (nombre, íconos, standalone,
+    * app/manifest.ts -> manifest.webmanifest (nombre, Ã­conos, standalone,
       colores).
     * app/sw.ts -> service worker Serwist.
-    * scripts/gen-icons.mjs -> generó icon-192.png, icon-512.png y
-      apple-touch-icon.png (placeholders de color sólido).
-    * Se verificó que el <link rel=manifest> y theme-color se inyectan en el
+    * scripts/gen-icons.mjs -> generÃ³ icon-192.png, icon-512.png y
+      apple-touch-icon.png (placeholders de color sÃ³lido).
+    * Se verificÃ³ que el <link rel=manifest> y theme-color se inyectan en el
       HTML.
 
-  - Lógica / capa de datos:
+  - LÃ³gica / capa de datos:
     * lib/supabase/server.ts -> cliente del lado servidor con service role key.
     * lib/supabase/client.ts -> cliente del navegador (anon key, para uso futuro).
     * lib/session.ts -> auth: hash SHA-256 (salt::password), cookie httpOnly
-      "bitakra_session" de 30 días, isAuthenticated() verifica contra Supabase.
+      "bitakra_session" de 30 dÃ­as, isAuthenticated() verifica contra Supabase.
     * lib/actions.ts -> Server Actions:
       - loginAction / logoutAction / changePasswordAction
-      - saveDayNotes (upsert día + notas)
-      - toggleDailyObjectiveAction (check de objetivos por día)
+      - saveDayNotes (upsert dÃ­a + notas)
+      - toggleDailyObjectiveAction (check de objetivos por dÃ­a)
       - CRUD objectives (crear/editar/activar/borrar)
       - CRUD temporal_goals (crear/editar/activar/borrar)
     * lib/utils.ts -> helpers de fechas (ISO, calendario grid, labels en es).
     * lib/types.ts -> tipos de las tablas + ChecklistItem + DayStatsPoint.
 
-  - Rutas / páginas:
-    * proxy.ts -> protege /bitacora/* si no hay cookie de sesión; redirige /
-      a /bitacora si ya hay sesión. (Convención "proxy" de Next 16, reemplaza
+  - Rutas / pÃ¡ginas:
+    * proxy.ts -> protege /bitacora/* si no hay cookie de sesiÃ³n; redirige /
+      a /bitacora si ya hay sesiÃ³n. (ConvenciÃ³n "proxy" de Next 16, reemplaza
       al deprecado middleware.)
-    * app/page.tsx -> login (gate de contraseña) si no hay sesión.
+    * app/page.tsx -> login (gate de contraseÃ±a) si no hay sesiÃ³n.
     * app/(bitacora)/layout.tsx -> header con nav (Hoy / Ajustes / Stats / Salir).
     * app/(bitacora)/page.tsx -> redirige a la fecha de hoy.
-    * app/(bitacora)/[date]/page.tsx -> vista del día: calendario + navegación,
+    * app/(bitacora)/[date]/page.tsx -> vista del dÃ­a: calendario + navegaciÃ³n,
       checklist de objetivos (con contador), metas temporales activas para esa
       fecha, notas con guardado.
     * app/(bitacora)/settings/page.tsx -> CRUD de objetivos, CRUD de metas
-      temporales y cambio de contraseña.
-    * app/(bitacora)/stats/page.tsx -> cumplimiento (%) de los últimos 30 días
-      (gráfico recharts), racha actual, días con registro/notas.
+      temporales y cambio de contraseÃ±a.
+    * app/(bitacora)/stats/page.tsx -> cumplimiento (%) de los Ãºltimos 30 dÃ­as
+      (grÃ¡fico recharts), racha actual, dÃ­as con registro/notas.
 
   - Componentes:
-    * password-gate, logoff-button, calendar-nav (día prev/next + calendario
+    * password-gate, logoff-button, calendar-nav (dÃ­a prev/next + calendario
       mensual), objectives-checklist (useOptimistic), temporal-goals-section,
       notes-editor (estados idle/unsaved/saving/saved/error), objective-manager,
       temporal-goal-manager, change-password-form, stats-charts.
 
-  - Verificación:
+  - VerificaciÃ³n:
     * npm run lint -> sin errores ni warnings.
-    * npm run build (webpack) -> compila OK, todo dinámico, Serwist bundló sw.js.
+    * npm run build (webpack) -> compila OK, todo dinÃ¡mico, Serwist bundlÃ³ sw.js.
     * Nota: npm audit reporta 2 vuln high en browserslist (dependencia de build
       de @serwist/next). Es tooling de build, riesgo bajo. El fix requiere
       @serwist/next@9.4.1 (breaking change) -> se deja pendiente.
 
-  - PENDIENTES (próximos pasos para el usuario):
+  - PENDIENTES (prÃ³ximos pasos para el usuario):
     1. Crear proyecto en Supabase.
     2. Copiar .env.local.example a .env.local y cargar las 3 claves.
     3. Correr supabase/schema.sql y supabase/seed.sql en el SQL Editor.
-    4. npm run dev y entrar con la contraseña inicial "bitakra"
-       (cambiarla después desde Ajustes > Seguridad).
+    4. npm run dev y entrar con la contraseÃ±a inicial "bitakra"
+       (cambiarla despuÃ©s desde Ajustes > Seguridad).
     5. Deploy en Vercel (link del repo, variables de entorno, build --webpack
        ya configurado).
-    6. Estética / tema visual (pensado como fase final).
+    6. EstÃ©tica / tema visual (pensado como fase final).
 
-[2026-09-08] FASE 2 - MODO LOCAL + RUTAS + NOTAS POR DÍA
+[2026-09-08] FASE 2 - MODO LOCAL + RUTAS + NOTAS POR DÃA
   - BUG IMPORTANTE corregido: el grupo de rutas "(bitacora)" NO agrega segmento
-    a la URL (nomenclatura de rutas de Next), así que /bitacora daba 404 y
-    /bitacora/[date] no existía. Se renombró app/(bitacora)/ -> app/bitacora/.
+    a la URL (nomenclatura de rutas de Next), asÃ­ que /bitacora daba 404 y
+    /bitacora/[date] no existÃ­a. Se renombrÃ³ app/(bitacora)/ -> app/bitacora/.
     Ahora las rutas son /bitacora, /bitacora/[date], /bitacora/settings y
     /bitacora/stats (se corrigieron path del log FASE 1 arriba: es bitacora/).
   - Modo local sin Supabase: lib/local-client.ts emula el cliente (select/eq/
@@ -104,44 +104,44 @@
     Supabase o con LOCAL_MODE=1. Password inicial local: "bitakra".
     * lib/supabase/server.ts -> createClient() elige local o Supabase; expone
       isLocalMode().
-    * app/bitacora/layout.tsx -> badge "LOCAL · SIN DB" cuando corresponde.
-    * Login muestra hint de contraseña local en modo local (PasswordGate).
-  - Notas: se reemplaza el campo único days.notes por una TABLA notes (id, date,
-    content, created_at). Ahora cada día acumula varias notas.
-    * supabase/schema.sql -> nueva tabla notes (+ índice date,created_at) y se
+    * app/bitacora/layout.tsx -> badge "LOCAL Â· SIN DB" cuando corresponde.
+    * Login muestra hint de contraseÃ±a local en modo local (PasswordGate).
+  - Notas: se reemplaza el campo Ãºnico days.notes por una TABLA notes (id, date,
+    content, created_at). Ahora cada dÃ­a acumula varias notas.
+    * supabase/schema.sql -> nueva tabla notes (+ Ã­ndice date,created_at) y se
       dropea days.notes.
     * lib/actions.ts -> addNoteAction(date, content) y deleteNoteAction(id, date)
       reemplazan a saveDayNotes.
-    * components/notes-editor.tsx -> lista cronológica de notas ENCIMA del
-      textarea, cada una con hora y botón Eliminar; se agregan con useOptimistic
+    * components/notes-editor.tsx -> lista cronolÃ³gica de notas ENCIMA del
+      textarea, cada una con hora y botÃ³n Eliminar; se agregan con useOptimistic
       (append), mensaje "Nota agregada" y limpieza del textarea.
     * El id de cada nota lo genera el CLIENTE (crypto.randomUUID) y se manda en
-      el insert: así el id optimista == id del server y borrar siempre acierta
+      el insert: asÃ­ el id optimista == id del server y borrar siempre acierta
       aunque el refresh del server tarde (evita carreras del useOptimistic).
       addNoteAction(date, content, id).
-    * app/bitacora/[date]/page.tsx -> consulta notas del día, NotesEditor con
-      key={date} para resetear al navegar entre días.
-    * stats: "Días con notas" y "hasData" ahora se calculan desde la tabla notes.
+    * app/bitacora/[date]/page.tsx -> consulta notas del dÃ­a, NotesEditor con
+      key={date} para resetear al navegar entre dÃ­as.
+    * stats: "DÃ­as con notas" y "hasData" ahora se calculan desde la tabla notes.
   - Fix warning de React: "An optimistic state update occurred outside a
     transition" en objectives-checklist: toggleOptimistic() ahora va DENTRO del
-    startTransition junto a la acción.
+    startTransition junto a la acciÃ³n.
   - ESLint: se ignoran scripts/** (herramientas de testeo: scripts/smoke-test.js).
   - Frase motivacional: components/motivational-quote.tsx + lib/quotes.ts (12 frases
-    cortas en español con autor). Recuadro justo debajo de la fecha en
-    app/bitacora/[date]/page.tsx: cita con comillas «» en itálica, autor normal.
-    Rota por día de forma determinística (hash de la fecha -> índice): cada día
-    muestra una distinta, estable durante todo el día.
+    cortas en espaÃ±ol con autor). Recuadro justo debajo de la fecha en
+    app/bitacora/[date]/page.tsx: cita con comillas Â«Â» en itÃ¡lica, autor normal.
+    Rota por dÃ­a de forma determinÃ­stica (hash de la fecha -> Ã­ndice): cada dÃ­a
+    muestra una distinta, estable durante todo el dÃ­a.
   - Verificado: npm run build (webpack) compila con las rutas correctas; lint OK.
 
-[2026-09-08] FASE 3 - MÁS FRASES + MARCADO DE DÍAS CUMPLIDOS
+[2026-09-08] FASE 3 - MÃS FRASES + MARCADO DE DÃAS CUMPLIDOS
   - Frase motivacional v2: pool expandido de 12 a ~96 frases en lib/quotes.ts
     (pool local en vez de API externa: la PWA debe andar offline y sin rate
-    limits). Nuevo getRandomQuote() y botón "↻ Otra frase" en
+    limits). Nuevo getRandomQuote() y botÃ³n "â†» Otra frase" en
     components/motivational-quote.tsx (ahora client component, useState), que
-    refresca la cita al instante. La del día sigue siendo determinística por
+    refresca la cita al instante. La del dÃ­a sigue siendo determinÃ­stica por
     fecha (quoteForDate).
-  - Marcado de días cumplidos en el calendario:
-    * Tabla nueva settings (fila única id=1): completion_mode ('off'|'count'|
+  - Marcado de dÃ­as cumplidos en el calendario:
+    * Tabla nueva settings (fila Ãºnica id=1): completion_mode ('off'|'count'|
       'percent') + threshold. En supabase/schema.sql (con insert default) y
       seed en lib/local-client.ts. FIX: load() ahora se asegura de que la fila
       singleton de settings exista aunque la DB local se haya creado antes.
@@ -149,13 +149,13 @@
       'count' (objetivos >= threshold) o 'percent' (% >= threshold).
     * lib/actions.ts -> saveSettingsAction revalida settings + bitacora.
     * components/completion-settings-form.tsx -> en Ajustes: criterio
-      (desactivado / por cantidad / por %) + valor mínimo.
+      (desactivado / por cantidad / por %) + valor mÃ­nimo.
     * components/calendar-nav.tsx -> prop marks (Record<fecha, bool>):
-      día cumplido = punto verde esmeralda ● bajo el número (+ title "Día
-      cumplido"). Las celdas mantienen el * del día actual.
+      dÃ­a cumplido = punto verde esmeralda â— bajo el nÃºmero (+ title "DÃ­a
+      cumplido"). Las celdas mantienen el * del dÃ­a actual.
     * app/bitacora/[date]/page.tsx -> calcula marks: settings + total de
-      objetivos activos + daily_objectives de todos los días (solo si modo
-      distinto de off). Nota: el "total" de un día se estima con los objetivos
+      objetivos activos + daily_objectives de todos los dÃ­as (solo si modo
+      distinto de off). Nota: el "total" de un dÃ­a se estima con los objetivos
       activos actuales.
   - Verificado en dev: tsc, lint, build (webpack) y smoke-test completo
     (refresh de frase, guardado de ajustes, recuadro verde, notas, stats).
@@ -166,7 +166,7 @@
     por celda se proyecta al elipsoide del globo ocular y se calcula la
     normal -> luz difusa desde arriba-izq + brillo especular + atenuacion de
     limbo, y la luminosidad se mapea a una rampa de densidad ASCII
-    (· . : - = + * # % @). Mucho mas grande: grid 52x30 celdas, canvas
+    (Â· . : - = + * # % @). Mucho mas grande: grid 52x30 celdas, canvas
     832x510 CSS (min(92vw, 832px)).
   - Iris/pupila como disco SOBRE la superficie de la esfera orientado por el
     vector de mirada (G): al mirar de costado el patch se recorre hacia el
@@ -200,13 +200,13 @@
   - scripts/render-eye.js (dev-tool, exento de ESLint por scripts/): replica
     la misma matematica sin canvas e imprime el ojo como ASCII en la terminal
     (estados center/right/left/up/down/half/blink/stare) para iterar el arte
-    sin ver capturas. Con la rampa · . : - = + * # % @  y los %/@/#/tilde
+    sin ver capturas. Con la rampa Â· . : - = + * # % @  y los %/@/#/tilde
     _ del parpado/ceja.
-  - Titulo corregido: "¿Sos el que tiene que ser?" (antes "quien").
+  - Titulo corregido: "Â¿Sos el que tiene que ser?" (antes "quien").
   - Login con maquina de estados (components/login/login-screen.tsx, nuevo):
     idle -> wrong -> flash -> off. PasswordGate agrega onError (detecta
     error de loginAction una vez por intento) y disabled para no reenviar.
-  - Al errar la contraseña: el ojo fija la mirada AL FRENTE (~320ms, prop
+  - Al errar la contraseÃ±a: el ojo fija la mirada AL FRENTE (~320ms, prop
     stare del AsciiEye -> target 0,0, micro-vida minima y sin sacadas) y
     luego se reproduce el apagado de televisor viejo (components/login/
     crt-shutdown.tsx): destello blanco corto con scanlines oscuras -> la
@@ -232,7 +232,7 @@
     aleatorias (cambia de direccion cada 0.9-2.6s) y parpadea cada ~4-7s
     (parpados superior/inferior + linea de ojo cerrado). Halo oscuro radial
     detras para destacarlo de la lluvia.
-  - Titulo pixel "¿Sos quien tiene que ser?" con fuente Press Start 2P
+  - Titulo pixel "Â¿Sos quien tiene que ser?" con fuente Press Start 2P
     (next/font/google self-hosted, fallback monospace) -> util font-pixel.
   - Input password oscuro de una linea + boton flecha -> al final (type submit,
     aria-label "Entrar"); sigue name=password/required/autoFocus.
@@ -243,38 +243,38 @@
     brillo (glint) arriba-izq, sombra de parpado superior, rebote de luz
     inferior, contorno tenue de la cuenca y sclera con luz direccional.
 
-[2026-09-08] FASE 5 - CUADRADO PARTICIONADO (3 COLORES) + SECCIÓN "QUÉ APRENDÍ"
-  - Cuadrado del día: sólido y más grande (h-7/min-w-7), se particiona en
-    franjas de igual tamaño según lo que se hizo ese día:
-      * verde  = día cumplido (objetivos, según Ajustes)
+[2026-09-08] FASE 5 - CUADRADO PARTICIONADO (3 COLORES) + SECCIÃ“N "QUÃ‰ APRENDÃ"
+  - Cuadrado del dÃ­a: sÃ³lido y mÃ¡s grande (h-7/min-w-7), se particiona en
+    franjas de igual tamaÃ±o segÃºn lo que se hizo ese dÃ­a:
+      * verde  = dÃ­a cumplido (objetivos, segÃºn Ajustes)
       * amarillo = hay notas
-      * rojo   = hay aprendizajes ("qué aprendí")
-    1 sola cosa -> 100% un color; 2 -> 50/50; 3 -> 33/33/33. El número del
-    día se superpone con texto blanco + sombra.
+      * rojo   = hay aprendizajes ("quÃ© aprendÃ­")
+    1 sola cosa -> 100% un color; 2 -> 50/50; 3 -> 33/33/33. El nÃºmero del
+    dÃ­a se superpone con texto blanco + sombra.
   - Nueva tabla learnings (id, date, content, created_at) como notes.
-    Actions addLearningAction/deleteLearningAction (mismo patrón, id generado
+    Actions addLearningAction/deleteLearningAction (mismo patrÃ³n, id generado
     en el cliente con crypto.randomUUID).
   - Editor compartido DailyEntriesEditor: notas y aprendizajes reutilizan el
-    mismo componente (lista cronológica + textarea + botón + useOptimistic).
+    mismo componente (lista cronolÃ³gica + textarea + botÃ³n + useOptimistic).
     NotesEditor y LearningsEditor ahora son wrappers.
-  - Página de día: los 2 editores van lado a lado (grid md:grid-cols-2).
-    Fix React: keys únicas `notes-${date}` / `learnings-${date}` (eran iguales
+  - PÃ¡gina de dÃ­a: los 2 editores van lado a lado (grid md:grid-cols-2).
+    Fix React: keys Ãºnicas `notes-${date}` / `learnings-${date}` (eran iguales
     y React tiraba "two children with the same key").
   - Marcado del calendario: 3 sets (completados por config de Ajustes, con
     nota, con aprendizaje) por mes visible -> marks[date] = DayMark.
-  - Stats: nueva tarjeta "Días con aprendizajes" (hasData incluye learnings).
+  - Stats: nueva tarjeta "DÃ­as con aprendizajes" (hasData incluye learnings).
 
 [2026-09-08] FASE 4 - FRASES REALES CON ROL + MARCADO NOTORIO
   - Frases v3: pool re-curado con SOLO frases reales y/o refranes populares
     (~60), eliminando las inventadas. Cada cita suma el rol del autor: ej.
-    "— Søren Kierkegaard, filósofo danés". Los "anónimos" ahora son refranes
-    populares verificables ("Refrán popular"/"Proverbio chino") o frases
-    famosas anónimas. El tipo MotivationalQuote pasa a author + role? y el
+    "â€” SÃ¸ren Kierkegaard, filÃ³sofo danÃ©s". Los "anÃ³nimos" ahora son refranes
+    populares verificables ("RefrÃ¡n popular"/"Proverbio chino") o frases
+    famosas anÃ³nimas. El tipo MotivationalQuote pasa a author + role? y el
     footer las muestra separadas por coma.
-  - Marcado de días cumplidos: en vez del puntito, el día cumplido se resalta
-    con un CUADRADO verde cerrado alrededor del número (span inline con
-    border-2 border-emerald-500 y h-6/min-w-6, más chico que la celda),
-    visible junto al día seleccionado y al * del día actual.
+  - Marcado de dÃ­as cumplidos: en vez del puntito, el dÃ­a cumplido se resalta
+    con un CUADRADO verde cerrado alrededor del nÃºmero (span inline con
+    border-2 border-emerald-500 y h-6/min-w-6, mÃ¡s chico que la celda),
+    visible junto al dÃ­a seleccionado y al * del dÃ­a actual.
   - PENDIENTE AL CONECTAR SUPABASE: conDefaults() de local-client agrega
     updated_at a inserts; las tablas objectives y temporal_goals no tienen esa
     columna -> revisar si al insertar en Supabase real da error (local no afecta).
@@ -323,7 +323,7 @@
         con esquinas en L, cursor bloque parpadeante, cellular 240x320).
    - Verificado con playwright-core: 6 dots, 6 secciones en orden, next
      cicla 0->5 y prev vuelve a envolver al 6, un solo dot activo, indicator
-     "N · Nombre · N/6", play/pausa alterna, auto-rotacion post-reload (pos
+     "N Â· Nombre Â· N/6", play/pausa alterna, auto-rotacion post-reload (pos
      0 -> 1 a los 8.5s), y por tema: fondo/fuente distintos y elementos
      estructurales presentes (6 molduras+6 placas en galeria, folios con
      filigrana en renacimiento, masthead editorial, glitch+ticker+mono en
@@ -346,10 +346,10 @@ cyberpunk). Sin errores JS. tsc y lint verdes (HTML/CSS/JS estatico,
      cyb-ambar #ffb020, cyb-rojo #ff3b5c, cyb-fucsia #ff4fd8,
      cyb-violeta #b26bff, cyb-azul #4d8fff, cyb-amarillo #ffd21e,
      cyb-naranja #ff7a2e.
-   - HTML: el section 6 quedó como `mock t-cyb cyb-verde` y se duplico
-     9 veces (via script node en temp, UTF-8) con data-name "6..15 ·
-     Cyberpunk · <color>". El rotador es data-driven: 15 dots, indicator
-     "N · Nombre · N/15" sin tocar el JS.
+   - HTML: el section 6 quedÃ³ como `mock t-cyb cyb-verde` y se duplico
+     9 veces (via script node en temp, UTF-8) con data-name "6..15 Â·
+     Cyberpunk Â· <color>". El rotador es data-driven: 15 dots, indicator
+     "N Â· Nombre Â· N/15" sin tocar el JS.
    - Verificado con playwright-core: 15 dots / 15 secciones en orden, next
      cicla 0->14, prev envuelve al 15, un solo dot activo, play/pausa,
      auto-rotacion post-reload. Por variante: --cyb-neon computado coincide
@@ -366,7 +366,7 @@ cyberpunk). Sin errores JS. tsc y lint verdes (HTML/CSS/JS estatico,
      * Se elimina el cursor bloque parpadeante (span.caret) que aparecia
        junto al boton "Agregar nota" en los 10 tema cyberpunk y su regla
        CSS .t-cyb .caret (dead code). El boton queda solo.
-   - Verificado con playwright-core: en "7 · blanco neon" la celda del dia,
+   - Verificado con playwright-core: en "7 Â· blanco neon" la celda del dia,
      seg g y SYS.OK computan rgb(0,255,157), ticker sigue blanco, LEDs
      amber/red sin cambios, .caret count 0 en toda la pagina, send a la
      vista, ninguna regla .caret en los stylesheets. Sin errores JS.
@@ -383,7 +383,7 @@ cyberpunk). Sin errores JS. tsc y lint verdes (HTML/CSS/JS estatico,
      panel/blk/btn/num/track-bg/track/field/border, glitch g1/g2) +
      scanlines y vinheta fijas (::before/::after, z 5/6). Helpers: .blk
      (esquinas en L), .blk-tag (// TITULO), .cyb-btn/.cyb-btn.small/.tight,
-     .cyb-in (inputs oscuros caret neon), .cyb-check (cuadrado con ✕),
+     .cyb-in (inputs oscuros caret neon), .cyb-check (cuadrado con âœ•),
      .cyb-link/.cyb-link.red, .led/.led.amber/.led.red, .cyb-ticker
      (marquee blanco invertido), .glitch (RGB split con data-text),
      .enrow, .cal-btn, .cyb-num + segs-g/a/r, regla .today verde acido.
@@ -395,14 +395,14 @@ cyberpunk). Sin errores JS. tsc y lint verdes (HTML/CSS/JS estatico,
    - components/cyb-clock.tsx: nuevo, reloj real 1s, hydrate-safe (render
      "--:--:--" hasta el mount para evitar hydration mismatch).
    - Vista dia app/bitacora/[date]/page.tsx: cards .blk con tags
-     "Agenda · <mes>", "Votos · x/y", "Notas_del_día" y "Aprendizajes";
+     "Agenda Â· <mes>", "Votos Â· x/y", "Notas_del_dÃ­a" y "Aprendizajes";
      TemporalGoalsSection es .blk "Metas_activas".
    - calendar-nav.tsx: celdas HUD sin fondo de bloque; el numero vive en
      .cyb-num con segs verticales g/a/r y la celda de hoy en verde acido
      con numero blanco (igual al mockup: .has-segs pisa el color oscuro).
    - motivational-quote.tsx: blockquote .blk con cita .glitch (data-text),
-     autor cyb-muted y boton "↻ Otra frase".
-   - objectives-checklist.tsx: checkbox .cyb-check cuadrado neón, titulo
+     autor cyb-muted y boton "â†» Otra frase".
+   - objectives-checklist.tsx: checkbox .cyb-check cuadrado neÃ³n, titulo
      tachado + cyb-muted al completarlo, empty state cyb-hint.
    - daily-entries-editor.tsx (notas/aprendizajes): filas .enrow, hora
      cyb-hint, Eliminar .cyb-link red, textarea .cyb-in, boton .cyb-btn
@@ -412,9 +412,9 @@ cyberpunk). Sin errores JS. tsc y lint verdes (HTML/CSS/JS estatico,
      cyb-link; logoff-button vinculo rojo en el nav. Stats: cards .blk y
      stats-charts con barras #00ff9d, grilla #2a2a2a, ticks #8f8f8f y
      tooltip oscuro.
-   - Login: nuevo lib/login-phrases.ts (pool criptico: "¿Sos el que tiene
-     que ser?", "¿Sos aquel que debe ser?", "¿Quién sos?", "¿Sentiste tu
-     llamado?", "¿Viste la señal?", "No todo es lo que parece. ¿Entrás?",
+   - Login: nuevo lib/login-phrases.ts (pool criptico: "Â¿Sos el que tiene
+     que ser?", "Â¿Sos aquel que debe ser?", "Â¿QuiÃ©n sos?", "Â¿Sentiste tu
+     llamado?", "Â¿Viste la seÃ±al?", "No todo es lo que parece. Â¿EntrÃ¡s?",
      etc, sin repetir la inmediata anterior) rotando en mount (useEffect,
      para no romper hydration) y en handleError al errar la clave.
      password-gate: input HUD con border/focus/caret #00ff9d.
@@ -457,13 +457,13 @@ cyberpunk). Sin errores JS. tsc y lint verdes (HTML/CSS/JS estatico,
       para que los .md de lib/dinos entren al trace de build de /api/chat.
     - Verificado: tsc, lint, build, probe del endpoint (200 con respuesta
       rioplatense real) y smoke con el panel de chat completo.
-[2026-09-08] FASE 10 - DÍAS FUTUROS SOLO LECTURA + RECORDATORIOS
-    - Días futuros bloqueados: en app/bitacora/[date]/page.tsx, si date > hoy
-      se muestra banner "Vista futura · solo lectura" y se ocultan Votos,
+[2026-09-08] FASE 10 - DÃAS FUTUROS SOLO LECTURA + RECORDATORIOS
+    - DÃ­as futuros bloqueados: en app/bitacora/[date]/page.tsx, si date > hoy
+      se muestra banner "Vista futura Â· solo lectura" y se ocultan Votos,
       Notas y Aprendizajes (dato gris). Las celdas futuras del calendario
       salen grises (.cyb-num.future) sin hover. Guarda de servidor en
       lib/actions.ts: addNoteAction, addLearningAction y
-      toggleDailyObjectiveAction rechazan fecha > hoy ("Días futuros: solo
+      toggleDailyObjectiveAction rechazan fecha > hoy ("DÃ­as futuros: solo
       lectura.").
     - Entidad reminders: tabla en supabase/schema.sql (id, date, content,
       created_at, indice por date, RLS), tabla "reminders" en
@@ -477,15 +477,15 @@ cyberpunk). Sin errores JS. tsc y lint verdes (HTML/CSS/JS estatico,
       Borrar, caja "nuevo recordatorio" con campo fecha dd/mm/aa (parse
       parseShortDate en lib/utils.ts, formato formatShortDate), validacion y
       guardado optimista. Se reusa en el modal del calendario y en la tarjeta
-      del día.
+      del dÃ­a.
     - components/calendar-nav.tsx: long-press (550ms) sobre cualquier celda
-      abre el modal con la fecha prellenada (se cancela si soltas o movés;
-      user-select none + sin contextmenu nativo). Botón REC+ en la fila del
-      año abre el modal con fecha propia textual. Recuadro rojo
-      (.cyb-num.has-reminder) en días con recordatorio activo (date <= hoy);
+      abre el modal con la fecha prellenada (se cancela si soltas o movÃ©s;
+      user-select none + sin contextmenu nativo). BotÃ³n REC+ en la fila del
+      aÃ±o abre el modal con fecha propia textual. Recuadro rojo
+      (.cyb-num.has-reminder) en dÃ­as con recordatorio activo (date <= hoy);
       los futuros se ven/editan/borran desde el modal pero no marcan el
-      calendario; los vencidos quedan en la tarjeta del día sin recuadro.
-    - Tarjeta "Recordatorios" en la página del día (acento rojo .reminder-blk
+      calendario; los vencidos quedan en la tarjeta del dÃ­a sin recuadro.
+    - Tarjeta "Recordatorios" en la pÃ¡gina del dÃ­a (acento rojo .reminder-blk
       si hay activos) con el mismo panel editable.
     - app/globals.css: .cyb-num.future, .has-reminder, .cyb-cal-grid
       (user-select) y .cyb-modal / .cyb-modal-panel (overlay fijo z100, encima
@@ -493,7 +493,7 @@ cyberpunk). Sin errores JS. tsc y lint verdes (HTML/CSS/JS estatico,
     - Verificado: tsc, lint, next build --webpack. Smoke extendido PASANDO
       TODO: vista futura sin editores y celda gris, long-press abre modal,
       crear/editar/borrar recordatorio, recuadro rojo aparece y persiste tras
-      reload, REC+ con fecha propia dd/mm/aa, borrado desde el día futuro.
+      reload, REC+ con fecha propia dd/mm/aa, borrado desde el dÃ­a futuro.
       Sin errores JS.
 
 FASE 11 (2026-09-08):
@@ -519,7 +519,7 @@ FASE 11 (2026-09-08):
     Sin errores JS.
 
 NOTA FASE 11 (ajuste de visual):
-  - Votos redise�ados como 3 casillas tipo checkbox VACIAS (28x28, borde 2px):
+  - Votos rediseï¿½ados como 3 casillas tipo checkbox VACIAS (28x28, borde 2px):
     se marca la que quieras; al tocarla aparece el simbolo en su color (X roja,
     '-' amarillo, tick verde) con fondo y glow de ese color. El simbolo solo se
     ve en la casilla elegida.
@@ -539,10 +539,10 @@ FASE 12 (2026-09-08):
     isDayFulfilled ahora compara PUNTOS: modo "count" = puntos >= umbral
     (un "a medias" aporta 0.5 asi el dia verde no es tan severo), modo
     "percent" = %(puntos/total) >= umbral.
-  - Dia: el header muestra "Objetivos � 2/3 � 67%". El marcado verde por dia
+  - Dia: el header muestra "Objetivos ï¿½ 2/3 ï¿½ 67%". El marcado verde por dia
     del mes acumula puntos (statusValue) por fecha.
   - Stats: el % por dia se calcula con puntos sobre el total de objetivos
-    activos; nueva metrica "Eficiencia � 30 dias" = sum(dia/puntos objetivos)
+    activos; nueva metrica "Eficiencia ï¿½ 30 dias" = sum(dia/puntos objetivos)
     => cada dia aporta 0..1, % = puntos/30. Ej: 20 pts en 30 dias = 66%.
     Grilla del Resumen pasa a 6 celdas.
   - Ajustes: textos actualizados (hecho=1, a medias=0.5, valor en puntos o %).
@@ -550,10 +550,10 @@ FASE 12 (2026-09-08):
     PASANDO TODO. tsc + lint + next build OK. Sin errores JS.
 
 FASE 13 (2026-09-08):
-  - Chat: botones "C�MO VA EL D�A" y "C�MO VA EL MES" (+ input mm/yy
+  - Chat: botones "Cï¿½MO VA EL Dï¿½A" y "Cï¿½MO VA EL MES" (+ input mm/yy
     precargado con el mes actual, editable) sobre el input del chat.
   - Slot de contexto en memoria por request (lib/chat-context.ts):
-    buildDayContext() arma un texto plano compacto del d�a actual (hora,
+    buildDayContext() arma un texto plano compacto del dï¿½a actual (hora,
     objetivos con ?/-/? y %, cant. de notas con la ultima truncada,
     aprendizajes y recordatorios, cap ~700 chars); buildMonthContext(mm, yy)
     arma el resumen del mes literal (dias con registro, puntos, eficiencia %,
@@ -564,13 +564,13 @@ FASE 13 (2026-09-08):
     validado) e inyecta el snapshot como mensaje system de contexto entre el
     prompt y el historial, con instruccion de comentar sin repetir ni enumerar.
   - Cliente: send() suma dataQuery; los botones mandan el mensaje visible
-    ("�C�mo va el d�a?" / "�C�mo va el mes (mm/yy)?") + el contexto oculto.
+    ("ï¿½Cï¿½mo va el dï¿½a?" / "ï¿½Cï¿½mo va el mes (mm/yy)?") + el contexto oculto.
     CSS .cyb-dchat-quick (fila de botones + input mm/yy).
   - Smoke extendido (botones presentes, mm/yy precargado, ambos responden con
     streaming) PASANDO TODO. tsc + lint + build OK. Sin errores JS.
 
 NOTA FASE 13 (2026-09-09):
-  - Los botones C�MO VA EL D�A / MES (+ input mm/yy) pasaron a la cabecera del
+  - Los botones Cï¿½MO VA EL Dï¿½A / MES (+ input mm/yy) pasaron a la cabecera del
     panel, recien debajo de la fila del nombre del dino (.cyb-dchat-head en
     columna + .cyb-dchat-head-top). Se quito la fila de arriba del input.
   - La hora del snapshot del dia ahora se calcula forzando la zona horaria de
@@ -586,9 +586,9 @@ NOTA PRE-DEPLOY (2026-09-09):
     futuros, calendario) queda consistente aunque el server corra en UTC
     (Vercel). chat-context.ts reutiliza arNow() en vez de su helper propio.
   - Arte de dinos redisenado (poses mixtas frontales/perfil) en dinosaurs.ts.
-  - Boton C�MO VA EL MES ahora pide el mes al apretar: aparece un mini-form
+  - Boton Cï¿½MO VA EL MES ahora pide el mes al apretar: aparece un mini-form
     inline mm/yy precargado (autofocus) + OK/?, Enter envia la pregunta y se
-    oculta. Flujo "c�mo va el d�a" directo. Verificado con smoke completo.
+    oculta. Flujo "cï¿½mo va el dï¿½a" directo. Verificado con smoke completo.
   - Mobile: @media (max-width:640px) agrega body { zoom: 0.8 } (todo al 80%).
   - Build (webpack)+lint+tsc y smoke al 100% en verde.
 
@@ -624,8 +624,8 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
     * lib/actions.ts: savePushSubscriptionAction (upsert on endpoint) y
       deletePushSubscriptionAction.
     * app/api/cron/notify/route.ts: autentica con Bearer CRON_SECRET (o
-      ?secret=), manda 1) push diario "revis� tu bit�cora" y 2) push con los
-      recordatorios de MA�ANA (fecha AR). Borra suscripciones 404/410.
+      ?secret=), manda 1) push diario "revisï¿½ tu bitï¿½cora" y 2) push con los
+      recordatorios de MAï¿½ANA (fecha AR). Borra suscripciones 404/410.
     * vercel.json: cron diario "0 1 * * *" (01:00 UTC = 22:00 AR).
     * components/notifications-toggle.tsx: seccion en Ajustes para activar/
       desactivar (permiso + subscripcion). Maneja dev sin SW y permisos.
@@ -637,37 +637,37 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
   - Tareas pendientes del deploy: correr schema.sql en Supabase; agregar las
     4 env nuevas en Vercel + redeploy; en el celular re-instalar la PWA.
 
-[2026-09-09] MEJORAS DE USO MÓVIL + MODELO DE CHAT + PUSH DE PRUEBA
+[2026-09-09] MEJORAS DE USO MÃ“VIL + MODELO DE CHAT + PUSH DE PRUEBA
   - Fechas por partes (el "/" era imposible de tipear en celular):
-    * Recordatorio (REC+): 3 inputs [día] / [mes] / [aa] inputMode=numeric,
+    * Recordatorio (REC+): 3 inputs [dÃ­a] / [mes] / [aa] inputMode=numeric,
       se arma dd/mm/aa al guardar (parseShortDate). Labels:
-      "Día del recordatorio (dd)"/"Mes del recordatorio (mm)"/"Año del
+      "DÃ­a del recordatorio (dd)"/"Mes del recordatorio (mm)"/"AÃ±o del
       recordatorio (aa)".
-    * Chat "Cómo va el mes": 2 inputs [mm] / [aa], precargados con el mes
-      actual, OK/✕/Enter. Labels "Mes (mm)"/"Año (aa)". CSS .cyb-dchat-month
+    * Chat "CÃ³mo va el mes": 2 inputs [mm] / [aa], precargados con el mes
+      actual, OK/âœ•/Enter. Labels "Mes (mm)"/"AÃ±o (aa)". CSS .cyb-dchat-month
       con wrap y entradas de 34px.
-  - Reloj: se quitó la animación "blk" de .cyb-clock u -> los segundos
-    avanzan sin parpadear (mantienen el verde neón).
-  - Login móvil: main pasa a min-h-dvh + overflow-x-hidden (scrollea si hace
+  - Reloj: se quitÃ³ la animaciÃ³n "blk" de .cyb-clock u -> los segundos
+    avanzan sin parpadear (mantienen el verde neÃ³n).
+  - Login mÃ³vil: main pasa a min-h-dvh + overflow-x-hidden (scrollea si hace
     falta), gap reducido en pantallas chicas y ojo a min(86vw, 832px).
-  - Chat modelo: se quitó thinkingmachines/inkling-small:free del fallback
+  - Chat modelo: se quitÃ³ thinkingmachines/inkling-small:free del fallback
     (responde 403: solo en agentic harnesses). Ahora el 403 se trata como
     "probar el siguiente modelo" (junto a 429/404). Default sigue siendo
     google/gemma-4-31b-it:free.
-  - Botón "Probar notificación" en Ajustes (solo cuando hay suscripción
+  - BotÃ³n "Probar notificaciÃ³n" en Ajustes (solo cuando hay suscripciÃ³n
     activa): lib/push.ts testPushPayload() + lib/actions.ts
     sendTestPushAction(subscription) que manda un push de prueba al
     dispositivo y muestra el resultado (incluye HTTP status si falla).
   - FIX importante: lib/local-client.ts cacheaba la DB en una singleton de
-    módulo ("let store"). En el build de producción, la Server Action (que
-    escribe) y el render de página (que lee) usan instancias de módulo
-    DISTINTAS -> la página seguía mostrando datos viejos aunque el archivo
-    .data/local-db.json sí se actualizaba (notas/aprendizajes/segmentos
-    nunca aparecían tras guardar). Ahora load() lee el archivo en cada
-    operación (archivo chico, solo modo local), garantizando consistencia.
+    mÃ³dulo ("let store"). En el build de producciÃ³n, la Server Action (que
+    escribe) y el render de pÃ¡gina (que lee) usan instancias de mÃ³dulo
+    DISTINTAS -> la pÃ¡gina seguÃ­a mostrando datos viejos aunque el archivo
+    .data/local-db.json sÃ­ se actualizaba (notas/aprendizajes/segmentos
+    nunca aparecÃ­an tras guardar). Ahora load() lee el archivo en cada
+    operaciÃ³n (archivo chico, solo modo local), garantizando consistencia.
   - smoke-test.js: selectores de mes/recordatorio pasan a los inputs por
-    partes; se reemplazó el mmInput viejo por monthInput/yearInput.
-  - Verificación: tsc, lint, build y smoke completos en verde (solo queda el
+    partes; se reemplazÃ³ el mmInput viejo por monthInput/yearInput.
+  - VerificaciÃ³n: tsc, lint, build y smoke completos en verde (solo queda el
     429 de rate-limit del modelo gratuito de OpenRouter, tolerado y con
     fallback; no rompe el chat).
 
@@ -676,7 +676,7 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
     <DinoChat /> en app/bitacora/layout.tsx (el dock .cyb-dock desaparece).
     Todo el codigo (componentes, lib/dino-prompt.ts, chat-context, /api/chat)
     queda intacto para retomarlo mas adelante.
-  - Stats: boton "¿Como estuvo el mes?" justo debajo de los graficos:
+  - Stats: boton "Â¿Como estuvo el mes?" justo debajo de los graficos:
     * app/api/monthly/route.ts (POST, nodejs, maxDuration 60): autenticacion,
       levanta los ultimos 30 dias (mismo rango que los graficos): % diario por
       objetivos, racha, eficiencia, dias con registro/vacios, mejores y peores
@@ -698,66 +698,66 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
     punta a punta; los modelos :free de OpenRouter estaban saturados (429/502)
     y el bloque mostro el aviso con Reintentar (esperado).
 
-[2026-09-09] CHAT DE NUEVO + RECORDATORIOS COMPLETOS + DÍAS DESTACADOS
+[2026-09-09] CHAT DE NUEVO + RECORDATORIOS COMPLETOS + DÃAS DESTACADOS
   - Chat de dinosaurios REHABILITADO: se descomentaron el import y el
     <DinoChat /> en app/bitacora/layout.tsx (vuelve el dock y el panel).
     Modelo sigue gratis a pedido del usuario; se agrega "openrouter/free"
     como ULTIMO respaldo en app/api/chat/route.ts y app/api/monthly/route.ts
     (router gratuito que deriva a cualquier modelo :free disponible -> absorbe
-    la saturación/intermitencia del tier sin pagar).
+    la saturaciÃ³n/intermitencia del tier sin pagar).
   - Recordatorios "completo":
-    * supabase/schema.sql: reminders ganó completed_at timestamptz (en el
+    * supabase/schema.sql: reminders ganÃ³ completed_at timestamptz (en el
       create + alter table add column if not exists para DB ya creada).
       lib/types.ts: Reminder.completed_at?: string | null.
     * lib/actions.ts: toggleReminderCompleteAction(id, date, completed).
-    * components/reminder-panel.tsx: botón "✓ Completar"/"Desmarcar" por ítem
+    * components/reminder-panel.tsx: botÃ³n "âœ“ Completar"/"Desmarcar" por Ã­tem
       (optimista, aria-label), los completos se tachan (.cyb-rem-done).
     * Calendario: el recuadro rojo ahora cuenta SOLO recordatorios pendientes
       (app/bitacora/[date]/page.tsx arma pendingRemindersByDate filtrando
       completed_at; calendar-nav recibe pendingReminders).
-    * Cron de push: los recordatorios de mañana excluyen los completados
-      (.is("completed_at", null)). lib/local-client.ts: se agregó el filtro
+    * Cron de push: los recordatorios de maÃ±ana excluyen los completados
+      (.is("completed_at", null)). lib/local-client.ts: se agregÃ³ el filtro
       .is() (null y undefined cuentan igual).
-  - Día destacado (anillo dorado):
+  - DÃ­a destacado (anillo dorado):
     * supabase/schema.sql: tabla day_flags (date pk, created_at) + RLS +
-      índice. lib/local-client.ts: "day_flags" en TABLES.
+      Ã­ndice. lib/local-client.ts: "day_flags" en TABLES.
     * lib/actions.ts: toggleDayFlagAction(date) (upsert/delete + revalidate).
-    * components/day-flag-button.tsx (nuevo): botón "★ Destacar"/"Destacado ✓"
-      en la cabecera del bloque Agenda de la vista del día.
+    * components/day-flag-button.tsx (nuevo): botÃ³n "â˜… Destacar"/"Destacado âœ“"
+      en la cabecera del bloque Agenda de la vista del dÃ­a.
     * calendar-nav.tsx: prop flaggedDates -> .cyb-num.has-flag (anillo dorado
-      amber, convive con hoy/recordatorio/futuro) + tooltip "Día destacado".
+      amber, convive con hoy/recordatorio/futuro) + tooltip "DÃ­a destacado".
     * globals.css: .cyb-num.has-flag (+ combos con today/has-reminder/future),
       .cyb-flag-btn (.on dorado) y .cyb-rem-done (tachado).
-  - Banner de días futuros: se quitó "Podés mirarlo en gris y" -> queda
-    "Podés dejar recordatorios" (se mantiene el aviso de solo lectura).
+  - Banner de dÃ­as futuros: se quitÃ³ "PodÃ©s mirarlo en gris y" -> queda
+    "PodÃ©s dejar recordatorios" (se mantiene el aviso de solo lectura).
   - smoke-test.js: chat reactivado (dock -> panel -> 6 dinos -> cierra),
     banner sin "en gris", marcar/desmarcar completo (rojo desaparece/vuelve),
     destacar/quitar (anillo dorado aparece, persiste al reload y desaparece).
-  - Verificacion: tsc, lint, build y smoke en verde. El único error JS es el
+  - Verificacion: tsc, lint, build y smoke en verde. El Ãºnico error JS es el
     502 esperado del resumen mensual (modelos gratis saturados -> aviso con
-    Reintentar). Server de producción reiniciado en http://localhost:3000.
+    Reintentar). Server de producciÃ³n reiniciado en http://localhost:3000.
   - Deploy pendiente: re-correr supabase/schema.sql en Supabase (crea
     day_flags y agrega completed_at a reminders) + redeploy. Sin env nuevas.
 
 [2026-09-09] PROVEEDOR DE RESPALDO: GROQ (fallback cuando OpenRouter se satura)
-  - El usuario eligió no pagar; mantiene OpenRouter como principal y suma Groq
+  - El usuario eligiÃ³ no pagar; mantiene OpenRouter como principal y suma Groq
     gratis como respaldo. No se pierde nada: se conservan los modelos :free +
     openrouter/free.
-  - lib/llm.ts (nuevo, server-only): chatWithFallback() unifica la lógica que
+  - lib/llm.ts (nuevo, server-only): chatWithFallback() unifica la lÃ³gica que
     estaba duplicada en /api/chat y /api/monthly:
     * Orden de intentos: 1) OpenRouter (env + :free + router gratuito),
       2) Groq (openai/gpt-oss-120b) si hay GROQ_API_KEY. Si ambos se agotan
-      (429/403/404/5xx) -> mensaje "Los modelos gratis están saturados".
+      (429/403/404/5xx) -> mensaje "Los modelos gratis estÃ¡n saturados".
     * Soporta streaming SSE (chat, stream:true -> pipe de deltas) y respuesta
       completa (resumen mensual, stream:false -> parsea choices[0].message.
-      content; respuesta vacía -> intenta el siguiente proveedor).
+      content; respuesta vacÃ­a -> intenta el siguiente proveedor).
     * Sin ninguna clave -> 503 con aviso.
-  - app/api/chat/route.ts: queda fino (auth, validación, dataQuery, prompt) y
+  - app/api/chat/route.ts: queda fino (auth, validaciÃ³n, dataQuery, prompt) y
     delega en chatWithFallback{stream:true, temp 0.5, max 800}.
   - app/api/monthly/route.ts: se eliminaron DEFAULT_MODELS/MODELS/fetch/
     summarize; el POST llama a chatWithFallback{stream:false, temp 0.3,
     max 700} y devuelve {text} o {error} (502/503).
-  - env: .env.local suma GROQ_API_KEY (real; .env.* está gitignored, nunca se
+  - env: .env.local suma GROQ_API_KEY (real; .env.* estÃ¡ gitignored, nunca se
     commitea). .env.local.example: placeholder GROQ_API_KEY=. Para Vercel:
     agregar GROQ_API_KEY como secret.
   - Ojo modelo Groq 2026: "llama-3.3-70b-versatile" ya no existe en Groq
@@ -765,76 +765,121 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
     openai/gpt-oss-120b (200) y qwen/qwen3.6-27b (429 por OTPM). Se usa
     openai/gpt-oss-120b (verificado: 200 + streaming SSE con deltas).
   - Verificacion: tsc, lint, build y smoke PASANDO TODO sin errores JS. El
-    resumen mensual funcionó de punta a punta con texto real (vía Groq cuando
-    OpenRouter se saturó): en el smoke entró y devolvió "RESUMEN ... 2 días
-    (06%)...". Server de producción reiniciado en http://localhost:3000.
+    resumen mensual funcionÃ³ de punta a punta con texto real (vÃ­a Groq cuando
+    OpenRouter se saturÃ³): en el smoke entrÃ³ y devolviÃ³ "RESUMEN ... 2 dÃ­as
+    (06%)...". Server de producciÃ³n reiniciado en http://localhost:3000.
 
-[2026-09-09] VOCES DE LOS DINO: MÁS PERSONALIDAD + RIO PLATENSE FUERTE
+[2026-09-09] VOCES DE LOS DINO: MÃS PERSONALIDAD + RIO PLATENSE FUERTE
   - FIX BUG: la personalidad del anquilosaurio nunca cargaba. El registro usa
     id "ank" pero el archivo era lib/dinos/4nky.md -> readPersonality(id)
-    devolvía "" y entraba con reglas genéricas nomás. git mv 4nky.md -> ank.md.
+    devolvÃ­a "" y entraba con reglas genÃ©ricas nomÃ¡s. git mv 4nky.md -> ank.md.
   - lib/dino-prompt.ts (GLOBAL_RULES reforzado):
-    * Voseo explícito: imperativos -á/-é/-í; prohibido español neutro (tú,
+    * Voseo explÃ­cito: imperativos -Ã¡/-Ã©/-Ã­; prohibido espaÃ±ol neutro (tÃº,
       usted, vosotros, haz, hazlo, recuerda, puedes, "ten en cuenta",
       "sin embargo", "por lo tanto", "no dudes en").
-    * Léxico rioplatense natural sin amontonar: che, dale, bancá, re-, ¿viste?,
+    * LÃ©xico rioplatense natural sin amontonar: che, dale, bancÃ¡, re-, Â¿viste?,
       ta, ni en pedo, de onda, pila de, tranqui/cortito. Prohibido deformar
       palabras.
-    * Cierre del prompt (resumen): "usá el registro de los ejemplos de TU VOZ".
-  - 6 .md reescritos con formato común: TU VOZ (rasgos léxicos + frase fetiche)
-    + REGLA DE ORO + 3 EJEMPLOS few-shot (dueño -> dino) en rioplatense.
-    Distintivos: TYrA_ seco/imperativo + "boludo" esporádico; N0d-0 cálido,
+    * Cierre del prompt (resumen): "usÃ¡ el registro de los ejemplos de TU VOZ".
+  - 6 .md reescritos con formato comÃºn: TU VOZ (rasgos lÃ©xicos + frase fetiche)
+    + REGLA DE ORO + 3 EJEMPLOS few-shot (dueÃ±o -> dino) en rioplatense.
+    Distintivos: TYrA_ seco/imperativo + "boludo" esporÃ¡dico; N0d-0 cÃ¡lido,
     sin boludo; 4nky monolito de 1-2 frases, sin jerga fuerte; V3L0 chispa +
-    "¿Esperar? Ni en pedo, boludo"; BR4ch0 pausa/panorama, sin jerga fuerte;
+    "Â¿Esperar? Ni en pedo, boludo"; BR4ch0 pausa/panorama, sin jerga fuerte;
     Tr1l0_ orden/listas de 3 pasos, sin jerga fuerte. Se conservan rol y
     especie.
   - Verificacion: tsc, lint, build, smoke TODO VERDE sin errores JS.
   - Auditoria por voz (script temporal node -> /api/chat con cookie calculada):
-    los 6 suenan distinto y en rioplatense, tirando contexto real del día
-    (ej. ank: "No hay que correr. Aguantá: a las veinte y cuarenta y tres
-    tenés una meta cumplida..."). Server reiniciado.
+    los 6 suenan distinto y en rioplatense, tirando contexto real del dÃ­a
+    (ej. ank: "No hay que correr. AguantÃ¡: a las veinte y cuarenta y tres
+    tenÃ©s una meta cumplida..."). Server reiniciado.
 
-[2026-09-09] FRASES MOTIVACIONALES: POOL GRANDE (REALES + JUEGOS + ANIME) + GLITCH MÁS LENTO
+[2026-09-09] FRASES MOTIVACIONALES: POOL GRANDE (REALES + JUEGOS + ANIME) + GLITCH MÃS LENTO
   - lib/quotes.ts reescrito: 123 frases en total.
     * Reales (~73): se quitaron 8 sobrantes repetidas/planas (dup de Jobs,
-      Churchill, Einstein y Confucio, + Wooden, Rohn, Ziglar, Ward) y se sumó
-      variedad de gente/países: Cortázar (ARG), Facundo Cabral (ARG), Galeano
-      (URY), Coelho (BRA), Neruda (CHL), García Márquez (COL), Kahlo (MEX),
-      Bolívar (VEN), Marco Aurelio (ROM), Tolstói (RUS), Rumi (PERS), Gibran
+      Churchill, Einstein y Confucio, + Wooden, Rohn, Ziglar, Ward) y se sumÃ³
+      variedad de gente/paÃ­ses: CortÃ¡zar (ARG), Facundo Cabral (ARG), Galeano
+      (URY), Coelho (BRA), Neruda (CHL), GarcÃ­a MÃ¡rquez (COL), Kahlo (MEX),
+      BolÃ­var (VEN), Marco Aurelio (ROM), TolstÃ³i (RUS), Rumi (PERS), Gibran
       (LBN), Mandela (ZAF), Sun Tzu (CHN), Teresa de Calcuta, Dante, Ana Frank,
-      Buda, Picasso, Wilde, Tagore. Se quedan los 2 proverbios chinos, 2 anónimas
-      súper conocidas (se sacó SOLO «Todo lo que siempre quisiste está al otro
-      lado del miedo» y los 13 refranes populares.
+      Buda, Picasso, Wilde, Tagore. Se quedan los 2 proverbios chinos, 2 anÃ³nimas
+      sÃºper conocidas (se sacÃ³ SOLO Â«Todo lo que siempre quisiste estÃ¡ al otro
+      lado del miedoÂ» y los 13 refranes populares.
     * Juegos (25): Paarthurnax, Geralt, Kratos, Viejo Sabio (Zelda), Andrew Ryan,
       G-Man, Ezio, Deckard Cain, Vaas, Narrador Fallout, Arthur Morgan, Pod 042
-      (NieR), "Aguantá y sobreviví", Cave Johnson, Zhongli, hoguera de Dark Souls
-      ("no te atrevas a volverte hueco"), Sora, Undertale ("a pesar de todo seguís
+      (NieR), "AguantÃ¡ y sobrevivÃ­", Cave Johnson, Zhongli, hoguera de Dark Souls
+      ("no te atrevas a volverte hueco"), Sora, Undertale ("a pesar de todo seguÃ­s
       siendo vos"), Elizabeth, Solid Snake, Joel, Leon, Kane, Nathan Drake, Master
       Chief.
     * Anime (25): Geto, Gojo, Yuji, Itachi, Luffy, Zoro, Saitama, Naruto, Kakashi,
       Rock Lee, Armin, Rengoku, Thorfinn, Nanami, Spike, Hanamichi, Kamina, Goku,
       Gon, Tanjiro, All Might, Eren, Edward Elric, Kenny, Plus Ultra.
   - Cada una con rol (autor, contexto de obra) como las reales; sin tag de
-    categoría en la UI. Textos adaptados a rioplatense cuando lo permite la frase.
-  - Verificación por web de las citas de ficción antes de escribirlas (sustituidas
+    categorÃ­a en la UI. Textos adaptados a rioplatense cuando lo permite la frase.
+  - VerificaciÃ³n por web de las citas de ficciÃ³n antes de escribirlas (sustituidas
     las no verificables, ej. el quote de 2B que era nihilista -> Pod 042 "el futuro
-    no se te regala"; Goku usa la del cap. 228 del manga "hasta el de más humilde
-    origen puede superar a la elite"; Kamina usa la del ep. 8 "creé en el vos que
+    no se te regala"; Goku usa la del cap. 228 del manga "hasta el de mÃ¡s humilde
+    origen puede superar a la elite"; Kamina usa la del ep. 8 "creÃ© en el vos que
     cree en vos mismo"; Eren la del tema de la libertad "nacemos libres... al diablo
-    con ellos"; Nanami la de la temp 1 ep 9 sobre las pequeñas desilusiones).
-  - Glitch de la cita 2x más lento para que se lea: cygA 2.3s -> 4.6s y cygB 1.9s -> 5.7s
+    con ellos"; Nanami la de la temp 1 ep 9 sobre las pequeÃ±as desilusiones).
+  - Glitch de la cita 2x mÃ¡s lento para que se lea: cygA 2.3s -> 4.6s y cygB 1.9s -> 5.7s
     (app/globals.css, .glitch::before/::after).
-  - Verificación: count script (73 reales + 25 juegos + 25 anime = 123), tsc, lint y
-    build en verde. Server de producción reiniciado en http://localhost:3000 (smoke
-    completo no corrido: el cambio es solo de datos frases + animación CSS).
+  - VerificaciÃ³n: count script (73 reales + 25 juegos + 25 anime = 123), tsc, lint y
+    build en verde. Server de producciÃ³n reiniciado en http://localhost:3000 (smoke
+    completo no corrido: el cambio es solo de datos frases + animaciÃ³n CSS).
 
 [2026-09-09] CHAT DE DINOS DESHABILITADO (de nuevo)
-  - app/bitacora/layout.tsx: se quitó el import y el render de <DinoChat /> (el dock
-    .cyb-dock desaparece). Todo el código (componentes, lib/dino-prompt.ts,
-    chat-context, /api/chat) queda intacto para retomarlo más adelante.
+  - app/bitacora/layout.tsx: se quitÃ³ el import y el render de <DinoChat /> (el dock
+    .cyb-dock desaparece). Todo el cÃ³digo (componentes, lib/dino-prompt.ts,
+    chat-context, /api/chat) queda intacto para retomarlo mÃ¡s adelante.
   - scripts/smoke-test.js: el bloque del chat (dock -> panel -> 6 dinos -> cierre)
-    se reemplazó por la aserción "Chat de dinos deshabilitado (sin dock)" +
-    "Sin botón de abrir chat".
-  - Verificación: tsc, lint, build en verde + probe rápido (playwright): vista día
-    carga, sin .cyb-dock, sin botón abrir chat y sin panel; sin errores JS. Server
-    de producción reiniciado en http://localhost:3000.
+    se reemplazÃ³ por la aserciÃ³n "Chat de dinos deshabilitado (sin dock)" +
+    "Sin botÃ³n de abrir chat".
+  - VerificaciÃ³n: tsc, lint, build en verde + probe rÃ¡pido (playwright): vista dÃ­a
+    carga, sin .cyb-dock, sin botÃ³n abrir chat y sin panel; sin errores JS. Server
+    de producciÃ³n reiniciado en http://localhost:3000.
+
+[2026-09-11] PUSH ELIMINADO + IGNORAR OBJETIVO
+  - Se borró todo el stack de notificaciones web push (no funcionaba y se decidió
+    no seguir lidiando con suscripciones/VAPID; para notificar en el celu con la app
+    cerrada no existe alternativa sin servidor, y los Notification Triggers
+    showTrigger/TimestampTrigger fueron abandonados por Chrome).
+  - Archivos eliminados: components/notifications-toggle.tsx, lib/push.ts,
+    lib/push-client.ts, app/api/cron/notify/route.ts (+ carpeta) y vercel.json
+    (solo tenía el cron).
+  - lib/actions.ts: fuera la sección "Notificaciones push"
+    (savePushSubscriptionAction, deletePushSubscriptionAction, sendTestPushAction)
+    y sus imports.
+  - app/sw.ts: se quitaron los handlers push/notificationclick (se mantiene el
+    Serwist para el offline caching). .env.local.example: bloque VAPID/CRON fuera.
+  - supabase/schema.sql: tabla push_subscriptions (+ su RLS) fuera.
+  - package.json: se desinstaló web-push y @types/web-push (npm uninstall).
+  - PENDIENTE EN SUPABASE (hosted): drop table if exists push_subscriptions;
+  - PENDIENTE EN VERCEL: borrar NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY,
+    VAPID_SUBJECT y CRON_SECRET (quedan sin uso).
+  - NUEVO: "ignorar objetivo" por día. 4to estado en daily_objectives
+    (status='ignored') que excluye el objetivo del numerador Y del denominador del
+    % del día, del marcado verde del calendario, de stats/eficiencia y del contexto
+    de chat. Si un día queda con TODOS los objetivos ignorados es día NEUTRO (no
+    castiga la eficiencia).
+  - lib/types.ts: ChecklistStatus suma "ignored". lib/completion.ts: statusOf lo
+    acepta, statusValue=0, dayPercent y el nuevo countedItems() descartan los
+    ignorados. Supabase: constraint de daily_objectives.status pasó a
+    ('none','partial','done','ignored').
+  - components/objectives-checklist.tsx: botón "ignorar" a la derecha de cada
+    objetivo, confirmación por SEGUNDO TOQUE ("¿Seguro? sí / no"); cuando está
+    ignorado la fila queda atenuada con "ignorado · quitar".
+  - app/bitacora/[date]/page.tsx: header "Objetivos · X/Y · Z%" y marcado verde del
+    calendario usan solo objetivos en cuenta (activos - ignorados del día).
+  - app/bitacora/stats/page.tsx, /api/monthly y lib/chat-context.ts: por día,
+    denominador = totales - ignorados (días todo-ignorados neutros).
+  - scripts/smoke-test.js: bloque "2b) Notificaciones push" -> aserciones de que la
+    sección NO existe ("Sin sección Notificaciones_push", "Sin Activar
+    notificaciones"); agregadas checks de ignorar (arma '¿Seguro?', cancelar
+    desarma, resta 1 al denominador, persiste tras reload, quitar restaura) y se
+    arregló la aserción del anillo dorado para apuntar a la celda de HOY (antes
+    buscaba ausencia global de .has-flag y quedaba colgada por un flag viejo de
+    09-09 en la DB local).
+  - Verificación: tsc, lint y build en verde; smoke completo en verde (incluido el
+    resumen mensual de IA) sin errores JS. Server de producción reiniciado en
+    http://localhost:3000.

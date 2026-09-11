@@ -120,15 +120,21 @@ async function buildFacts(): Promise<Fact> {
     const hasNotes = noteDates.has(date);
     const hasLearnings = learningDates.has(date);
     const hasData = Boolean(hasNotes || hasLearnings || todosForDay.length > 0);
+    const ignoredCount = todosForDay.filter(
+      (entry) => statusOf(entry) === "ignored"
+    ).length;
+    // Los ignorados del día no cuentan ni en el numerador ni en el
+    // denominador; si el día quedó sin objetivos en cuenta es neutro.
+    const denominator = objectives.length - ignoredCount;
     const dayPoints = todosForDay.reduce(
       (sum, entry) => sum + statusValue(statusOf(entry)),
       0
     );
-    const percent = objectives.length
-      ? Math.round((dayPoints / objectives.length) * 100)
+    const percent = denominator > 0
+      ? Math.round((dayPoints / denominator) * 100)
       : 0;
-    if (objectives.length) {
-      periodPoints += dayPoints / objectives.length;
+    if (denominator > 0) {
+      periodPoints += dayPoints / denominator;
     }
     points.push({ date, percent, hasData });
   }

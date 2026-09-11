@@ -62,7 +62,7 @@ export type Settings = {
   updated_at: string;
 };
 
-export type ChecklistStatus = "none" | "partial" | "done";
+export type ChecklistStatus = "none" | "partial" | "done" | "ignored";
 
 export type DailyObjective = {
   id: string;
