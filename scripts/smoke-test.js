@@ -294,26 +294,14 @@ const { chromium } = require("playwright-core");
     await page.waitForSelector("text=Estadísticas", { timeout: 10000 });
     console.log("Stats carga: yes");
 
-    // 7) Chat de dinosaurios: dock + panel + 6 dinos
-    await page.waitForSelector(".cyb-dock", { timeout: 10000 });
-    console.log("Dock del chat presente (.cyb-dock): yes");
-    await page.locator('button[aria-label="Abrir chat de dinosaurios"]').click();
-    await page.waitForSelector('section[aria-label="Chat de dinosaurios"]', {
-      timeout: 10000,
-    });
-    console.log("Panel del chat se abre: yes");
+    // 7) Chat de dinosaurios DESHABILITADO: sin dock ni panel
     console.log(
-      "Lista de 6 dinos:",
-      (await page.locator(".cyb-dchat-item").count()) === 6
+      "Chat de dinos deshabilitado (sin dock):",
+      (await page.locator(".cyb-dock").count()) === 0
     );
-    await page.locator(".cyb-dchat-close").first().click();
-    await page.waitForSelector('section[aria-label="Chat de dinosaurios"]', {
-      state: "detached",
-      timeout: 10000,
-    });
     console.log(
-      "El panel se cierra y vuelve el dock:",
-      (await page.locator(".cyb-dock").count()) === 1
+      "Sin botón de abrir chat:",
+      (await page.locator('button[aria-label="Abrir chat de dinosaurios"]').count()) === 0
     );
 
     // 7b) Resumen mensual con IA, justo debajo de los gráficos

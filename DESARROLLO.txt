@@ -827,3 +827,14 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
   - Verificación: count script (73 reales + 25 juegos + 25 anime = 123), tsc, lint y
     build en verde. Server de producción reiniciado en http://localhost:3000 (smoke
     completo no corrido: el cambio es solo de datos frases + animación CSS).
+
+[2026-09-09] CHAT DE DINOS DESHABILITADO (de nuevo)
+  - app/bitacora/layout.tsx: se quitó el import y el render de <DinoChat /> (el dock
+    .cyb-dock desaparece). Todo el código (componentes, lib/dino-prompt.ts,
+    chat-context, /api/chat) queda intacto para retomarlo más adelante.
+  - scripts/smoke-test.js: el bloque del chat (dock -> panel -> 6 dinos -> cierre)
+    se reemplazó por la aserción "Chat de dinos deshabilitado (sin dock)" +
+    "Sin botón de abrir chat".
+  - Verificación: tsc, lint, build en verde + probe rápido (playwright): vista día
+    carga, sin .cyb-dock, sin botón abrir chat y sin panel; sin errores JS. Server
+    de producción reiniciado en http://localhost:3000.
