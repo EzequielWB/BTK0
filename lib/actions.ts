@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AUTH_COOKIE, generateSalt, hashPassword, isAuthenticated } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { isValidISODate, todayISO } from "@/lib/utils";
+import { isValidISODate, isValidMonthDay, todayISO } from "@/lib/utils";
 
 export type ActionResult = { error?: string; success?: string };
 
@@ -568,6 +568,226 @@ export async function toggleReminderCompleteAction(
 
   if (error) return { error: "No se pudo actualizar el recordatorio." };
   return { success: completed ? "Recordatorio completado." : "Recordatorio desmarcado." };
+}
+
+// ---------------------------------------------------------------------------
+// Efemérides (fechas que se repiten todos los años) y sus categorías
+// ---------------------------------------------------------------------------
+
+function sanitizeCategoryName(name: string): string {
+  return name.trim().slice(0, 40);
+}
+
+export async function createAnnualReminderAction(
+  content: string,
+  month: number,
+  day: number,
+  id: string,
+  categoryId: string | null
+): Promise<ActionResult> {
+  await requireAuth();
+
+  const text = content.trim();
+  if (!text) return { error: "La efeméride está vacía." };
+  if (!isValidMonthDay(month, day)) return { error: "La fecha no es válida." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("annual_reminders")
+    .insert({ id, month, day, content: text, category_id: categoryId });
+
+  revalidatePath("/bitacora", "layout");
+
+  if (error) return { error: "No se pudo guardar la efeméride." };
+  return { success: "Efeméride guardada." };
+}
+
+export async function updateAnnualReminderAction(
+  id: string,
+  content: string,
+  month: number,
+  day: number,
+  categoryId: string | null
+): Promise<ActionResult> {
+  await requireAuth();
+
+  const text = content.trim();
+  if (!text) return { error: "La efeméride está vacía." };
+  if (!isValidMonthDay(month, day)) return { error: "La fecha no es válida." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("annual_reminders")
+    .update({ content: text, month, day, category_id: categoryId })
+    .eq("id", id);
+
+  revalidatePath("/bitacora", "layout");
+
+  if (error) return { error: "No se pudo actualizar la efeméride." };
+  return { success: "Efeméride actualizada." };
+}
+
+export async function deleteAnnualReminderAction(id: string): Promise<ActionResult> {
+  await requireAuth();
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("annual_reminders")
+    .delete()
+    .eq("id", id);
+
+  revalidatePath("/bitacora", "layout");
+
+  if (error) return { error: "No se pudo borrar la efeméride." };
+  return { success: "Efeméride eliminada." };
+}
+
+export async function createAnnualCategoryAction(name: string): Promise<ActionResult> {
+  await requireAuth();
+
+  const text = sanitizeCategoryName(name);
+  if (!text) return { error: "Escribí el nombre de la categoría." };
+
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("annual_categories")
+    .select("id")
+    .ilike("name", text);
+
+  if (((existing as Array<{ id: string }> | null)?.length ?? 0) > 0) {
+    return { error: "Ya existe esa categoría." };
+  }
+
+  const { data: last } = await supabase
+    .from("annual_categories")
+    .select("sort_order")
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const sortOrder = ((last as { sort_order: number } | null)?.sort_order ?? -1) + 1;
+
+  const { error } = await supabase
+    .from("annual_categories")
+    .insert({ name: text, sort_order: sortOrder });
+
+  revalidatePath("/bitacora", "layout");
+
+  if (error) return { error: "No se pudo crear la categoría." };
+  return { success: "Categoría creada." };
+}
+
+export async function updateAnnualCategoryAction(
+  id: string,
+  name: string
+): Promise<ActionResult> {
+  await requireAuth();
+
+  const text = sanitizeCategoryName(name);
+  if (!text) return { error: "El nombre de la categoría está vacío." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("annual_categories")
+    .update({ name: text })
+    .eq("id", id);
+
+  revalidatePath("/bitacora", "layout");
+
+  if (error) return { error: "No se pudo renombrar la categoría." };
+  return { success: "Categoría renombrada." };
+}
+
+export async function moveAnnualCategoryAction(
+  id: string,
+  direction: "up" | "down"
+): Promise<ActionResult> {
+  await requireAuth();
+
+  const supabase = await createClient();
+  const { data: categories } = await supabase
+    .from("annual_categories")
+    .select("*")
+    .order("sort_order", { ascending: true });
+
+  const list = (categories ?? []) as {
+    id: string;
+    sort_order: number;
+  }[];
+  const index = list.findIndex((c) => c.id === id);
+  if (index < 0) return { error: "Categoría no encontrada." };
+
+  const neighborIndex = direction === "up" ? index - 1 : index + 1;
+  if (neighborIndex < 0 || neighborIndex >= list.length) {
+    return { error: "No se puede mover más en esa dirección." };
+  }
+
+  // Swap de sort_order contra el vecino (tiro doble: asegurado en ambas filas).
+  await supabase
+    .from("annual_categories")
+    .update({ sort_order: list[neighborIndex].sort_order })
+    .eq("id", list[index].id);
+  const { error } = await supabase
+    .from("annual_categories")
+    .update({ sort_order: list[index].sort_order })
+    .eq("id", list[neighborIndex].id);
+
+  revalidatePath("/bitacora", "layout");
+
+  if (error) return { error: "No se pudo reordenar la categoría." };
+  return { success: "Categoría reordenada." };
+}
+
+export async function deleteAnnualCategoryAction(id: string): Promise<ActionResult> {
+  await requireAuth();
+
+  const supabase = await createClient();
+  // Las efemérides de la categoría pasan a "sin separar" (catálogo en NULL).
+  await supabase
+    .from("annual_reminders")
+    .update({ category_id: null })
+    .eq("category_id", id);
+
+  const { error } = await supabase.from("annual_categories").delete().eq("id", id);
+
+  revalidatePath("/bitacora", "layout");
+
+  if (error) return { error: "No se pudo borrar la categoría." };
+  return { success: "Categoría eliminada." };
+}
+
+// ---------------------------------------------------------------------------
+// La Hoja (pensamientos del día): una fila por día; al quedar vacía se borra
+// ---------------------------------------------------------------------------
+
+export async function saveJournalAction(
+  date: string,
+  content: string
+): Promise<ActionResult> {
+  await requireAuth();
+  if (!isValidISODate(date)) return { error: "La fecha es inválida." };
+
+  const text = content.trim();
+  const supabase = await createClient();
+
+  if (!text) {
+    const { error } = await supabase.from("journal").delete().eq("date", date);
+    revalidatePath(`/bitacora/${date}`);
+    if (error) return { error: "No se pudo limpiar la hoja." };
+    return { success: "Hoja limpia." };
+  }
+
+  const { error } = await supabase
+    .from("journal")
+    .upsert(
+      { date, content: text, updated_at: new Date().toISOString() },
+      { onConflict: "date" }
+    );
+
+  revalidatePath(`/bitacora/${date}`);
+
+  if (error) return { error: "No se pudo guardar la hoja." };
+  return { success: "Hoja guardada." };
 }
 
 // ---------------------------------------------------------------------------

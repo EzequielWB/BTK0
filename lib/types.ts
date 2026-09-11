@@ -46,10 +46,37 @@ export type Reminder = {
   completed_at?: string | null;
 };
 
+/** Efeméride: fecha que se repite todos los años (cumpleaños, aniversarios). */
+export type AnnualReminder = {
+  id: string;
+  month: number;
+  day: number;
+  content: string;
+  created_at: string;
+  /** null/ausente = "sin separar". */
+  category_id?: string | null;
+};
+
+/** Categoría para ordenar efemérides (ej: cumpleaños, aniversarios). */
+export type AnnualCategory = {
+  id: string;
+  name: string;
+  sort_order: number;
+  created_at: string;
+};
+
+/** "La hoja": pensamientos extensos del día. Una fila por día (date es PK). */
+export type JournalEntry = {
+  date: string;
+  content: string;
+  updated_at: string;
+};
+
 export type DayMark = {
   complete: boolean;
   note: boolean;
   learn: boolean;
+  thought: boolean;
   reminder: boolean;
 };
 

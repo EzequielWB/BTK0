@@ -23,12 +23,14 @@ export function CalendarNav({
   reminders = {},
   pendingReminders,
   flaggedDates = [],
+  annualDates = [],
 }: {
   date: string;
   marks?: Record<string, DayMark>;
   reminders?: Record<string, Reminder[]>;
   pendingReminders?: Record<string, Reminder[]>;
   flaggedDates?: string[];
+  annualDates?: string[];
 }) {
   const parsed = parseISODate(date);
   const [year, setYear] = useState(parsed.getFullYear());
@@ -146,6 +148,7 @@ export function CalendarNav({
             mark?.complete ? "segs-g" : null,
             mark?.note ? "segs-a" : null,
             mark?.learn ? "segs-r" : null,
+            mark?.thought ? "segs-w" : null,
           ].filter((className): className is string => Boolean(className));
 
           const isFuture = cell > today;
@@ -156,6 +159,7 @@ export function CalendarNav({
             cell >= today &&
             ((pendingReminders ?? reminders)[cell]?.length ?? 0) > 0;
           const isFlagged = flaggedDates.includes(cell);
+          const isAnnual = annualDates.includes(cell);
 
           const numClass = ["cyb-num"]
             .concat(cell === date ? "today" : "")
@@ -163,6 +167,7 @@ export function CalendarNav({
             .concat(isFuture ? "future" : "")
             .concat(hasReminder ? "has-reminder" : "")
             .concat(isFlagged ? "has-flag" : "")
+            .concat(isAnnual ? "has-annual" : "")
             .join(" ");
 
           const onPointerDown = (boy: React.PointerEvent) => {
@@ -187,17 +192,19 @@ export function CalendarNav({
               key={cell}
               href={`/bitacora/${cell}`}
               title={
-                isFlagged
-                  ? "Día destacado"
-                  : hasReminder
-                    ? "Hay recordatorio"
-                    : isFuture
-                      ? "Vista futura (solo lectura)"
-                      : mark?.complete
-                        ? "Día cumplido"
-                        : mark?.note || mark?.learn
-                          ? "Día registrado"
-                          : undefined
+                isAnnual
+                  ? "Efeméride"
+                  : isFlagged
+                    ? "Día destacado"
+                    : hasReminder
+                      ? "Hay recordatorio"
+                      : isFuture
+                        ? "Vista futura (solo lectura)"
+                        : mark?.complete
+                          ? "Día cumplido"
+                          : mark?.note || mark?.learn
+                            ? "Día registrado"
+                            : undefined
               }
               className="py-1 flex items-center justify-center rounded hover:bg-zinc-800/50"
               onPointerDown={onPointerDown}

@@ -3,6 +3,7 @@ import { CalendarNav } from "@/components/calendar-nav";
 import { DayFlagButton } from "@/components/day-flag-button";
 import { LearningsEditor } from "@/components/learnings-editor";
 import { MotivationalQuote } from "@/components/motivational-quote";
+import { JournalSheet } from "@/components/journal-sheet";
 import { NotesEditor } from "@/components/notes-editor";
 import { ObjectivesChecklist } from "@/components/objectives-checklist";
 import { ReminderPanel } from "@/components/reminder-panel";
@@ -18,6 +19,7 @@ import {
 import { isAuthenticated } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import {
+  formatMonthDay,
   isValidISODate,
   monthLabel,
   monthRangeISO,
@@ -25,11 +27,13 @@ import {
   todayISO,
 } from "@/lib/utils";
 import type {
+  AnnualReminder,
   ChecklistItem,
   ChecklistStatus,
   DailyObjective,
   Day,
   DayMark,
+  JournalEntry,
   Learning,
   Note,
   Objective,
@@ -51,7 +55,7 @@ export default async function DayPage({
 
   const supabase = await createClient();
 
-  const [{ data: objectives }, { data: day }, { data: goals }, { data: noteRows }, { data: learningRows }, { data: reminderRows }] =
+  const [{ data: objectives }, { data: day }, { data: goals }, { data: noteRows }, { data: learningRows }, { data: reminderRows }, { data: annualRows }, { data: journalRow }] =
     await Promise.all([
       supabase
         .from("objectives")
@@ -85,6 +89,8 @@ export default async function DayPage({
         .eq("date", date)
         .order("created_at")
         .order("id"),
+      supabase.from("annual_reminders").select("*"),
+      supabase.from("journal").select("date, content").eq("date", date).maybeSingle(),
     ]);
 
   const dayRow = (day ?? null) as Day | null;
@@ -142,6 +148,7 @@ export default async function DayPage({
     { data: learningsInMonth },
     { data: remindersInMonth },
     { data: flagsInMonth },
+    { data: journalDates },
   ] = await Promise.all([
     supabase.from("days").select("id, date"),
     supabase.from("daily_objectives").select("*"),
@@ -163,6 +170,11 @@ export default async function DayPage({
       .order("created_at"),
     supabase
       .from("day_flags")
+      .select("date")
+      .gte("date", monthStart)
+      .lte("date", monthEnd),
+    supabase
+      .from("journal")
       .select("date")
       .gte("date", monthStart)
       .lte("date", monthEnd),
@@ -229,23 +241,47 @@ export default async function DayPage({
   const learningDates = new Set(
     ((learningsInMonth ?? []) as { date: string }[]).map((row) => row.date)
   );
+  const thoughtDates = new Set(
+    ((journalDates ?? []) as { date: string }[]).map((row) => row.date)
+  );
 
   const marks: Record<string, DayMark> = {};
   const allMarkedDates = new Set([
     ...completedDates,
     ...noteDates,
     ...learningDates,
+    ...thoughtDates,
   ]);
   for (const markedDate of allMarkedDates) {
     marks[markedDate] = {
       complete: completedDates.has(markedDate),
       note: noteDates.has(markedDate),
       learn: learningDates.has(markedDate),
+      thought: thoughtDates.has(markedDate),
       reminder: (remindersByDate[markedDate]?.length ?? 0) > 0,
     };
   }
 
   const parsed = parseISODate(date);
+
+  // Efemérides: marcan su celda en el calendario del mes y aparecen como
+  // propia categoría encima de la cita en la vista del día.
+  const efemerides = (annualRows ?? []) as AnnualReminder[];
+  const dayEfemerides = efemerides.filter(
+    (entry) =>
+      entry.month === Number(date.slice(5, 7)) &&
+      entry.day === Number(date.slice(8, 10))
+  );
+  const journal = (journalRow ?? null) as Pick<JournalEntry, "content"> | null;
+  const annualDates = new Set<string>();
+  for (const entry of efemerides) {
+    if (entry.month !== parsed.getMonth() + 1) continue;
+    const iso = `${parsed.getFullYear()}-${String(entry.month).padStart(
+      2,
+      "0"
+    )}-${String(entry.day).padStart(2, "0")}`;
+    if (isValidISODate(iso)) annualDates.add(iso);
+  }
 
   return (
     <div className="space-y-4">
@@ -254,7 +290,14 @@ export default async function DayPage({
           <span className="blk-tag">
             Agenda · {monthLabel(parsed.getFullYear(), parsed.getMonth())}
           </span>
-          <DayFlagButton date={date} flagged={isFlagged} />
+          <div className="flex items-center gap-2">
+            <JournalSheet
+              key={`journal-${date}`}
+              date={date}
+              initial={journal?.content ?? ""}
+            />
+            <DayFlagButton date={date} flagged={isFlagged} />
+          </div>
         </div>
         <CalendarNav
           date={date}
@@ -262,6 +305,7 @@ export default async function DayPage({
           reminders={remindersByDate}
           pendingReminders={pendingRemindersByDate}
           flaggedDates={flaggedDates}
+          annualDates={[...annualDates]}
         />
       </div>
 
@@ -274,6 +318,28 @@ export default async function DayPage({
             la fecha.
           </p>
         </div>
+      )}
+
+      {dayEfemerides.length > 0 && (
+        <section className="blk efemeride-blk">
+          <span className="blk-tag">
+            Efemérides
+            <span className="normal-case tracking-normal text-xs opacity-80">
+              {" "}
+              {formatMonthDay(
+                dayEfemerides[0].month,
+                dayEfemerides[0].day
+              )}
+            </span>
+          </span>
+          <ul className="space-y-2">
+            {dayEfemerides.map((entry) => (
+              <li key={entry.id} className="enrow">
+                <p className="whitespace-pre-wrap">{entry.content}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       <MotivationalQuote date={date} />

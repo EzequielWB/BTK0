@@ -51,6 +51,11 @@ const { chromium } = require("playwright-core");
     await page.waitForURL("**/bitacora/**", { timeout: 15000 });
     const todayUrl = page.url();
     console.log("URL tras login:", todayUrl);
+    const iso = (d) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+        d.getDate()
+      ).padStart(2, "0")}`;
+    const todayIso = iso(new Date());
 
     // HUD: deck, reloj, LED / ticker presente
     await page.waitForSelector(".cyb-deck", { timeout: 15000 });
@@ -349,6 +354,87 @@ const { chromium } = require("playwright-core");
         (await todayCell.locator("i.segs-r").count()) === 0
     );
 
+    // 5b) La Hoja: pensamientos del día (botón hoja en cabecera + cuaderno)
+    await page.goto(todayUrl, { waitUntil: "networkidle" });
+    const leafBtn = page.locator('button[aria-label="Abrir pensamientos del día"]');
+    await leafBtn.waitFor({ timeout: 10000 });
+    console.log("Botón hoja en la cabecera del día: yes");
+    await leafBtn.click();
+    const sheet = page.locator(".cyb-paper");
+    await sheet.waitFor({ timeout: 10000 });
+    console.log("Se abre el cuaderno blanco con renglones: yes");
+    const sheetTextarea = sheet.locator("textarea");
+
+    // Limpiar sobras de corridas anteriores (si el día quedó con texto)
+    const prevSheet = (await sheetTextarea.inputValue()).trim();
+    if (prevSheet) {
+      await sheetTextarea.fill("");
+      await page.waitForFunction(
+        (iso) =>
+          !document.querySelector(`nav a[href="/bitacora/${iso}"] .cyb-num i.segs-w`),
+        todayIso,
+        { timeout: 10000 }
+      );
+    }
+
+    const pensoText = "penso-" + Date.now();
+    await sheetTextarea.fill(pensoText);
+    await page
+      .locator(".paper-status", { hasText: "Guardado" })
+      .waitFor({ timeout: 10000 });
+    console.log("Autosave por pausa -> 'Guardado · hora': yes");
+
+    // Tope blando (~20k caracteres) muestra el aviso de tinta
+    await sheetTextarea.fill("x".repeat(20001));
+    await page.locator(".paper-warn").waitFor({ timeout: 10000 });
+    console.log("Tope blando: aviso de tinta aparece: yes");
+
+    // Restaurar texto real, cerrar -> 4to segmento blanco en el calendario
+    await sheetTextarea.fill(pensoText);
+    await page
+      .locator(".paper-status", { hasText: "Guardado" })
+      .waitFor({ timeout: 10000 });
+    await page.locator(".paper-shell button[aria-label='Cerrar']").click();
+    await page.waitForSelector(
+      `nav a[href="/bitacora/${todayIso}"] .cyb-num i.segs-w`,
+      { timeout: 10000 }
+    );
+    console.log("4to segmento blanco (.segs-w) en el calendario: yes");
+
+    await page.reload({ waitUntil: "networkidle" });
+    await page.waitForSelector(
+      `nav a[href="/bitacora/${todayIso}"] .cyb-num i.segs-w`,
+      { timeout: 10000 }
+    );
+    console.log("Segmento persiste tras reload: yes");
+    await leafBtn.click();
+    await sheet.waitFor({ timeout: 10000 });
+    const loadedSheetText = (await sheetTextarea.inputValue()).trim();
+    console.log(
+      "El texto del pensamiento persiste en la hoja:",
+      loadedSheetText === pensoText
+    );
+
+    // Limpiar la hoja -> la fila se borra y el segmento desaparece
+    if (loadedSheetText !== pensoText) {
+      await sheetTextarea.fill(pensoText);
+      await page
+        .locator(".paper-status", { hasText: "Guardado" })
+        .waitFor({ timeout: 10000 });
+    }
+    await sheetTextarea.fill("");
+    await page
+      .locator(".paper-status", { hasText: "Guardado" })
+      .waitFor({ timeout: 10000 });
+    await page.locator(".paper-shell button[aria-label='Cerrar']").click();
+    await page.waitForFunction(
+      (iso) =>
+        !document.querySelector(`nav a[href="/bitacora/${iso}"] .cyb-num i.segs-w`),
+      todayIso,
+      { timeout: 10000 }
+    );
+    console.log("Al vaciar la hoja, la fila se borra y el segmento desaparece: yes");
+
     // 6) Stats carga
     await page.click("a:has-text('Stats')");
     await page.waitForSelector("text=Estadísticas", { timeout: 10000 });
@@ -385,11 +471,6 @@ const { chromium } = require("playwright-core");
     );
 
     // 8) Días futuros: vista solo lectura
-    const iso = (d) =>
-      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-        d.getDate()
-      ).padStart(2, "0")}`;
-    const todayIso = iso(new Date());
     const next = new Date();
     next.setDate(next.getDate() + 1);
     const tomorrowIso = iso(next);
@@ -615,6 +696,212 @@ const { chromium } = require("playwright-core");
       (await modal.getByText(farText).count()) === 0
     );
     await modal.locator("button[aria-label='Cerrar']").click();
+
+    // 11a) Efemérides: pestaña propia, agregar/editar/borrar, marcado en
+    //     calendario y bloque en la vista del día (encima de la cita).
+    console.log(
+      "Link 'Efemérides' en el nav:",
+      (await page.locator("nav a:has-text('Efemérides')").count()) === 1
+    );
+    await page.goto(base + "/bitacora/efemerides", { waitUntil: "networkidle" });
+    await page.waitForSelector("button:has-text('Agregar efeméride')", {
+      timeout: 10000,
+    });
+    console.log("Página de efemérides carga: yes");
+
+    const efaText = "efa-" + Date.now();
+    const efaDay = todayIso.slice(8, 10);
+    const efaMonth = todayIso.slice(5, 7);
+    await page
+      .locator('input[aria-label="Día de la efeméride (dd)"]')
+      .fill(efaDay);
+    await page
+      .locator('input[aria-label="Mes de la efeméride (mm)"]')
+      .fill(efaMonth);
+    await page.locator("textarea").first().fill(efaText);
+    await page.locator("button:has-text('Agregar efeméride')").click();
+    await page.getByText(efaText).first().waitFor({ timeout: 10000 });
+    console.log("Efeméride agregada desde su pestaña: yes");
+    console.log(
+      "Indica próxima ocurrencia ('hoy'):",
+      (await page.locator(`li:has-text('${efaText}') span.cyb-hint`).first().innerText()).includes("hoy")
+    );
+
+    // Editar contenido
+    await page.locator(`li:has-text('${efaText}') button:has-text('Editar')`).click();
+    const efaText2 = efaText + "-edit";
+    await page.locator("textarea").first().fill(efaText2);
+    await page.locator("button:has-text('Guardar')").click();
+    await page.getByText(efaText2).first().waitFor({ timeout: 10000 });
+    console.log("Efeméride editada: yes");
+
+    // La celda del día se marca y el bloque aparece encima de la cita
+    await page.goto(base + `/bitacora/${todayIso}`, { waitUntil: "networkidle" });
+    await page.waitForSelector(
+      `nav a[href="/bitacora/${todayIso}"] .cyb-num.has-annual`,
+      { timeout: 10000 }
+    );
+    console.log("Celda con efeméride marcada (.has-annual): yes");
+    const quote = page.locator("blockquote").first();
+    const efemerideBlock = page.locator(".blk.efemeride-blk");
+    const quoteBox = await quote.boundingBox();
+    const efBox = await efemerideBlock.boundingBox();
+    console.log(
+      "Bloque 'Efemérides' está encima de la cita:",
+      (await efemerideBlock.count()) === 1 &&
+        Boolean(quoteBox && efBox && efBox.y < quoteBox.y)
+    );
+    console.log(
+      "Muestra el texto de la efeméride en la vista del día:",
+      (await efemerideBlock.getByText(efaText2).count()) === 1
+    );
+
+    // Borrar y verificar que desaparece del calendario
+    await page.goto(base + "/bitacora/efemerides", { waitUntil: "networkidle" });
+    await page.locator(`li:has-text('${efaText2}') button:has-text('Borrar')`).click();
+    await page.getByText(efaText2).waitFor({ timeout: 10000, state: "detached" });
+    console.log("Efeméride borrada: yes");
+    await page.goto(base + `/bitacora/${todayIso}`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(500);
+    console.log(
+      "Celda ya no marcada tras borrar:",
+      (await page.locator(`nav a[href="/bitacora/${todayIso}"] .cyb-num.has-annual`).count()) === 0
+    );
+
+    // 11a2) Categorías de efemérides: crear, renombrar, menú al guardar,
+    //     mover, reordenar con flechas y volver a "sin separar" al borrar.
+    await page.goto(base + "/bitacora/efemerides", { waitUntil: "networkidle" });
+    await page.waitForSelector("input[aria-label='Nombre de la nueva categoría']", {
+      timeout: 10000,
+    });
+
+    const catA = "cumple-" + Date.now();
+    const catB = "aniv-" + Date.now();
+    await page
+      .locator("input[aria-label='Nombre de la nueva categoría']")
+      .fill(catA);
+    await page.locator("button:has-text('Agregar')").first().click();
+    await page.waitForSelector(`.cat-chip:has-text('${catA}')`, { timeout: 10000 });
+    console.log("Categoría creada (chip ámbar): yes");
+
+    // Segundo parámetro mantiene el nombre hasta armar los checks de orden.
+    console.log(
+      "Segunda categoría agregada:",
+      (await (async () => {
+        await page
+          .locator("input[aria-label='Nombre de la nueva categoría']")
+          .fill(catB);
+        await page.locator("button:has-text('Agregar')").first().click();
+        await page
+          .locator(`.cat-chip:has-text('${catB}')`)
+          .waitFor({ timeout: 10000 });
+        return true;
+      })()) === true
+    );
+
+    // Renombrar la segunda categoría
+    await page.locator(`.cat-chip:has-text('${catB}') button[aria-label^="Renombrar "]`).first().click();
+    const catB2 = catB + "-b";
+    await page.locator("input[aria-label^='Renombrar categoría ']").fill(catB2);
+    await page.locator("button[aria-label='Confirmar nombre']").first().click();
+    await page.waitForSelector(`.cat-chip:has-text('${catB2}')`, { timeout: 10000 });
+    console.log("Categoría renombrada: yes");
+
+    // Menú al guardar: elegir catA para una efeméride
+    const cEfaA = "cefa-" + Date.now();
+    await page.locator('input[aria-label="Día de la efeméride (dd)"]').fill(efaDay);
+    await page.locator('input[aria-label="Mes de la efeméride (mm)"]').fill(efaMonth);
+    await page.locator("textarea").first().fill(cEfaA);
+    await page.locator("button:has-text('Agregar efeméride')").click();
+    await page.waitForSelector(".cyb-modal-panel", { timeout: 10000 });
+    console.log("Menú al guardar aparece (elegir categoría): yes");
+    await page.locator(`.chip-btn:has-text('${catA}')`).click();
+    await page.getByText(cEfaA).first().waitFor({ timeout: 10000 });
+    let selectedCat = await page
+      .locator(`li:has-text('${cEfaA}') select`)
+      .first()
+      .evaluate((el) => el.options[el.selectedIndex].text);
+    console.log("Elegida la categoría, guarda ahí:", selectedCat === catA);
+
+    // Sin elegir (cerrar menú con ✕) -> se anota como "sin separar"
+    const cEfaB = "cefb-" + Date.now();
+    await page.locator('input[aria-label="Día de la efeméride (dd)"]').fill(efaDay);
+    await page.locator('input[aria-label="Mes de la efeméride (mm)"]').fill(efaMonth);
+    await page.locator("textarea").first().fill(cEfaB);
+    await page.locator("button:has-text('Agregar efeméride')").click();
+    await page.waitForSelector(".cyb-modal-panel", { timeout: 10000 });
+    await page.locator("button[aria-label='Cerrar sin elegir']").click();
+    await page.getByText(cEfaB).first().waitFor({ timeout: 10000 });
+    selectedCat = await page
+      .locator(`li:has-text('${cEfaB}') select`)
+      .first()
+      .evaluate((el) => el.options[el.selectedIndex].text);
+    console.log("Sin elegir se anota en 'Sin separar':", selectedCat === "Sin separar");
+
+    // Mover la efeméride B a catA con el select
+    await page.locator(`li:has-text('${cEfaB}') select`).first().selectOption({ label: catA });
+    await page.locator(`li:has-text('${cEfaB}') select`).first().waitFor({ timeout: 10000 });
+    selectedCat = await page
+      .locator(`li:has-text('${cEfaB}') select`)
+      .first()
+      .evaluate((el) => el.options[el.selectedIndex].text);
+    console.log("Mover con el select (a otra categoría):", selectedCat === catA);
+    console.log(
+      "Agrupadas bajo la categoría:",
+      (await page.locator(`li:has-text('${cEfaA}')`).count()) === 1 &&
+        (await page.locator(`li:has-text('${cEfaB}')`).count()) === 1
+    );
+
+    // Reordenar con flechas: bajar catA -> el orden de chips cambia
+    const chipNames = async () =>
+      page
+        .locator(".cat-chip > span")
+        .allTextContents()
+        .then((names) => names.map((n) => n.trim()));
+    const before = await chipNames();
+    await page.locator(`.cat-chip:has-text('${catA}') button[aria-label^="Bajar"]`).click();
+    await page.waitForTimeout(500);
+    const after = await chipNames();
+    const expected = [catB2, catA];
+    console.log(
+      "Flechas reordenan las categorías:",
+      JSON.stringify(before) === JSON.stringify([catA, catB2]) &&
+        JSON.stringify(after) === JSON.stringify(expected)
+    );
+
+    // Borrar catA (doble toque de confirmación) -> sus efemérides vuelven a "sin separar"
+    const catAChip = page.locator(`.cat-chip:has-text('${catA}')`);
+    await catAChip.locator("button[aria-label^='Borrar ']").click();
+    await catAChip
+      .locator("button[aria-label^='Confirmar borrado ']")
+      .click();
+    await page.locator(`.cat-chip:has-text('${catA}')`).waitFor({ timeout: 10000, state: "detached" });
+    await page.waitForFunction(
+      (text) =>
+        Array.from(document.querySelectorAll(".cat-chip > span")).every(
+          (el) => !el.textContent.includes(text)
+        ),
+      catA,
+      { timeout: 10000 }
+    );
+    console.log("Borrar categoría (doble toque) la elimina: yes");
+    await page.getByText(cEfaA).first().waitFor({ timeout: 10000 });
+    selectedCat = await page
+      .locator(`li:has-text('${cEfaA}') select`)
+      .first()
+      .evaluate((el) => el.options[el.selectedIndex].text);
+    console.log("Sus efemérides quedan en 'Sin separar':", selectedCat === "Sin separar");
+
+    // Cleanup: borrar categoría restante y las dos efemérides
+    const catBChip = page.locator(`.cat-chip:has-text('${catB2}')`);
+    await catBChip.locator("button[aria-label^='Borrar ']").click();
+    await catBChip.locator("button[aria-label^='Confirmar borrado ']").click();
+    await page.locator(`.cat-chip:has-text('${catB2}')`).waitFor({ timeout: 10000, state: "detached" });
+    for (const t of [cEfaA, cEfaB]) {
+      await page.locator(`li:has-text('${t}') button:has-text('Borrar')`).click();
+      await page.getByText(t).waitFor({ timeout: 10000, state: "detached" });
+    }
+    console.log("Cleanup: categorías y efemérides de prueba borradas: yes");
 
     // 11b) Día destacado: botón ★ en la vista del día + anillo dorado en el calendario
     await page.goto(base + `/bitacora/${todayIso}`, { waitUntil: "networkidle" });

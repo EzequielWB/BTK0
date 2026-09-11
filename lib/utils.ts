@@ -127,3 +127,41 @@ export function formatDateRange(startISO: string, endISO: string): string {
   }).format(parseISODate(endISO));
   return `${start} → ${end}`;
 }
+
+const DAYS_IN_MONTH = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+/** Valida un día/mes como fecha recurrente (Febrero admite hasta 29). */
+export function isValidMonthDay(month: number, day: number): boolean {
+  if (!Number.isInteger(month) || !Number.isInteger(day)) return false;
+  if (month < 1 || month > 12 || day < 1) return false;
+  return day <= (DAYS_IN_MONTH[month - 1] ?? 0);
+}
+
+/** "14/05" a partir de mes y día (formato corto, sin año). */
+export function formatMonthDay(month: number, day: number): string {
+  return `${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}`;
+}
+
+/**
+ * Próxima ocurrencia de una efeméride (mes/día recursivo). Ej: hoy 11/09,
+ * "14/05" cae el 14/05 del año que viene. El 29/02 en año no bisiesto cae
+ * el 28/02. Devuelve null si el día/mes no es válido.
+ */
+export function annualOccurrenceISO(
+  month: number,
+  day: number,
+  from = todayISO()
+): { iso: string; inDays: number } | null {
+  if (!isValidMonthDay(month, day)) return null;
+  const fromYear = Number(from.slice(0, 4));
+  const build = (year: number): string => {
+    const iso = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    return isValidISODate(iso) ? iso : `${year}-02-28`;
+  };
+  let candidate = build(fromYear);
+  if (candidate < from) candidate = build(fromYear + 1);
+  const inDays = Math.round(
+    (parseISODate(candidate).getTime() - parseISODate(from).getTime()) / 86400000
+  );
+  return { iso: candidate, inDays };
+}

@@ -883,3 +883,111 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
   - Verificación: tsc, lint y build en verde; smoke completo en verde (incluido el
     resumen mensual de IA) sin errores JS. Server de producción reiniciado en
     http://localhost:3000.
+
+[2026-09-11] EFEMÉRIDES: FECHAS QUE SE REPITEN TODOS LOS AÑOS
+  - Nueva pestaña "Efemérides" en el nav (entre Hoy y Ajustes, ruta
+    /bitacora/efemerides). Mismo patrón visual y de comportamiento que un
+    recordatorio común pero SIN opción de completar (solo Editar / Borrar) y
+    anclado a día+mes (se repite todos los años: cumpleaños, aniversarios).
+  - Tabla nueva annual_reminders (id, month 1-12, day 1-31, content,
+    created_at) + índice + RLS en supabase/schema.sql; tipo AnnualReminder en
+    lib/types.ts; "annual_reminders" en lib/local-client.ts (TABLES + seed []).
+  - lib/utils.ts: isValidMonthDay (Feb admite hasta 29, como referencia bisiesta),
+    formatMonthDay (dd/mm) y annualOccurrenceISO(month, day) -> próxima fecha
+    (este año o el que viene; 29/02 en no-bisiesto cae 28/02) con "en N días".
+  - lib/actions.ts: create/update/deleteAnnualReminderAction (validan la fecha,
+    revalidatePath("/bitacora", "layout")).
+  - components/annual-reminders.tsx (client): filas dd/mm · contenido con hint de
+    próxima ("hoy"/"mañana"/"en N días"), Editar inline / Borrar (sin completar),
+    formulario con inputs día/mes (sin año), useOptimistic igual que reminders.
+  - Vista del día: bloque propio ".blk.efemeride-blk" (acento ámbar) justo ENCIMA
+    de la cita (MotivationalQuote) listando las efemérides de esa fecha.
+  - Calendario: las celdas con efeméride del mes se marcan con borde punteado
+    (.cyb-num.has-annual, convive con hoy/flag/recordatorio/futuro) + tooltip
+    "Efeméride"; se pasan como prop annualDates desde la página del día.
+  - smoke-test.js: checks nuevos (link en nav, página carga, agregar/editar/
+    borrar, "próxima: hoy", celda .has-annual, bloque encima de la cita y que
+    desaparece al borrar). TODO en verde + sin errores JS. tsc, lint, build OK.
+  - Server de producción reiniciado en http://localhost:3000 (PID 7692).
+  - PENDIENTE EN SUPABASE (hosted): correr el create table de annual_reminders
+    (idempotente, ya está en supabase/schema.sql).
+
+[2026-09-11] LA HOJA: PENSAMIENTOS EXTENSOS DEL DÍA
+  - Botón con forma de hoja de papel en la cabecera de "Agenda" (junto a ★
+    Destacar) que abre un cuaderno blanco con renglones y margen rojo para volcar
+    pensamientos/hojas de notas extensas del día. Autosave con debounce de 1,5 s
+    y estado "Editando…/Guardando…/Guardado · hora/Error". Tope BLANDO de ~20.000
+    caracteres (solo aviso de tinta, no bloquea).
+  - Dato de almacenamiento: la DB local anda en ~4,3 KB de datos y el plan free de
+    Supabase recién entra en modo read-only a los 500 MB de DB (proyecto nuevo
+    arranca ~40-60 MB de sistema). Por eso la hoja usa 1 fila por día máximo:
+    tabla journal (date PK, content, updated_at) + RLS en supabase/schema.sql;
+    la fila se crea al primer guardado con texto y se BORRA si queda vacía.
+  - lib/types.ts: JournalEntry + DayMark.thought; lib/local-client.ts: tabla
+    "journal" + seed []; lib/actions.ts: saveJournalAction (upsert por date,
+    si queda vacío hace delete, revalidatePath("/bitacora/{fecha}")).
+  - components/journal-sheet.tsx (client): botón .leaf-btn con doblez de esquina,
+    modal .paper-shell con .cyb-paper (renglones alineados al line-height 28px +
+    línea roja del margen), flush al cerrar/desmontar por si quedó algo sin
+    guardar, formato de hora es-AR en el status.
+  - Vista del día: fetch del journal del día (maybeSingle) + fechas del mes con
+    journal para el 4to segmento; el botón se monta con key={fecha} para no
+    arrastrar el estado entre días.
+  - Calendario: 4to segmento blanco .segs-w bajo el número cuando el día tiene
+    hoja escrita (convive con verde/amarillo/rojo). CSS .leaf-btn/.leaf-lines,
+    .paper-shell, .cyb-paper/.cyb-paper-in, .paper-status/.paper-warn, .segs-w.
+  - smoke-test.js: bloque "5b) La Hoja" (botón en cabecera, apertura del
+    cuaderno, autosave "Guardado · hora", tope blando muestra el aviso, 4to
+    segmento aparece/desaparece, persiste tras reload, vaciar borra la fila y el
+    segmento). Se subieron hoyIso/iso() arriba del archivo para reutilizarlos.
+  - Verificación: tsc, lint y build en verde; smoke completo en verde (95 checks)
+    sin errores JS. Server de producción reiniciado en http://localhost:3000.
+  - PENDIENTE EN SUPABASE (hosted): correr el create table de journal
+    (idempotente, ya está en supabase/schema.sql) junto con annual_reminders.
+
+[2026-09-11] CATEGORÍAS PARA EFEMÉRIDES
+  - Se puede armar categorías en la pestaña Efemérides (ej: "cumpleaños",
+    "aniversarios") para ordenar cada fecha que se anota. Crear, renombrar
+    (✎ inline), reordenar con flechas ▲▼ y borrar (doble toque de
+    confirmación: primero arma, segundo confirma).
+  - Tabla nueva annual_categories (id, name, sort_order, created_at) + RLS en
+    supabase/schema.sql; annual_reminders suma category_id (FK on delete set
+    null). NULL = "sin separar". Tipos AnnualCategory + AnnualReminder.
+    category_id en lib/types.ts; "annual_categories" en lib/local-client.ts
+    (TABLES + seed []). LocalQuery suma .ilike() y .limit() para soportar el
+    check de nombre duplicado y el último sort_order.
+  - lib/actions.ts: createAnnualCategoryAction (rechaza duplicados case-,
+    insensitive), updateAnnualCategoryAction, moveAnnualCategoryAction (swap
+    de sort_order con el vecino), deleteAnnualCategoryAction (primero pasa las
+    efemérides de esa categoría a category_id NULL = "sin separar", después
+    borra la categoría). create/updateAnnualReminderAction ahora reciben
+    categoryId.
+  - components/annual-reminders.tsx: bloque "Categorías" en chips ámbar
+    (.cat-chip con ✎/▲/▼/✕), lista de efemérides AGRUPADA por categoría con
+    "Sin separar" al final, y un select compacto por fila para MOVER cada
+    efeméride de categoría. Al dar "Agregar efeméride": si hay categorías
+    aparece el menú "¿Dónde la guardo?" (elegís la categoría o "Sin separar";
+    si cerrás sin elegir, se anota igual como "sin separar"). Sin categorías
+    guarda directo como antes.
+  - app/bitacora/efemerides/page.tsx: fetch de annual_categories (order
+    sort_order) y pasa initialCategories. La vista del día NO cambia (por
+    elección: las categorías se manejan solo en la pestaña).
+  - Estilos nuevos en globals.css: .chip-row, .cat-chip (con botones y estado
+    .cat-del-active de confirmación), .chip-btn (botones del menú), .cat-move-select.
+  - smoke-test.js: bloque "11a2)" (crear categoría, segunda categoría,
+    renombrar, menú al guardar con elección de categoría, cerrar sin elegir ->
+    "sin separar", mover con el select, agrupación bajo la categoría, flechas
+    reordenan, borrar con doble toque deja las efemérides en "sin separar" y
+    cleanup). Se sacaron los casts TS de los evaluate (el archivo es JS puro).
+  - Verificación: tsc, lint y build en verde; smoke completo en verde (106
+    checks) sin errores JS. Server de producción reiniciado (PID 19992).
+  - PENDIENTE EN SUPABASE (hosted):
+      create table if not exists annual_categories (
+        id         uuid primary key default gen_random_uuid(),
+        name       text not null,
+        sort_order int not null default 0,
+        created_at timestamptz not null default now()
+      );
+      alter table annual_reminders add column if not exists category_id uuid
+        references annual_categories(id) on delete set null;
+      alter table annual_categories enable row level security;

@@ -136,9 +136,48 @@ create table if not exists day_flags (
 );
 
 -- ------------------------------------------------------------
+-- annual_categories: categorías para ordenar las efemérides
+-- (cumpleaños, aniversarios...). Reordenables con sort_order.
+-- ------------------------------------------------------------
+create table if not exists annual_categories (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null,
+  sort_order int not null default 0,
+  created_at timestamptz not null default now()
+);
+
+-- ------------------------------------------------------------
+-- annual_reminders: efemérides: fechas que se repiten todos los
+-- años (cumpleaños, aniversarios). Guardan solo mes y día (sin
+-- año) y no tienen estado "completo": se recalculan solas cada
+-- año en su propia pestaña y se marcan en el calendario.
+-- category_id en NULL = "sin separar".
+-- ------------------------------------------------------------
+create table if not exists annual_reminders (
+  id          uuid primary key default gen_random_uuid(),
+  month       int not null check (month between 1 and 12),
+  day         int not null check (day between 1 and 31),
+  content     text not null,
+  created_at  timestamptz not null default now(),
+  category_id uuid references annual_categories(id) on delete set null
+);
+
+-- ------------------------------------------------------------
+-- journal: "la hoja" de pensamientos del día. UNA fila por día
+-- (date es PK), sin historial: se crea al guardar con texto y se
+-- borra si queda vacía. content se comprime solo (TOAST).
+-- ------------------------------------------------------------
+create table if not exists journal (
+  date       date primary key,
+  content    text not null default '',
+  updated_at timestamptz not null default now()
+);
+
+-- ------------------------------------------------------------
 -- Índices útiles
 -- ------------------------------------------------------------
 create index if not exists idx_days_date on days(date);
+create index if not exists idx_annual_reminders_md on annual_reminders(month, day);
 create index if not exists idx_notes_date on notes(date, created_at);
 create index if not exists idx_learnings_date on learnings(date, created_at);
 create index if not exists idx_reminders_date on reminders(date);
@@ -164,3 +203,6 @@ alter table reminders enable row level security;
 alter table day_flags enable row level security;
 alter table daily_objectives enable row level security;
 alter table temporal_goals enable row level security;
+alter table annual_reminders enable row level security;
+alter table annual_categories enable row level security;
+alter table journal enable row level security;

@@ -451,6 +451,9 @@ body {
 .cyb-num .segs-r {
   background: var(--cyb-g1);
 }
+.cyb-num .segs-w {
+  background: var(--cyb-neon);
+}
 .cyb-day-num {
   position: relative;
   z-index: 2;
@@ -518,6 +521,27 @@ body {
 }
 /* Un día futuro destacado se ve (no queda apagado) */
 .cyb-num.future.has-flag {
+  opacity: 1;
+  color: #fff;
+}
+
+/* Efeméride: fecha que se repite todos los años (borde punteado blanco) */
+.cyb-num.has-annual {
+  border-style: dashed;
+  border-color: rgba(242, 242, 242, 0.6);
+}
+.cyb-num.has-annual.today {
+  box-shadow: 0 0 8px rgba(242, 242, 242, 0.35);
+}
+.cyb-num.has-flag.has-annual {
+  border-style: dashed;
+  border-color: rgba(255, 225, 74, 0.9);
+}
+.cyb-num.has-reminder.has-annual {
+  border-style: dashed;
+  border-color: var(--cyb-g1);
+}
+.cyb-num.future.has-annual {
   opacity: 1;
   color: #fff;
 }
@@ -638,6 +662,180 @@ body {
 }
 .blk.future-blk .blk-tag {
   color: rgba(242, 242, 242, 0.55);
+}
+
+/* Tarjeta de efemérides (acento ámbar: fechas que se repiten cada año) */
+.blk.efemeride-blk::before,
+.blk.efemeride-blk::after {
+  border-color: var(--cyb-amber);
+}
+.blk.efemeride-blk .blk-tag {
+  color: var(--cyb-amber);
+}
+.blk.efemeride-blk .blk-tag::before {
+  color: var(--cyb-amber);
+}
+
+/* ==================================================================
+   LA HOJA — botón hoja + cuaderno con renglones (pensamientos del día)
+   ================================================================== */
+.leaf-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--cyb-neon);
+  background: transparent;
+  color: var(--cyb-neon);
+  cursor: pointer;
+  padding: 0;
+}
+/* Doblez de esquina (hoja de papel) */
+.leaf-btn::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 9px 9px 0;
+  border-color: transparent var(--cyb-bg) transparent transparent;
+}
+.leaf-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-top: 6px;
+}
+.leaf-lines i {
+  display: block;
+  height: 2px;
+  width: 14px;
+  background: var(--cyb-green);
+}
+.leaf-lines i:nth-child(2) {
+  width: 9px;
+}
+.leaf-lines i:nth-child(3) {
+  width: 12px;
+}
+
+/* Modal de la hoja: marco HUD pero adentro el cuaderno blanco */
+.paper-shell {
+  max-width: 560px;
+}
+.cyb-paper {
+  position: relative;
+  background: #fbfaf6;
+  color: #1c1c1c;
+  background-image: linear-gradient(rgba(120, 130, 150, 0.28) 1px, transparent 1px);
+  background-size: 100% 28px;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+}
+/* Línea roja del margen del cuaderno */
+.cyb-paper::before {
+  content: "";
+  position: absolute;
+  left: 46px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(220, 80, 80, 0.55);
+}
+.cyb-paper-in {
+  display: block;
+  width: 100%;
+  min-height: 300px;
+  background: transparent;
+  border: 0;
+  outline: none;
+  resize: vertical;
+  color: #1c1c1c;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 28px;
+  padding: 0 12px 12px 56px;
+}
+.cyb-paper-in::placeholder {
+  color: rgba(28, 28, 28, 0.35);
+}
+.paper-status {
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--cyb-neon);
+}
+.paper-warn {
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #ff9a3b;
+}
+
+/* ==================================================================
+   CATEGORÍAS DE EFEMÉRIDES — chips ámbar, menú de guardado y mover
+   ================================================================== */
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.cat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--cyb-amber);
+  color: var(--cyb-amber);
+  padding: 3px 6px;
+  font-size: 12px;
+}
+.cat-chip button {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: inherit;
+  padding: 0 1px;
+  font-size: 12px;
+  line-height: 1;
+}
+.cat-chip button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.cat-chip button:hover:not(:disabled) {
+  color: var(--cyb-neon);
+}
+.cat-chip .cat-del-active {
+  color: #ff3b5c;
+}
+.cat-chip-in {
+  width: 130px !important;
+  padding: 2px 6px !important;
+}
+.new-cat-in {
+  flex: 1 1 150px;
+}
+.chip-btn {
+  border: 1px solid var(--cyb-amber);
+  background: transparent;
+  color: var(--cyb-amber);
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.chip-btn:hover:not(:disabled) {
+  background: var(--cyb-amber);
+  color: var(--cyb-bg);
+}
+.cat-move-select {
+  max-width: 210px;
 }
 
 ::selection {

@@ -22,6 +22,9 @@ const TABLES = [
   "learnings",
   "reminders",
   "day_flags",
+  "annual_reminders",
+  "annual_categories",
+  "journal",
 ];
 
 function defaultSeed(): Store {
@@ -68,6 +71,9 @@ function defaultSeed(): Store {
     notes: [],
     learnings: [],
     reminders: [],
+    annual_reminders: [],
+    annual_categories: [],
+    journal: [],
   };
 }
 
@@ -105,6 +111,7 @@ class LocalQuery {
   private columns = "*";
   private filters: Array<(row: Row) => boolean> = [];
   private orders: Array<{ column: string; ascending: boolean }> = [];
+  private limitCount: number | null = null;
   private singleMode: "none" | "single" | "maybe" = "none";
 
   constructor(table: string) {
@@ -124,6 +131,16 @@ class LocalQuery {
   is(column: string, value: unknown) {
     // null/undefined se tratan igual (columnas opcionales ausentes en local).
     this.filters.push((row) => (row[column] ?? null) === value);
+    return this;
+  }
+
+  ilike(column: string, value: unknown) {
+    // Comparación texto case-insensitive (aproximación al ILIKE de Postgres).
+    const target = String(value).toLowerCase();
+    this.filters.push((row) => {
+      const cell = row[column];
+      return typeof cell === "string" && cell.toLowerCase() === target;
+    });
     return this;
   }
 
@@ -149,6 +166,11 @@ class LocalQuery {
 
   order(column: string, opts?: { ascending?: boolean }) {
     this.orders.push({ column, ascending: opts?.ascending ?? true });
+    return this;
+  }
+
+  limit(count: number) {
+    this.limitCount = count;
     return this;
   }
 
@@ -231,6 +253,7 @@ class LocalQuery {
     if (this.op === "select") {
       resultRows = rows.filter((row) => this.filters.every((filter) => filter(row)));
       resultRows = this.applyOrder(resultRows);
+      if (this.limitCount !== null) resultRows = resultRows.slice(0, this.limitCount);
     } else if (this.op === "insert" || this.op === "upsert") {
       const payload = { ...(this.payload ?? {}) };
       if (this.op === "upsert" && this.conflictColumn) {
