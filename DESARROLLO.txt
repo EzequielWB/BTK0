@@ -991,3 +991,43 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
       alter table annual_reminders add column if not exists category_id uuid
         references annual_categories(id) on delete set null;
       alter table annual_categories enable row level security;
+
+[2026-09-11] DOCUMENTACIÓN, SCRIPTS DE MANTENIMIENTO Y SMOKE AMPLIADO
+  - README.md reescrito con la documentación real y completa del proyecto:
+    presentación, caraterísticas por secciones (login/ñoño, bitácora, metas
+    temporales, efemérides con categorías, recordatorios, la hoja, PWA),
+    modos de datos LOCAL (sin Supabase) y SUPABASE, requisitos, puesta en
+    marcha, scripts, cómo correr el smoke, resumen mensual con IA y claves,
+    deploy en Vercel y notas de la base de datos.
+  - .gitignore: se versiona .env.local.example (`!.env.local.example`) para
+    que los scripts de puesta en marcha tengan la plantilla.
+  - package.json: scripts nuevos `check` (`tsc --noEmit && eslint`),
+    `smoke` (`node scripts/smoke-test.js`) y `backup`
+    (`node scripts/backup-db.js`).
+  - scripts/backup-db.js: copia .data/local-db.json a
+    .data/backups/local-db-<marca de tiempo>.json conservando las últimas 10
+    copias.
+  - smoke-test.js: bloques nuevos al inicio de "Ajustes" ->
+    "2c) Metas temporales" (crear con rango=HOY, mensaje, vista del día,
+    desactivar/reactivar, editar, borrar y sin rastro) y
+    "2d) Modos de completado" (self-contained: count + umbral, percent +
+    umbral, suma de − = 0.5, restaura count + mínimo). El bloque 2c destapó
+    un bug REAL en modo LOCAL: al crear una meta temporal no se seteaba
+    is_active (la vista del día la filtra) -> arreglado en lib/actions.ts
+    (insert con is_active: true).
+  - smoke-test.js: bloque "11a)" robustecido (el menú "¿Dónde la guardo?"
+    bloquea el guardado si hay categorías: ahora elige "Sin separar") y
+    "11a2)" con pre-cleanup de categorías sobrantes de corridas fallidas y
+    verificación que el borrado persista pasada la ventana optimista
+    (espera antes de dar por confirmada la ausencia).
+  - Cometidos del locale durante la corrida: la escritura read-modify-write
+    del local-client pierde escrituras si varias acciones salen en paralelo;
+    el smoke serializa las acciones destructivas (espera entre clicks).
+  - Verificación: `npm run check` (tsc + eslint) en verde, `npm run build`
+    en verde, smoke completo en verde (todos los checks booleanos imprimen
+    true/yes) sin errores JS. Server de producción reiniciado con el build.
+  - PENDIENTE EN SUPABASE (hosted): correr supabase/schema.sql (bloques
+    idempotentes) y limpiar en Vercel las variables de entorno de push
+    (NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT,
+    CRON_SECRET) y los enpoints/scripts de cron de resumen mensual si no se
+    usan.

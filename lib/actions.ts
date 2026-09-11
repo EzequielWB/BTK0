@@ -383,7 +383,7 @@ export async function createTemporalGoalAction(
   const supabase = await createClient();
   const { error } = await supabase
     .from("temporal_goals")
-    .insert({ title, description, start_date, end_date });
+    .insert({ title, description, start_date, end_date, is_active: true });
 
   revalidatePath("/bitacora/settings");
 

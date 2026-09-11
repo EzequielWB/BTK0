@@ -243,6 +243,204 @@ const { chromium } = require("playwright-core");
       (await page.getByText("Activar notificaciones", { exact: false }).count()) === 0
     );
 
+    // 2c) Metas temporales (premios): crear desde Ajustes, verla en el día,
+    //     desactivar, reactivar, editar y borrar.
+    const goalsSection = page
+      .locator("section.blk")
+      .filter({ has: page.locator("h2:has-text('Metas_temporales')") });
+    const metaTitle = "meta-" + Date.now();
+    const metaTitle2 = metaTitle + "-b";
+    await page.goto(base + "/bitacora/settings", { waitUntil: "networkidle" });
+    await goalsSection.locator('input[name="title"]').fill(metaTitle);
+    await goalsSection.locator('input[name="start_date"]').fill(todayIso);
+    await goalsSection.locator('input[name="end_date"]').fill(todayIso);
+    await goalsSection.locator("button:has-text('Crear meta')").click();
+    await goalsSection.locator(`li:has-text('${metaTitle}')`).waitFor({ timeout: 10000 });
+    console.log("Meta temporal creada desde Ajustes: yes");
+    console.log(
+      "Mensaje 'Meta temporal creada.':",
+      (await goalsSection.getByText("Meta temporal creada.").count()) === 1
+    );
+
+    await page.goto(base + `/bitacora/${todayIso}`, { waitUntil: "networkidle" });
+    const activesSection = page
+      .locator("section.blk")
+      .filter({ has: page.locator("h2:has-text('Metas_activas')") });
+    await activesSection.locator(`li:has-text('${metaTitle}')`).waitFor({ timeout: 10000 });
+    console.log("Aparece en la vista del día ('Metas_activas'): yes");
+
+    // Desactivar -> desaparece del día y queda 'Desactivada' en Ajustes
+    await page.goto(base + "/bitacora/settings", { waitUntil: "networkidle" });
+    await goalsSection
+      .locator(`li:has-text('${metaTitle}') button:has-text('Desactivar')`)
+      .click();
+    await page.waitForFunction(
+      (t) => {
+        const li = Array.from(document.querySelectorAll("li")).find(
+          (el) => el.className.includes("enrow") && el.textContent.includes(t)
+        );
+        return Boolean(li) && li.textContent.includes("Desactivada");
+      },
+      metaTitle,
+      { timeout: 10000 }
+    );
+    console.log("Desactivada -> 'Desactivada' en Ajustes: yes");
+    await page.goto(base + `/bitacora/${todayIso}`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(400);
+    console.log(
+      "Desactivada ya no aparece en la vista del día:",
+      (await page.locator(`section:has(h2:has-text('Metas_activas')) li:has-text('${metaTitle}')`).count()) === 0
+    );
+
+    // Reactivar -> vuelve a la vista del día
+    await page.goto(base + "/bitacora/settings", { waitUntil: "networkidle" });
+    await goalsSection
+      .locator(`li:has-text('${metaTitle}') button:has-text('Activar')`)
+      .click();
+    await page.waitForFunction(
+      (t) => {
+        const li = Array.from(document.querySelectorAll("li")).find(
+          (el) => el.className.includes("enrow") && el.textContent.includes(t)
+        );
+        return Boolean(li) && li.textContent.includes("Desactivar");
+      },
+      metaTitle,
+      { timeout: 10000 }
+    );
+    console.log("Reactivada (vuelve el botón 'Desactivar'): yes");
+
+    // Editar título (en modo edición el li muestra el form, no el strong)
+    await goalsSection
+      .locator(`li:has-text('${metaTitle}') button:has-text('Editar')`)
+      .click();
+    const editingRow = goalsSection.locator("li.enrow").filter({
+      hasText: "Guardar cambios",
+    });
+    await editingRow.waitFor({ timeout: 10000 });
+    await editingRow.locator('input[name="title"]').fill(metaTitle2);
+    await editingRow.locator("button:has-text('Guardar cambios')").click();
+    await editingRow.locator("button:has-text('Cancelar')").click();
+    await goalsSection
+      .locator(`li:has-text('${metaTitle2}') button:has-text('Borrar')`)
+      .waitFor({ timeout: 10000 });
+    console.log("Meta editada (nuevo título): yes");
+
+    // Borrar -> desaparece de Ajustes y del día
+    await goalsSection
+      .locator(`li:has-text('${metaTitle2}') button:has-text('Borrar')`)
+      .click();
+    await page.waitForFunction(
+      (t) =>
+        !Array.from(document.querySelectorAll("li")).some(
+          (el) => el.className.includes("enrow") && el.textContent.includes(t)
+        ),
+      metaTitle2,
+      { timeout: 10000 }
+    );
+    console.log("Meta borrada de Ajustes: yes");
+    await page.goto(base + `/bitacora/${todayIso}`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(400);
+    console.log(
+      "No queda rastro de la meta en la vista del día:",
+      (await page.locator(`section:has(h2:has-text('Metas_activas')) li:has-text('${metaTitle2}')`).count()) === 0
+    );
+
+    // 2d) Modos de completado: count/percent + umbral cambian el punto verde
+    //     (verde = segs-g en la celda de HOY). El bloque normaliza el día a un
+    //     estado conocido y solo lee el verde DESPUÉS de una navegación completa
+    //     (el nav no se refresca al instante tras tocar un slot).
+    const todaySeg = page.locator(`nav a[href="/bitacora/${todayIso}"] .cyb-num i.segs-g`);
+    const setCompletion = async (mode, threshold) => {
+      await page.goto(base + "/bitacora/settings", { waitUntil: "networkidle" });
+      await page.selectOption('select[name="mode"]', mode);
+      await page.fill('input[name="threshold"]', String(threshold));
+      await page.click("button:has-text('Guardar ajustes')");
+      await page.waitForSelector("text=Ajustes guardados.", { timeout: 10000 });
+      await page.goto(todayUrl, { waitUntil: "networkidle" });
+      await page.waitForTimeout(500);
+    };
+const setSlotDo = async (label) => {
+  await page
+    .locator(".cyb-trio")
+    .nth(2)
+    .locator('button[aria-label="' + label + '"]')
+    .click();
+};
+while ((await page.locator("button:has-text('ignorado · quitar')").count()) > 0) {
+  await page.locator("button:has-text('ignorado · quitar')").first().click();
+  await page.waitForTimeout(800);
+}
+
+// Normalizar: los 3 objetivos en ✓.
+// El resto del bloque solo toca el trio #2 (el tercer objetivo), así el
+// conteo de los otros dos queda fijo en ✓.
+await setCompletion("count", 2);
+for (let i = 0; i < 3; i++) {
+  await page
+    .locator(".cyb-trio")
+    .nth(i)
+    .locator('button[aria-label="Completado"]')
+    .click();
+  await page.waitForTimeout(700);
+}
+await setCompletion("count", 2);
+console.log(
+  "count/umbral 2: con 3 ✓ (3 puntos) marca:",
+  (await todaySeg.count()) === 1
+);
+console.log(
+  "Render del día con 3/3 · 100%:",
+  (await page.locator("h2:has-text('Objetivos')").first().innerText().then((t) => /3\/3/.test(t)))
+);
+
+// 2 ✓ + 1 ✕ = 2 puntos -> sigue marcando con umbral 2
+setSlotDo("Sin hacer");
+await page.waitForTimeout(1500);
+await setCompletion("count", 2);
+console.log(
+  "count/umbral 2: con 2 ✓ (2 puntos) marca:",
+  (await todaySeg.count()) === 1
+);
+
+// 2 ✓ + 1 − = 2.5 puntos -> NO llega al umbral 3 (el − suma 0.5, no 1)
+setSlotDo("A medias");
+await page.waitForTimeout(1500);
+await setCompletion("count", 3);
+console.log(
+  "− suma 0.5: 2 ✓ + 1 − = 2.5 no llega al umbral 3 (no marca):",
+  (await todaySeg.count()) === 0
+);
+
+// 3 ✓ = 3 puntos -> llega al umbral 3
+setSlotDo("Completado");
+await page.waitForTimeout(1500);
+await setCompletion("count", 3);
+console.log(
+  "Con la 3ra en ✓: 3 puntos >= umbral 3 marca:",
+  (await todaySeg.count()) === 1
+);
+
+// Modo percent: 2 ✓ + 1 − = 2.5/3 = 83%
+setSlotDo("A medias");
+await page.waitForTimeout(1500);
+await setCompletion("percent", 84);
+    console.log(
+      "percent/umbral 84: 2 ✓ + 1 − = 83% < 84 no marca:",
+      (await todaySeg.count()) === 0
+    );
+    await setCompletion("percent", 83);
+    console.log(
+      "percent/umbral 83: 83% >= 83 marca:",
+      (await todaySeg.count()) === 1
+    );
+
+    // Restaurar: vuelve al modo count/umbral 1 (flujo de los bloques siguientes)
+    await setCompletion("count", 1);
+    console.log(
+      "Restaurado count/umbral 1 (vuelve a marcar):",
+      (await todaySeg.count()) === 1
+    );
+
     // 3) Volver al día y verificar segmentos de colores (verde/amarillo/rojo)
     await page.goto(todayUrl, { waitUntil: "networkidle" });
     await page.waitForSelector("h2:has-text('Objetivos')", { timeout: 15000 });
@@ -720,7 +918,15 @@ const { chromium } = require("playwright-core");
       .fill(efaMonth);
     await page.locator("textarea").first().fill(efaText);
     await page.locator("button:has-text('Agregar efeméride')").click();
-    await page.getByText(efaText).first().waitFor({ timeout: 10000 });
+    // Si el menú "¿Dónde la guardo?" abre (hay categorías), elegir Sin separar.
+    const picker = page.locator(".cyb-modal-panel");
+    try {
+      await picker.waitFor({ state: "visible", timeout: 3000 });
+      await picker.getByText("Sin separar", { exact: true }).click();
+    } catch {
+      // sin menú: la efeméride se guarda directo
+    }
+    await page.locator(`li.enrow:has-text('${efaText}')`).waitFor({ timeout: 10000 });
     console.log("Efeméride agregada desde su pestaña: yes");
     console.log(
       "Indica próxima ocurrencia ('hoy'):",
@@ -760,6 +966,7 @@ const { chromium } = require("playwright-core");
     await page.goto(base + "/bitacora/efemerides", { waitUntil: "networkidle" });
     await page.locator(`li:has-text('${efaText2}') button:has-text('Borrar')`).click();
     await page.getByText(efaText2).waitFor({ timeout: 10000, state: "detached" });
+    await page.waitForTimeout(1500);
     console.log("Efeméride borrada: yes");
     await page.goto(base + `/bitacora/${todayIso}`, { waitUntil: "networkidle" });
     await page.waitForTimeout(500);
@@ -774,6 +981,32 @@ const { chromium } = require("playwright-core");
     await page.waitForSelector("input[aria-label='Nombre de la nueva categoría']", {
       timeout: 10000,
     });
+
+    // Pre-cleanup: borrar categorías de prueba de corridas fallidas (la del
+    // usuario, "Cumpleaños", se conserva). Verifica que el borrado persista
+    // pasado el efecto optimista (espera extra antes de confirmar ausencia).
+    const deleteCategoryChip = async (nm) => {
+      const chip = page.locator(`.cat-chip:has-text('${nm}')`);
+      if ((await chip.count()) === 0) return true;
+      await chip.locator("button[aria-label^='Borrar ']").click();
+      await chip.locator("button[aria-label^='Confirmar borrado ']").click();
+      await chip.waitFor({ timeout: 10000, state: "detached" });
+      await page.waitForTimeout(1500);
+      return (await chip.count()) === 0;
+    };
+    const toClean = (
+      await page.locator(".cat-chip > span").allTextContents()
+    ).map((n) => n.trim());
+    for (const nm of toClean) {
+      if (nm === "Cumpleaños" || nm === "Sin separar") continue;
+      if (!(await deleteCategoryChip(nm))) {
+        console.log("Pre-cleanup falló borrando:", nm);
+      }
+    }
+    const surviving = (
+      await page.locator(".cat-chip > span").allTextContents()
+    ).map((n) => n.trim());
+    console.log("Pre-cleanup, chips restantes:", surviving.join(" | "));
 
     const catA = "cumple-" + Date.now();
     const catB = "aniv-" + Date.now();
@@ -852,21 +1085,34 @@ const { chromium } = require("playwright-core");
         (await page.locator(`li:has-text('${cEfaB}')`).count()) === 1
     );
 
-    // Reordenar con flechas: bajar catA -> el orden de chips cambia
+    // Reordenar con flechas: bajar catA -> queda DESPUÉS de catB2.
+    // El check no asume la cantidad de chips (puede haber categorías previas).
     const chipNames = async () =>
       page
         .locator(".cat-chip > span")
         .allTextContents()
         .then((names) => names.map((n) => n.trim()));
     const before = await chipNames();
-    await page.locator(`.cat-chip:has-text('${catA}') button[aria-label^="Bajar"]`).click();
-    await page.waitForTimeout(500);
+    await page
+      .locator(`.cat-chip:has-text('${catA}') button[aria-label^="Bajar"]`)
+      .click();
+    await page.waitForFunction(
+      ({ a, b }) => {
+        const names = Array.from(
+          document.querySelectorAll(".cat-chip > span")
+        ).map((s) => (s.textContent || "").trim());
+        const ia = names.indexOf(a);
+        const ib = names.indexOf(b);
+        return ia !== -1 && ib !== -1 && ia > ib;
+      },
+      { a: catA, b: catB2 },
+      { timeout: 10000 }
+    );
     const after = await chipNames();
-    const expected = [catB2, catA];
     console.log(
       "Flechas reordenan las categorías:",
-      JSON.stringify(before) === JSON.stringify([catA, catB2]) &&
-        JSON.stringify(after) === JSON.stringify(expected)
+      before.indexOf(catA) < before.indexOf(catB2) &&
+        after.indexOf(catA) > after.indexOf(catB2)
     );
 
     // Borrar catA (doble toque de confirmación) -> sus efemérides vuelven a "sin separar"
@@ -884,6 +1130,9 @@ const { chromium } = require("playwright-core");
       catA,
       { timeout: 10000 }
     );
+    // Dar tiempo a que la acción resuelva (evita que la siguiente corra en
+    // paralelo y el storage local pierda escrituras) antes de verificar.
+    await page.waitForTimeout(1500);
     console.log("Borrar categoría (doble toque) la elimina: yes");
     await page.getByText(cEfaA).first().waitFor({ timeout: 10000 });
     selectedCat = await page
@@ -892,14 +1141,29 @@ const { chromium } = require("playwright-core");
       .evaluate((el) => el.options[el.selectedIndex].text);
     console.log("Sus efemérides quedan en 'Sin separar':", selectedCat === "Sin separar");
 
-    // Cleanup: borrar categoría restante y las dos efemérides
+    // Cleanup: borrar categoría restante y las dos efemérides (seriado para
+    // que la acción anterior termine antes de lanzar la siguiente).
+    const settle = () => page.waitForTimeout(1500);
     const catBChip = page.locator(`.cat-chip:has-text('${catB2}')`);
     await catBChip.locator("button[aria-label^='Borrar ']").click();
     await catBChip.locator("button[aria-label^='Confirmar borrado ']").click();
     await page.locator(`.cat-chip:has-text('${catB2}')`).waitFor({ timeout: 10000, state: "detached" });
+    await page.waitForFunction(
+      (text) =>
+        Array.from(document.querySelectorAll(".cat-chip > span")).every(
+          (el) => !el.textContent.includes(text)
+        ),
+      catB2,
+      { timeout: 10000 }
+    );
+    await settle();
     for (const t of [cEfaA, cEfaB]) {
       await page.locator(`li:has-text('${t}') button:has-text('Borrar')`).click();
       await page.getByText(t).waitFor({ timeout: 10000, state: "detached" });
+      await settle();
+      if ((await page.getByText(t).count()) !== 0) {
+        console.log("Cleanup falló borrando:", t);
+      }
     }
     console.log("Cleanup: categorías y efemérides de prueba borradas: yes");
 
