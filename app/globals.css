@@ -1259,3 +1259,74 @@ body {
     font-size: 7px;
   }
 }
+
+.login-scanlines {
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.045) 0 1px,
+    transparent 1px 3px
+  );
+  opacity: 0.6;
+}
+.login-vignette {
+  background: radial-gradient(
+    ellipse at center,
+    transparent 45%,
+    rgba(0, 0, 0, 0.6) 100%
+  );
+}
+.dot-live {
+  animation: dot-live-blink 1.2s steps(2, start) infinite;
+}
+@keyframes dot-live-blink {
+  50% {
+    opacity: 0.15;
+  }
+}
+.tw-caret {
+  color: #00ff9d;
+  animation: tw-caret-blink 1s steps(1) infinite;
+}
+@keyframes tw-caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+.gate-shake {
+  animation: gate-shake-x 0.34s ease both;
+}
+@keyframes gate-shake-x {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
+}
+.granted-flash {
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0, 255, 157, 0.35) 0%,
+    rgba(0, 255, 157, 0.08) 45%,
+    transparent 75%
+  );
+  animation: granted-flash-fade 0.9s ease-out forwards;
+}
+@keyframes granted-flash-fade {
+  0% {
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}

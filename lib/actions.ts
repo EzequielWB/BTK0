@@ -3,9 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { AUTH_COOKIE, generateSalt, hashPassword, isAuthenticated } from "@/lib/session";
+import { AUTH_COOKIE, AUTH_DAY_COOKIE, generateSalt, hashPassword, isAuthenticated } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { isValidISODate, isValidMonthDay, todayISO } from "@/lib/utils";
+import { arNow, isValidISODate, isValidMonthDay, todayISO } from "@/lib/utils";
 
 export type ActionResult = { error?: string; success?: string };
 
@@ -46,21 +46,39 @@ export async function loginAction(
     return { error: "Contraseña incorrecta" };
   }
 
+  return { success: "IDENTIDAD VERIFICADA" };
+}
+
+export async function grantSessionAction(): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("password_config")
+    .select("password_hash")
+    .eq("id", 1)
+    .single();
+
+  if (error || !data) {
+    return { error: "No hay contraseña configurada. Revisá el seed de Supabase." };
+  }
+
   const cookieStore = await cookies();
-  cookieStore.set(AUTH_COOKIE, password_hash, {
+  const options = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24 * 30,
-  });
+  } as const;
+  cookieStore.set(AUTH_COOKIE, (data as { password_hash: string }).password_hash, options);
+  cookieStore.set(AUTH_DAY_COOKIE, arNow().date, options);
 
-  redirect("/bitacora");
+  return { success: "granted" };
 }
 
 export async function logoutAction(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.delete(AUTH_COOKIE);
+  cookieStore.delete(AUTH_DAY_COOKIE);
   redirect("/");
 }
 

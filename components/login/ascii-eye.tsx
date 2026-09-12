@@ -57,7 +57,8 @@ function cell(
   y: number,
   gx: number,
   gy: number,
-  blink: number
+  blink: number,
+  pupil: number
 ): [string, number] | null {
   const u = (x - CX) / R;
   const v = (y - CY) / R;
@@ -133,7 +134,7 @@ function cell(
   if (v - vMin < 0.6) shadeMul *= 0.78;
   if (vMax - v < 0.6) shadeMul *= 1.08;
 
-  if (dO >= PUPIL_K) {
+  if (dO >= PUPIL_K - pupil) {
     const gd = norm3([gx - 0.16, gy - 0.18, 1.1]);
     const glint = clamp((n[0] * gd[0] + n[1] * gd[1] + n[2] * gd[2] - 0.956) * 22, 0, 1);
     if (glint > 0.6) return ["·", 0.98];
@@ -154,13 +155,28 @@ function cell(
   return [shadeChar(b), b];
 }
 
-export function AsciiEye({ stare = false }: { stare?: boolean }) {
+type EyeMode = "idle" | "read" | "stare";
+
+type Action = {
+  kind: "wait" | "sweep";
+  fromX: number;
+  fromY: number;
+  toX: number;
+  toY: number;
+  dur: number;
+};
+
+function easeInOut(t: number): number {
+  return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+}
+
+export function AsciiEye({ mode = "idle" }: { mode?: EyeMode }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const stareRef = useRef(stare);
+  const modeRef = useRef<EyeMode>(mode);
 
   useEffect(() => {
-    stareRef.current = stare;
-  }, [stare]);
+    modeRef.current = mode;
+  }, [mode]);
 
   useEffect(() => {
     const elem = canvasRef.current;
@@ -187,15 +203,56 @@ export function AsciiEye({ stare = false }: { stare?: boolean }) {
     let lastNow = performance.now();
     let ox = 0;
     let oy = 0;
-    let dirIdx = 0;
-    let flipped = true;
     let nextBlinkAt = performance.now() + rand(1500, 2800);
     let blinkStart = -Infinity;
     const blinkDuration = 130;
     const blinkHold = 60;
     const blinkOpen = 150;
+    let actionStart = performance.now();
+    let action: Action = {
+      kind: "wait",
+      fromX: 0,
+      fromY: 0,
+      toX: 0,
+      toY: 0,
+      dur: 1400,
+    };
 
-    function draw(gx: number, gy: number, blink: number) {
+    function pickIdleAction(now: number) {
+      const r = Math.random();
+      if (r < 0.5) {
+        const b = FIXED_LOOKS[Math.floor(Math.random() * FIXED_LOOKS.length)];
+        action = {
+          kind: "wait",
+          fromX: ox,
+          fromY: oy,
+          toX: b[0] + rand(-0.05, 0.05),
+          toY: b[1] + rand(-0.05, 0.05),
+          dur: rand(1500, 2600),
+        };
+      } else if (r < 0.75) {
+        action = {
+          kind: "wait",
+          fromX: ox,
+          fromY: oy,
+          toX: rand(-0.16, 0.16),
+          toY: rand(-0.12, 0.12),
+          dur: rand(420, 800),
+        };
+      } else {
+        action = {
+          kind: "sweep",
+          fromX: ox,
+          fromY: oy,
+          toX: Math.random() < 0.5 ? -0.72 : 0.72,
+          toY: rand(-0.32, 0.32),
+          dur: rand(1600, 2800),
+        };
+      }
+      actionStart = now;
+    }
+
+    function draw(gx: number, gy: number, blink: number, pupil: number) {
       ctx.clearRect(0, 0, W * CHAR_W, H * CHAR_H);
 
       const glowX = CX * CHAR_W;
@@ -209,7 +266,7 @@ export function AsciiEye({ stare = false }: { stare?: boolean }) {
 
       for (let cy = 0; cy < H; cy++) {
         for (let cx = 0; cx < W; cx++) {
-          const got = cell(cx, cy, gx, gy, blink);
+          const got = cell(cx, cy, gx, gy, blink, pupil);
           if (!got) continue;
           const [ch, b] = got;
           const g = Math.round(b * 255);
@@ -227,38 +284,52 @@ export function AsciiEye({ stare = false }: { stare?: boolean }) {
       raf = requestAnimationFrame(frame);
       if (hidden) return;
 
-      const staring = stareRef.current;
+      const m = modeRef.current;
 
       let lid = 0;
       if (now - blinkStart < blinkDuration) {
         lid = ease((now - blinkStart) / blinkDuration);
       } else if (now - blinkStart < blinkDuration + blinkHold) {
         lid = 1;
-        // con el ojo cerrado, cambia a la siguiente dirección fija
-        if (!staring && !flipped) {
-          flipped = true;
-          dirIdx = (dirIdx + 1) % FIXED_LOOKS.length;
-        }
       } else if (now - blinkStart < blinkDuration + blinkHold + blinkOpen) {
         lid = 1 - ease((now - blinkStart - blinkDuration - blinkHold) / blinkOpen);
-      } else if (!staring && now >= nextBlinkAt) {
+      } else if (now >= nextBlinkAt) {
         blinkStart = now;
-        flipped = false;
-        nextBlinkAt = now + rand(1500, 2800);
+        const span = m === "read" ? 900 : 1500;
+        nextBlinkAt = now + rand(span, span * 1.9);
+      }
+
+      let targetX = 0;
+      let targetY = 0;
+      if (m !== "idle") {
+        targetX = 0;
+        targetY = 0;
+      } else {
+        if (now - actionStart >= action.dur) pickIdleAction(now);
+        if (action.kind === "sweep") {
+          const p = easeInOut(Math.min(1, (now - actionStart) / action.dur));
+          targetX = action.fromX + (action.toX - action.fromX) * p;
+          targetY = action.fromY + (action.toY - action.fromY) * p;
+        } else {
+          targetX = action.toX;
+          targetY = action.toY;
+        }
       }
 
       const dt = Math.min(0.1, (now - lastNow) / 1000 || 0.016);
       lastNow = now;
-      const k = staring ? 1 - Math.exp(-dt * 9) : 1 - Math.exp(-dt * 7);
-      const look = FIXED_LOOKS[staring ? 0 : dirIdx];
-      ox += ((staring ? 0 : look[0]) - ox) * k;
-      oy += ((staring ? 0 : look[1]) - oy) * k;
+      const k = m === "stare" ? 1 - Math.exp(-dt * 9) : 1 - Math.exp(-dt * 7);
+      ox += (targetX - ox) * k;
+      oy += (targetY - oy) * k;
 
-      const amp = staring ? 0.015 : 0.035;
+      const amp = m === "idle" ? 0.035 : 0;
       const idlDx = Math.sin(now / 900) * amp;
       const idlDy = Math.cos(now / 1100) * amp;
+      const trembleX = m === "read" ? Math.sin(now / 47) * 0.02 : 0;
+      const trembleY = m === "read" ? Math.cos(now / 41) * 0.015 : 0;
+      const pupil = m === "stare" ? 0.09 : m === "read" ? 0.025 : 0;
 
-      draw(ox + idlDx, oy + idlDy, lid);
+      draw(ox + idlDx + trembleX, oy + idlDy + trembleY, lid, pupil);
     }
 
     const onVisibility = () => {
@@ -268,7 +339,9 @@ export function AsciiEye({ stare = false }: { stare?: boolean }) {
     document.addEventListener("visibilitychange", onVisibility);
 
     if (reduceMotion) {
-      draw(0, 0, 0);
+      const pupilStatic =
+        modeRef.current === "stare" ? 0.09 : modeRef.current === "read" ? 0.025 : 0;
+      draw(0, 0, 0, pupilStatic);
     } else {
       raf = requestAnimationFrame(frame);
     }
@@ -283,7 +356,7 @@ export function AsciiEye({ stare = false }: { stare?: boolean }) {
     <canvas
       ref={canvasRef}
       aria-hidden
-      className="mx-auto block"
+      className="login-eye mx-auto block"
       style={{ width: "min(86vw, 832px)", height: "auto" }}
     />
   );

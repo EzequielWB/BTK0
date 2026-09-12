@@ -10,6 +10,10 @@ const PHRASES: string[] = [
   "¿Quién te espera\nal otro lado?",
   "¿Estás listo para\ndejar huella?",
   "No todo es lo que\nparece. ¿Entrás?",
+  "El ojo ya te\nvio llegar.",
+  "No hay puertas.\nSolo mirada.",
+  "¿Qué buscás\nacá dentro?",
+  "La terminal espera.\n¿Y vos?",
 ];
 
 let last = -1;

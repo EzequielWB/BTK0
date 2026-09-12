@@ -1031,3 +1031,65 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
     (NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT,
     CRON_SECRET) y los enpoints/scripts de cron de resumen mensual si no se
     usan.
+
+[2026-09-11] ROLLBACK — SE ELIMINA EL FEATURE DE TEMAS VISUALES
+  - Después de probar 3 diseños del tema "renacimiento" (v1, v2 barroco y
+    v3 "El Gabinete"), el usuario decidió que ninguno lo convencía y pidió
+    volver atrás en TODO lo relacionado a temas.
+  - Se revirtió el working tree completo al commit 2e00bbe (estado previo al
+    feature) con `git restore .` + borrado del archivo nuevo
+    components/theme-settings-form.tsx.
+  - Queda eliminado: el formulario "Tema visual" en Ajustes, el tipo
+    ThemeName + columna settings.theme (schema.sql, seed y migración del
+    local-client), saveThemeAction en lib/actions.ts, las fuentes
+    Montserrat/Playfair y la cookie theme en app/layout.tsx y app/page.tsx,
+    el branch renacimiento del login (login-screen.tsx), el refactor de
+    password-gate a .login-*, las clases .cyb-ok/.cyb-err/.theme-* y los
+    bloques html[data-theme="renacimiento"] de globals.css, el barrido de
+    hex a utilidades, y el bloque "11g) Tema visual" del smoke (vuelve a
+    arrancar sin cookie).
+  - Verificación post-rollback: `npm run check` y `npm run build` en verde
+    (las rutas /_not-found y /manifest.webmanifest vuelven a ser estáticas),
+    smoke completo en verde (sin :false ni FALLO, sin errores JS), login con
+    el HUD cyberpunk original. Server de producción reiniciado.
+  - Nota: la fila settings del local-db.json puede quedar con un campo
+    `theme` extra que el código (ya revertido) ignora; es inofensivo.
+
+[2026-09-11] LOGIN V2 — "TERMINAL DE ACCESO" (rediseño manteniendo esencia)
+  - Decisión del usuario: mantener el núcleo (ojo ASCII sentinela, lluvia
+    digital, frases existenciales, apagado CRT al fallar) y mejorarlo SIN
+    seguimiento de cursor (uso mayoritario en mobile). Se optó por una
+    "terminal de acceso": el ojo te lee por foco y sus miradas tienen más
+    vida; sin cursor-mouse.
+  - ascii-eye.tsx: prop stare -> mode "idle"|"read"|"stare". Idle con
+    coreografía nueva (miradas largas, micro-sacadas, barridos que "escanean
+    la sala"). read = mira de frente con micro-temblor y parpadea más seguido
+    (al tocar/Tab en el input, onReading lo dispara). stare = mirada fija +
+    pupilA dilatada (umbral pupilar PUPIL_K - bias) antes del flash CRT.
+    Misma matemática de esfera; el resto del shader intacto.
+  - Nuevos componentes en components/login/: osd-frame.tsx (barra superior
+    "ACCESO RESTRINGIDO" + dot LIVE parpadeante, barra inferior
+    "BITÁKORA OS v0.1" + reloj HH:MM:SS, scanlines CSS y viñeta), boot-log.tsx
+    (tipea 3 líneas de arranque, salteable con tap/tecla, reduced-motion
+    instantáneo), typewriter.tsx (frase tipeada con caret verde y
+    data-phrase-src para el smoke).
+  - password-gate.tsx: onReading(true/false), contador cosmético "· INTENTO N ·",
+    flash rojo -> verde + shake de la fila al errar, focus-visible ring. Sin
+    lockout (reintento infinito como antes).
+  - login-screen.tsx: phases boot -> idle -> wrong -> flash -> off. El input
+    NUNCA se condiciona al boot (DOM presente desde el inicio, el smoke no se
+    rompe). El ojo "prende" con fade (opacity transition) tras el boot.
+  - login-phrases.ts: +4 frases ("El ojo ya te vio llegar", "No hay puertas.
+    Solo mirada.", etc.).
+  - globals.css: .login-scanlines, .login-vignette, dot-live-blink,
+    tw-caret-blink, gate-shake-x.
+  - Smoke (login): + OSD "ACCESO RESTRINGIDO", reloj #HH:MM:SS, scanlines,
+    ojo (.login-eye), typewriter completo (span.textContent === data-phrase-src),
+    contador "INTENTO 1" tras clave errónea. Resto del flujo intacto (negro
+    absoluto, refresco, bitakra -> /bitacora).
+  - Verificación: npm run check y npm run build en verde. Smoke completo en
+    verde (ningún ": false", sin FALLO, sin errores JS). Server reiniciado.
+  - Nota eslint strict (react-hooks v16): nada de setState síncrono en bodies
+    de effect ni mutar refs en render -> boot/typewriter/osd usan setState
+    sól desde callbacks de interval, y los refs de callback solo se actualizan
+    en effectos.

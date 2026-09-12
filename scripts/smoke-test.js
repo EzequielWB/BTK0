@@ -27,9 +27,44 @@ const { chromium } = require("playwright-core");
       (await page.locator("h1.font-pixel").count()) === 1
     );
 
-    // Login incorrecto → el ojo mira de frente, flash CRT y negro absoluto
+    // Terminal de acceso: marco OSD, reloj vivo, scanlines, ojo y typewriter
+    console.log(
+      "OSD 'ACCESO RESTRINGIDO':",
+      (await page.locator("text=Acceso restringido").count()) >= 1
+    );
+    await page.waitForSelector(".osd-clock", { timeout: 8000 });
+    console.log(
+      "Reloj OSD HH:MM:SS:",
+      /^#?\d{2}:\d{2}:\d{2}$/.test(
+        (await page.locator(".osd-clock").innerText()).trim()
+      )
+    );
+    console.log(
+      "Scanlines presentes:",
+      (await page.locator(".login-scanlines").count()) === 1
+    );
+    console.log(
+      "Ojo ASCII presente:",
+      (await page.locator("canvas.login-eye").count()) === 1
+    );
+    await page.waitForFunction(
+      () => {
+        const h = document.querySelector("h1.font-pixel[data-phrase-src]");
+        if (!h) return false;
+        const span = h.querySelector("span");
+        return (
+          !!span && span.textContent === h.getAttribute("data-phrase-src")
+        );
+      },
+      { timeout: 8000 }
+    );
+    console.log("Frase tipeada completa (typewriter): yes");
+
+    // Login incorrecto → contador INTENTO, el ojo mira de frente, flash CRT y negro absoluto
     await page.fill('input[name="password"]', "clave-equivocada");
     await page.click('button[type="submit"]');
+    await page.waitForSelector("text=INTENTO 1", { timeout: 10000 });
+    console.log("Contador INTENTO tras clave errónea: yes");
     await page.waitForSelector("div.fixed.inset-0.z-50.bg-black", {
       timeout: 12000,
     });
@@ -48,6 +83,10 @@ const { chromium } = require("playwright-core");
 
     await page.fill('input[name="password"]', "bitakra");
     await page.click('button[type="submit"]');
+    await page.waitForSelector("text=IDENTIDAD VERIFICADA", {
+      timeout: 12000,
+    });
+    console.log("Animación de acceso (IDENTIDAD VERIFICADA): yes");
     await page.waitForURL("**/bitacora/**", { timeout: 15000 });
     const todayUrl = page.url();
     console.log("URL tras login:", todayUrl);
