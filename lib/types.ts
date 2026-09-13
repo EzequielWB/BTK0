@@ -86,7 +86,18 @@ export type Settings = {
   id: number;
   completion_mode: CompletionMode;
   threshold: number;
+  /** Hora AR (HH:MM) de la notificación diaria "revisá tu bitácora". */
+  notif_daily_time?: string | null;
+  /** Hora AR (HH:MM) del aviso "un día antes" de los recordatorios. */
+  notif_reminder_time?: string | null;
   updated_at: string;
+};
+
+export type PushSubscriptionRow = {
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  created_at: string;
 };
 
 export type ChecklistStatus = "none" | "partial" | "done" | "ignored";

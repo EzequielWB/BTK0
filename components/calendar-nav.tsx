@@ -33,8 +33,9 @@ export function CalendarNav({
   annualDates?: string[];
 }) {
   const parsed = parseISODate(date);
-  const [year, setYear] = useState(parsed.getFullYear());
-  const [month, setMonth] = useState(parsed.getMonth());
+  const year = parsed.getFullYear();
+  const month = parsed.getMonth();
+  const day = parsed.getDate();
   const [modalDate, setModalDate] = useState<string | null>(null);
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -71,64 +72,48 @@ export function CalendarNav({
     }
   };
 
-  const goPrev = () => {
-    if (month === 0) {
-      setYear((y) => y - 1);
-      setMonth(11);
-    } else {
-      setMonth((m) => m - 1);
-    }
-  };
-
-  const goNext = () => {
-    if (month === 11) {
-      setYear((y) => y + 1);
-      setMonth(0);
-    } else {
-      setMonth((m) => m + 1);
-    }
-  };
+  const pad2 = (n: number) => String(n).padStart(2, "0");
+  const isoOf = (targetYear: number, targetMonth: number) =>
+    `${targetYear}-${pad2(targetMonth + 1)}-${pad2(
+      Math.min(day, new Date(targetYear, targetMonth + 1, 0).getDate())
+    )}`;
 
   return (
     <nav>
       <div className="flex items-center justify-between gap-2 mb-3">
-        <button
-          type="button"
-          onClick={() => setYear((y) => y - 1)}
+        <Link
+          href={`/bitacora/${isoOf(year - 1, month)}`}
           className="cal-btn"
           aria-label="Año anterior"
         >
           ←
-        </button>
+        </Link>
         <span className="font-medium text-center flex-1">{year}</span>
-        <button
-          type="button"
-          onClick={() => setYear((y) => y + 1)}
+        <Link
+          href={`/bitacora/${isoOf(year + 1, month)}`}
           className="cal-btn"
           aria-label="Año siguiente"
         >
           →
-        </button>
+        </Link>
       </div>
 
       <div className="flex items-center justify-between mb-2">
-        <button
-          type="button"
-          onClick={goPrev}
+        <Link
+          href={`/bitacora/${month === 0 ? isoOf(year - 1, 11) : isoOf(year, month - 1)}`}
           className="cal-btn"
           aria-label="Mes anterior"
         >
           ‹
-        </button>
+        </Link>
         <strong className="capitalize text-center">{monthLabel(year, month)}</strong>
-        <button
-          type="button"
-          onClick={goNext}
+        <Link
+          href={`/bitacora/${month === 11 ? isoOf(year + 1, 0) : isoOf(year, month + 1)}`}
           className="cal-btn"
           aria-label="Mes siguiente"
         >
           ›
-        </button>
+        </Link>
       </div>
 
       <div

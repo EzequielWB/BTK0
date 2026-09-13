@@ -836,3 +836,99 @@ export async function toggleDayFlagAction(date: string): Promise<ActionResult> {
   revalidatePath("/bitacora");
   return { success: existing ? "Destacado quitado." : "Día destacado." };
 }
+
+// ---------------------------------------------------------------------------
+// Notificaciones PWA (Web Push)
+// ---------------------------------------------------------------------------
+
+const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+function parseSubKeys(sub: {
+  endpoint?: string;
+  keys?: { p256dh?: string; auth?: string };
+}): { endpoint?: string; p256dh?: string; auth?: string } {
+  return {
+    endpoint:
+      typeof sub.endpoint === "string" && sub.endpoint.startsWith("https://")
+        ? sub.endpoint
+        : undefined,
+    p256dh: typeof sub.keys?.p256dh === "string" ? sub.keys.p256dh : undefined,
+    auth: typeof sub.keys?.auth === "string" ? sub.keys.auth : undefined,
+  };
+}
+
+export async function savePushSubscriptionAction(sub: {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+}): Promise<ActionResult> {
+  await requireAuth();
+
+  const { endpoint, p256dh, auth } = parseSubKeys(sub);
+  if (!endpoint || !p256dh || !auth) {
+    return { error: "Suscripción inválida." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("push_subs").upsert(
+    { endpoint, p256dh, auth },
+    { onConflict: "endpoint" }
+  );
+
+  if (error) return { error: "No se pudo guardar la suscripción." };
+  return { success: "Notificaciones activadas." };
+}
+
+export async function deletePushSubscriptionAction(endpoint: string): Promise<ActionResult> {
+  await requireAuth();
+
+  const supabase = await createClient();
+  await supabase.from("push_subs").delete().eq("endpoint", endpoint);
+
+  return { success: "Notificaciones desactivadas." };
+}
+
+export async function saveNotificationTimesAction(
+  daily: string,
+  reminder: string
+): Promise<ActionResult> {
+  await requireAuth();
+
+  if (!TIME_PATTERN.test(daily) || !TIME_PATTERN.test(reminder)) {
+    return { error: "Las horas tienen que tener formato HH:MM." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("settings")
+    .update({
+      notif_daily_time: daily,
+      notif_reminder_time: reminder,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", 1);
+
+  if (error) return { error: "No se pudieron guardar las horas." };
+  return { success: "Horas de notificación guardadas." };
+}
+
+export async function sendTestPushAction(): Promise<ActionResult> {
+  await requireAuth();
+
+  const { notifyAll } = await import("@/lib/push");
+  const { sent, removed } = await notifyAll({
+    title: "BitAK0R4_",
+    body: "Notificación de prueba. Las alertas están funcionando.",
+    url: "/bitacora",
+    tag: "bitakra-test",
+  });
+
+  if (sent === 0) {
+    return {
+      error:
+        removed > 0
+          ? "No hay suscripciones activas (se limpiaron algunas vencidas)."
+          : "Todavía no se activaron notificaciones en este dispositivo.",
+    };
+  }
+  return { success: `Notificación de prueba enviada (${sent} dispositivo/s).` };
+}

@@ -1,0 +1,21 @@
+name: bitakra-notify
+
+on:
+  schedule:
+    # Cada 5 minutos (hora UTC). La API compara la hora de Argentina (UTC-3)
+    # contra las horas configuradas en Ajustes y decide cuándo disparar.
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Disparar notificaciones
+        run: >
+          curl -fsS -X POST
+          -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+          "${{ vars.BITAK0RA_URL }}/api/cron/notify"

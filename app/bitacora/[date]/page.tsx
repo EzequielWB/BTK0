@@ -154,12 +154,12 @@ export default async function DayPage({
     supabase.from("daily_objectives").select("*"),
     supabase
       .from("notes")
-      .select("date")
+      .select("date, content")
       .gte("date", monthStart)
       .lte("date", monthEnd),
     supabase
       .from("learnings")
-      .select("date")
+      .select("date, content")
       .gte("date", monthStart)
       .lte("date", monthEnd),
     supabase
@@ -175,7 +175,7 @@ export default async function DayPage({
       .lte("date", monthEnd),
     supabase
       .from("journal")
-      .select("date")
+      .select("date, content")
       .gte("date", monthStart)
       .lte("date", monthEnd),
   ]);
@@ -288,7 +288,7 @@ export default async function DayPage({
       <div className="blk">
         <div className="flex items-center justify-between gap-2 mb-2">
           <span className="blk-tag">
-            Agenda · {monthLabel(parsed.getFullYear(), parsed.getMonth())}
+            Agenda - {monthLabel(parsed.getFullYear(), parsed.getMonth())}
           </span>
           <div className="flex items-center gap-2">
             <JournalSheet

@@ -31,6 +31,7 @@ export default function BitacoraLayout({ children }: { children: ReactNode }) {
         </span>
         <nav className="cyb-nav">
           <Link href="/bitacora">Hoy</Link>
+          <Link href="/bitacora/buscar">Buscar</Link>
           <Link href="/bitacora/efemerides">Efemérides</Link>
           <Link href="/bitacora/settings">Ajustes</Link>
           <Link href="/bitacora/stats">Stats</Link>

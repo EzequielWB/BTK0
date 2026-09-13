@@ -603,6 +603,10 @@ const QUOTES: MotivationalQuote[] = [
     author: "Lema de la Academia UA",
     role: "grito de batalla (My Hero Academia)",
   },
+  {
+    text: "O aumentás el peso de tu sacrificio o reducís el tamaño de tus deseos.",
+    author: "-Anónimo",
+  },
 ];
 
 export function quoteForDate(iso: string): MotivationalQuote {
@@ -615,4 +619,13 @@ export function quoteForDate(iso: string): MotivationalQuote {
 
 export function getRandomQuote(): MotivationalQuote {
   return QUOTES[Math.floor(Math.random() * QUOTES.length)];
+}
+
+export function getSpecialQuote(): MotivationalQuote {
+  const special = QUOTES.find(
+    (q) =>
+      q.text ===
+      "O aumentás el peso de tu sacrificio o reducís el tamaño de tus deseos."
+  );
+  return special ?? getRandomQuote();
 }

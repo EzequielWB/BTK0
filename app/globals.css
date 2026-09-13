@@ -267,6 +267,26 @@ body {
   color: var(--cyb-faint);
 }
 
+.cyb-campo-sm {
+  width: 132px;
+  background: var(--cyb-field);
+  color: var(--cyb-fg);
+  border: 1px solid var(--cyb-track);
+  outline: none;
+  caret-color: var(--cyb-neon);
+  border-radius: 0;
+  padding: 4px 8px;
+  font-family: inherit;
+  font-size: 12px;
+  color-scheme: dark;
+}
+.cyb-campo-sm:focus {
+  border-color: var(--cyb-neon);
+}
+.cyb-campo-sm::placeholder {
+  color: var(--cyb-faint);
+}
+
 /* Checkboxes HUD */
 .cyb-check {
   width: 15px;

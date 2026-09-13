@@ -1,0 +1,65 @@
+BUSQUEDA EN EL MES — NOTA DE IMPLEMENTACION
+============================================
+
+QUE SE HIZO (CABLEADO EXISTENTE, BUILD VERDE)
+---------------------------------------------
+- components/month-search.tsx   -> componente client (input "buscar en este mes." + boton "Buscar").
+                                    Importa con "@"use client"", useState/useRef/useEffect, Link de next/link.
+                                    Recibe items: MonthSearchItem[] (categoria, categoria/nombre, fecha, texto).
+                                    Agrupa por categoria (Recordatorio, Efemeride, Anotacion, Aprendizaje, Hoja),
+                                    filtra con toLowerCase().includes() (sin FTS/tsvector), muestra Link a /bitacora/{fecha}.
+- app/bitacora/[date]/page.tsx   -> importa MonthSearch + MonthSearchItem (L.5), construye monthSearchItems
+                                    (recordatorios + efemerides con categoria via annual_categories + notas
+                                    + aprendizajes + hojas del journal) y RENDERIZA
+                                    <MonthSearch items={monthSearchItems} /> (L.350) en el header junto al tag "//AGENDA".
+- app/globals.css                -> clases cyb-modal (backdrop oscuro fijo), cyb-modal-panel (panel centrado),
+                                    cyb-campo / cyb-btn / cyb-campo-sm / cyb-campo-abs.
+- npm run check (tsc+eslint)     -> 0 errores.
+- npm run build                  -> "Compiled successfully".
+
+PROBLEMA REPORTADO POR EL USUARIO
+--------------------------------
+"cuando se de a buscar los resultados aparezcan bien visibles y ordenados por categorias
+ en una ventana en un prompt por fuera que quede adelante, de igual forma a como cuando
+ quiero anadir un recordatorio de X fecha (ventana modal con fondo oscurecido atras)."
+
+Es decir: LOS RESULTADOS DEBEN SALIR EN UN MODAL (cyb-modal + cyb-modal-panel)
+CON EL RESTO DE LA PAGINA OSCURECIDO DETRAS, IGUAL QUE EL FAB DE RECORDATORIOS.
+
+TAMBIEN PIDIO:
+- Busqueda mas PEQUENA (input chico + boton chico).
+- Que el input (donde se escribe) tenga UN RECUADRO (borde/recuadro visible).
+- Fuente "mas acorde a la usada en toda la pagina" (Geist Mono / fuentes cyb).
+
+ESTADO ACTUAL DEL COMPONENTE (PARA NO ROMPER)
+---------------------------------------------
+El componente month-search.tsx YA tiene el modal cableado con cyb-modal/cyb-modal-panel/cyb-modal-abs
+pero la estructura de DIVS QUEDO DESBALANCEADA tras un edit previo:
+  - L69: <div cyb-modal> (backdrop, onClick cierra)
+  - L70: <div cyb-modal-panel> (panel, stopPropagation)
+  - ... header + resultados ...
+  - FALTA UN </div> de cierre antes de })}
+=> VERIFICAR SIEMPRE EL BALANCE DE DIVS ANTES DE ASUMIR; LEER NATIVO (System.IO) CON
+   POWERSHELL 5.1 (SIN TERNARIO ?:, SIN arrays [x] como rutas que rompen wildcards).
+
+COMO DEBERIA QUEDAR EL RENDER FINAL (REFERENCIA)
+------------------------------------------------
+{open && grouped.length > 0 && (
+  <div className="cyb-modal" onClick={cerrar}>           <!-- backdrop oscuro -->
+    <div className="cyb-modal-panel max-w-[380px]" onClick={stop}>
+      <header> Resultados · N   [x] </header>
+      <div className="space-y-3 max-h-72 overflow-y-auto">
+        {grouped.map(...grupos por categoria...)}
+      </div>
+    </div>  <!-- cierra cyb-modal-panel -->
+  </div>    <!-- cierra cyb-modal -->
+)}
+
+PENDIENTE (PROXIMO PASO)
+------------------------
+1. SOLO deshacer el div extra que desbalanceo el anidamiento (ver STATO ACTUAL arriba,
+   quitar el cyb-modal-panel anidado si corresponde) y dejar UN solo wrapper cyb-modal-abs.
+2. Asegurar que el input use cyb-campo-sm (chico, con recuadro) y boton cyb-btn small.
+3. Correccion menor: typeof group.rows no usado / CTAG ORDER limpio (sin duplicados).
+4. Confirmar el modal centrado con backdrop oscurecido (patron FAB de recordatorios).
+5. npm run check && npm run build && reiniciar next start (PID viejo bloquea .next).
