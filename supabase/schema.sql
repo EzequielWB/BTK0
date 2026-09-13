@@ -38,6 +38,9 @@ create table if not exists days (
   updated_at timestamptz not null default now()
 );
 
+-- Ánimo del día (1 = mal, 5 = genial). NULL = sin registrar.
+alter table days add column if not exists mood int check (mood between 1 and 5);
+
 -- La columna notes fue reemplazada por la tabla notes (varias por día)
 alter table days drop column if exists notes;
 

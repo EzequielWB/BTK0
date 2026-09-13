@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { CalendarNav } from "@/components/calendar-nav";
 import { DayFlagButton } from "@/components/day-flag-button";
 import { LearningsEditor } from "@/components/learnings-editor";
+import { MoodPicker } from "@/components/mood-picker";
 import { MotivationalQuote } from "@/components/motivational-quote";
 import { JournalSheet } from "@/components/journal-sheet";
 import { NotesEditor } from "@/components/notes-editor";
@@ -150,7 +151,7 @@ export default async function DayPage({
     { data: flagsInMonth },
     { data: journalDates },
   ] = await Promise.all([
-    supabase.from("days").select("id, date"),
+    supabase.from("days").select("id, date, mood"),
     supabase.from("daily_objectives").select("*"),
     supabase
       .from("notes")
@@ -244,6 +245,10 @@ export default async function DayPage({
   const thoughtDates = new Set(
     ((journalDates ?? []) as { date: string }[]).map((row) => row.date)
   );
+  const moodDates = new Map<string, number>();
+  for (const row of (allDays ?? []) as Day[]) {
+    if (row.mood) moodDates.set(row.date, row.mood);
+  }
 
   const marks: Record<string, DayMark> = {};
   const allMarkedDates = new Set([
@@ -251,6 +256,7 @@ export default async function DayPage({
     ...noteDates,
     ...learningDates,
     ...thoughtDates,
+    ...moodDates.keys(),
   ]);
   for (const markedDate of allMarkedDates) {
     marks[markedDate] = {
@@ -259,6 +265,7 @@ export default async function DayPage({
       learn: learningDates.has(markedDate),
       thought: thoughtDates.has(markedDate),
       reminder: (remindersByDate[markedDate]?.length ?? 0) > 0,
+      mood: moodDates.get(markedDate),
     };
   }
 
@@ -343,6 +350,13 @@ export default async function DayPage({
       )}
 
       <MotivationalQuote date={date} />
+
+      {!isFuture && (
+        <section className="blk">
+          <span className="blk-tag">Ánimo · ¿cómo estuvo?</span>
+          <MoodPicker date={date} initialMood={dayRow?.mood ?? null} />
+        </section>
+      )}
 
       {!isFuture && (
         <section className="blk">

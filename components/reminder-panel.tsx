@@ -9,7 +9,7 @@ import {
   updateReminderAction,
 } from "@/lib/actions";
 import type { Reminder } from "@/lib/types";
-import { formatShortDate, parseShortDate } from "@/lib/utils";
+import { formatShortDate, parseShortDate, todayISO } from "@/lib/utils";
 
 function formatTime(iso: string): string {
   return new Intl.DateTimeFormat("es-AR", {
@@ -41,6 +41,8 @@ export function ReminderPanel({
   const [editValue, setEditValue] = useState("");
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<Message | null>(null);
+
+  const isPast = Boolean(date && date < todayISO());
 
   const [optimistic, mutate] = useOptimistic(
     initialReminders,
@@ -83,6 +85,13 @@ export function ReminderPanel({
     }
     if (!iso) {
       setMessage({ kind: "error", text: "La fecha no es válida. Usá dd/mm/aa." });
+      return;
+    }
+    if (iso < todayISO()) {
+      setMessage({
+        kind: "error",
+        text: "No se pueden agregar recordatorios a días pasados.",
+      });
       return;
     }
     const id = crypto.randomUUID();
@@ -242,83 +251,89 @@ export function ReminderPanel({
         </ul>
       )}
 
-      <div className="pt-3 border-t" aria-label="Nuevo recordatorio">
-        <textarea
-          value={content}
-          onChange={(event) => {
-            setContent(event.target.value);
-            setMessage(null);
-          }}
-          placeholder="Escribí el recordatorio..."
-          rows={2}
-          className="cyb-in resize-y"
-        />
-        <div className="flex flex-wrap items-center gap-2 mt-2">
-          {!date && (
-            <div className="flex items-center gap-1">
-              <input
-                value={dayVal}
-                onChange={(event) => {
-                  setDayVal(event.target.value.replace(/\D/g, "").slice(0, 2));
-                  setMessage(null);
-                }}
-                placeholder="día"
-                inputMode="numeric"
-                maxLength={2}
-                aria-label="Día del recordatorio (dd)"
-                className="cyb-in w-14"
-              />
-              <span aria-hidden className="cyb-hint text-xs">/</span>
-              <input
-                value={monthVal}
-                onChange={(event) => {
-                  setMonthVal(
-                    event.target.value.replace(/\D/g, "").slice(0, 2)
-                  );
-                  setMessage(null);
-                }}
-                placeholder="mes"
-                inputMode="numeric"
-                maxLength={2}
-                aria-label="Mes del recordatorio (mm)"
-                className="cyb-in w-14"
-              />
-              <span aria-hidden className="cyb-hint text-xs">/</span>
-              <input
-                value={yearVal}
-                onChange={(event) => {
-                  setYearVal(event.target.value.replace(/\D/g, "").slice(0, 2));
-                  setMessage(null);
-                }}
-                placeholder="aa"
-                inputMode="numeric"
-                maxLength={2}
-                aria-label="Año del recordatorio (aa)"
-                className="cyb-in w-14"
-              />
-            </div>
-          )}
-          <button
-            type="button"
-            onClick={handleAdd}
-            disabled={pending || (!content.trim() && (date ? false : !(dayVal || monthVal || yearVal)))}
-            className="cyb-btn disabled:opacity-40"
-          >
-            {pending ? "Guardando..." : "Agregar recordatorio"}
-          </button>
-          {message && (
-            <span
-              role="status"
-              aria-live="polite"
-              className={`text-sm ${
-                message.kind === "error" ? "text-[#ff3b5c]" : "cyb-muted"
-              }`}
+      {isPast ? (
+        <p className="cyb-hint text-sm">
+          Este día ya pasó; no se pueden agregar recordatorios.
+        </p>
+      ) : (
+        <div className="pt-3 border-t" aria-label="Nuevo recordatorio">
+          <textarea
+            value={content}
+            onChange={(event) => {
+              setContent(event.target.value);
+              setMessage(null);
+            }}
+            placeholder="Escribí el recordatorio..."
+            rows={2}
+            className="cyb-in resize-y"
+          />
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            {!date && (
+              <div className="flex items-center gap-1">
+                <input
+                  value={dayVal}
+                  onChange={(event) => {
+                    setDayVal(event.target.value.replace(/\D/g, "").slice(0, 2));
+                    setMessage(null);
+                  }}
+                  placeholder="día"
+                  inputMode="numeric"
+                  maxLength={2}
+                  aria-label="Día del recordatorio (dd)"
+                  className="cyb-in w-14"
+                />
+                <span aria-hidden className="cyb-hint text-xs">/</span>
+                <input
+                  value={monthVal}
+                  onChange={(event) => {
+                    setMonthVal(
+                      event.target.value.replace(/\D/g, "").slice(0, 2)
+                    );
+                    setMessage(null);
+                  }}
+                  placeholder="mes"
+                  inputMode="numeric"
+                  maxLength={2}
+                  aria-label="Mes del recordatorio (mm)"
+                  className="cyb-in w-14"
+                />
+                <span aria-hidden className="cyb-hint text-xs">/</span>
+                <input
+                  value={yearVal}
+                  onChange={(event) => {
+                    setYearVal(event.target.value.replace(/\D/g, "").slice(0, 2));
+                    setMessage(null);
+                  }}
+                  placeholder="aa"
+                  inputMode="numeric"
+                  maxLength={2}
+                  aria-label="Año del recordatorio (aa)"
+                  className="cyb-in w-14"
+                />
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={handleAdd}
+              disabled={pending || (!content.trim() && (date ? false : !(dayVal || monthVal || yearVal)))}
+              className="cyb-btn disabled:opacity-40"
             >
-              {message.text}
-            </span>
-          )}
+              {pending ? "Guardando..." : "Agregar recordatorio"}
+            </button>
+            {message && (
+              <span
+                role="status"
+                aria-live="polite"
+                className={`text-sm ${
+                  message.kind === "error" ? "text-[#ff3b5c]" : "cyb-muted"
+                }`}
+              >
+                {message.text}
+              </span>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

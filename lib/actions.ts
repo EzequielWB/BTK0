@@ -518,6 +518,9 @@ export async function createReminderAction(
   await requireAuth();
 
   if (!isValidISODate(date)) return { error: "La fecha es inválida." };
+  if (date < todayISO()) {
+    return { error: "No se pueden agregar recordatorios a días pasados." };
+  }
   const text = content.trim();
   if (!text) return { error: "El recordatorio está vacío." };
 
@@ -835,4 +838,35 @@ export async function toggleDayFlagAction(date: string): Promise<ActionResult> {
   revalidatePath(`/bitacora/${date}`);
   revalidatePath("/bitacora");
   return { success: existing ? "Destacado quitado." : "Día destacado." };
+}
+
+// ---------------------------------------------------------------------------
+// Ánimo del día (1-5, columna mood en days)
+// ---------------------------------------------------------------------------
+
+export async function saveMoodAction(
+  date: string,
+  mood: number | null
+): Promise<ActionResult> {
+  await requireAuth();
+
+  if (!isValidISODate(date)) return { error: "La fecha es inválida." };
+  if (date > todayISO()) return { error: "Días futuros: solo lectura." };
+  if (mood !== null && (!Number.isInteger(mood) || mood < 1 || mood > 5)) {
+    return { error: "El ánimo debe ser un número entre 1 y 5." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("days")
+    .upsert(
+      { date, mood, updated_at: new Date().toISOString() },
+      { onConflict: "date" }
+    );
+
+  revalidatePath(`/bitacora/${date}`);
+  revalidatePath("/bitacora");
+
+  if (error) return { error: "No se pudo guardar el ánimo." };
+  return { success: mood ? "Ánimo guardado." : "Ánimo borrado." };
 }

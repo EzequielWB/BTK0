@@ -20,6 +20,8 @@ export type TemporalGoal = {
 export type Day = {
   id: string;
   date: string;
+  /** Ánimo del día: 1 (mal) a 5 (genial). null = sin registrar. */
+  mood?: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -78,6 +80,7 @@ export type DayMark = {
   learn: boolean;
   thought: boolean;
   reminder: boolean;
+  mood?: number;
 };
 
 export type CompletionMode = "off" | "count" | "percent";

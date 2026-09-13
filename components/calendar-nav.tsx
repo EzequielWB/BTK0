@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ReminderPanel } from "@/components/reminder-panel";
+import { MOOD_COLORS } from "@/lib/mood";
 import { deleteDayDataAction } from "@/lib/actions";
 import type { DayMark, Reminder } from "@/lib/types";
 import {
@@ -191,7 +192,7 @@ export function CalendarNav({
                             ? "Día registrado"
                             : undefined
               }
-              className="py-1 flex items-center justify-center rounded hover:bg-zinc-800/50"
+              className="relative py-1 flex items-center justify-center rounded hover:bg-zinc-800/50"
               onPointerDown={onPointerDown}
               onPointerUp={clearHold}
               onPointerLeave={clearHold}
@@ -212,6 +213,13 @@ export function CalendarNav({
                 }
               }}
             >
+              {mark?.mood ? (
+                <i
+                  aria-hidden
+                  className="cyb-mood-glow"
+                  style={{ background: MOOD_COLORS[mark.mood] }}
+                />
+              ) : null}
               <span className={numClass}>
                 {segs.length > 0 && (
                   <span aria-hidden className="cyb-segs">
