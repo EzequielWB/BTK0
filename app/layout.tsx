@@ -19,7 +19,7 @@ const pressStart2p = Press_Start_2P({
 });
 
 export const metadata: Metadata = {
-  title: "La BitAK0R4_ de Ezequiel",
+  title: "BitAK0R4_",
   description: "Bitácora personal diaria",
   manifest: "/manifest.webmanifest",
   appleWebApp: {

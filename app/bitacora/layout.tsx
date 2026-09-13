@@ -12,7 +12,7 @@ export default function BitacoraLayout({ children }: { children: ReactNode }) {
     <div className="cyb-shell flex min-h-full flex-col">
       <header className="cyb-deck">
         <Link href="/bitacora" className="cyb-logo no-underline">
-          LA_BITAK0R4_
+          BitAK0R4_
         </Link>
         <CybClock />
         <span className="cyb-tags">

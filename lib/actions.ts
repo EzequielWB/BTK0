@@ -375,6 +375,54 @@ export async function deleteObjectiveAction(formData: FormData): Promise<void> {
   revalidatePath("/bitacora/settings");
 }
 
+export async function reorderObjectivesAction(
+  ids: string[]
+): Promise<ActionResult> {
+  await requireAuth();
+
+  const seen = new Set<string>();
+  const uniqueIds: string[] = [];
+  for (const raw of ids) {
+    const id = String(raw).trim();
+    if (id && !seen.has(id)) {
+      seen.add(id);
+      uniqueIds.push(id);
+    }
+  }
+  if (uniqueIds.length < 2) {
+    return { error: "Se necesitan al menos dos objetivos para ordenar." };
+  }
+
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("objectives")
+    .select("id")
+    .in("id", uniqueIds);
+
+  if (error) return { error: "No se pudo cargar los objetivos." };
+  const known = new Set(
+    ((data ?? []) as Array<{ id: string }>).map((row) => row.id)
+  );
+  const missing = uniqueIds.some((id) => !known.has(id));
+  if (missing) return { error: "Algunos objetivos no existen." };
+
+  let failure = false;
+  for (let index = 0; index < uniqueIds.length; index++) {
+    const res = await supabase
+      .from("objectives")
+      .update({ sort_order: index })
+      .eq("id", uniqueIds[index]);
+    if (res.error) failure = true;
+  }
+
+  revalidatePath("/bitacora/settings");
+  revalidatePath("/bitacora");
+
+  if (failure) return { error: "No se pudo guardar el nuevo orden." };
+  return { success: "Orden actualizado." };
+}
+
 // ---------------------------------------------------------------------------
 // CRUD metas temporales
 // ---------------------------------------------------------------------------

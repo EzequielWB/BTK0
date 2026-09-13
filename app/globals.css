@@ -542,6 +542,32 @@ body {
   border-color: rgba(var(--cyb-green-rgb), 0.7);
   color: var(--cyb-green);
 }
+
+/* Reorden de objetivos del día: grip ⋮⋮ (mantener y arrastrar) */
+.cyb-grip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  min-width: 14px;
+  color: var(--cyb-dim);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.cyb-grip:hover:not(:focus-visible) {
+  color: var(--cyb-fg);
+}
+.cyb-grip:active {
+  cursor: grabbing;
+}
+.cyb-dragging {
+  opacity: 0.45;
+}
+.cyb-dragging button {
+  pointer-events: none;
+}
 .cyb-num.today {
   background: var(--cyb-green);
   border-color: var(--cyb-green);

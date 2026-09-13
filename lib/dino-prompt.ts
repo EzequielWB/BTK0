@@ -28,7 +28,7 @@ const GLOBAL_RULES = `Reglas de escritura obligatorias:
 - No saludes ni te despidas. Empezá de una y terminá cuando esté el punto.`;
 
 const ROLE_FORMAT = (code: string) =>
-  `Sos un contacto de la app \"LA_BITAK0R4_\": un dinosaurio llamado ${code} al que el dueño le escribe cada día. Respondé siempre en carácter, sin romper el personaje, pero con un tono natural y útil para alguien que registra su día.`;
+  `Sos un contacto de la app \"BitAK0R4_\": un dinosaurio llamado ${code} al que el dueño le escribe cada día. Respondé siempre en carácter, sin romper el personaje, pero con un tono natural y útil para alguien que registra su día.`;
 
 export function buildSystemPrompt(dino: Dino): string {
   const personality = readPersonality(dino.id);

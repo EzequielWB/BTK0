@@ -1,10 +1,12 @@
 "use client";
 
-import { useOptimistic, useTransition, useState } from "react";
-import { setDailyObjectiveStatusAction } from "@/lib/actions";
+import { useCallback, useEffect, useRef, useState, useTransition, useOptimistic } from "react";
+import { useRouter } from "next/navigation";
+import { reorderObjectivesAction, setDailyObjectiveStatusAction } from "@/lib/actions";
 import type { ChecklistItem, ChecklistStatus } from "@/lib/types";
 
 const ORDER: ChecklistStatus[] = ["none", "partial", "done"];
+const HOLD_MS = 250;
 
 export function ObjectivesChecklist({
   date,
@@ -13,6 +15,7 @@ export function ObjectivesChecklist({
   date: string;
   items: ChecklistItem[];
 }) {
+  const router = useRouter();
   const [optimisticItems, setOptimistic] = useOptimistic(
     items,
     (state: ChecklistItem[], action: { objectiveId: string; status: ChecklistStatus }) =>
@@ -26,19 +29,117 @@ export function ObjectivesChecklist({
   const [, startTransition] = useTransition();
   const [armedId, setArmedId] = useState<string | null>(null);
 
-  function onSet(item: ChecklistItem, status: ChecklistStatus) {
-    setArmedId(null);
-    startTransition(() => {
-      setOptimistic({ objectiveId: item.objectiveId, status });
-      void setDailyObjectiveStatusAction({
-        date,
-        objectiveId: item.objectiveId,
-        status,
-      });
+  // Drag & drop: mantener apretado el grip ⋮⋮, mover y soltar.
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOrder, setDragOrder] = useState<ChecklistItem[] | null>(null);
+  const holdTimer = useRef<number | null>(null);
+  const press = useRef<{ el: HTMLElement | null; pointerId: number } | null>(null);
+  const draggingIdRef = useRef<string | null>(null);
+
+  function clearHold() {
+    if (holdTimer.current !== null) {
+      window.clearTimeout(holdTimer.current);
+      holdTimer.current = null;
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      if (holdTimer.current !== null) window.clearTimeout(holdTimer.current);
+    };
+  }, []);
+
+  function onGripDown(e: React.PointerEvent, objectiveId: string) {
+    if (dragOrder || draggingIdRef.current) return;
+    press.current = { el: e.currentTarget as HTMLElement, pointerId: e.pointerId };
+    holdTimer.current = window.setTimeout(() => {
+      const target = press.current;
+      if (!target) return;
+      draggingIdRef.current = objectiveId;
+      setDraggingId(objectiveId);
+      setDragOrder([...optimisticItems]);
+      try {
+        target.el?.setPointerCapture(target.pointerId);
+      } catch {
+        /* sin captura, se tolera */
+      }
+    }, HOLD_MS);
+  }
+
+  function onGripMove(e: React.PointerEvent) {
+    if (!dragOrder || !draggingIdRef.current) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+    const row = el?.closest?.("[data-obj-id]") as HTMLElement | null;
+    const overId = row?.dataset.objId ?? null;
+    if (!overId || overId === draggingIdRef.current) return;
+
+    setDragOrder((prev) => {
+      if (!prev) return prev;
+      const from = prev.findIndex((i) => i.objectiveId === draggingIdRef.current);
+      const to = prev.findIndex((i) => i.objectiveId === overId);
+      if (from < 0 || to < 0 || from === to) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
     });
   }
 
-  if (optimisticItems.length === 0) {
+  function onGripUp() {
+    if (press.current?.el) {
+      try {
+        press.current.el.releasePointerCapture(press.current.pointerId);
+      } catch {
+        /* sin captura */
+      }
+    }
+    if (draggingIdRef.current) {
+      setDraggingId(null);
+      clearHold();
+      press.current = null;
+      const ids = dragOrder?.map((item) => item.objectiveId) ?? [];
+      draggingIdRef.current = null;
+      if (ids.length >= 2) {
+        startTransition(async () => {
+          const res = await reorderObjectivesAction(ids);
+          if (res?.error) router.refresh();
+          setDragOrder(null);
+        });
+      } else {
+        setDragOrder(null);
+      }
+      return;
+    }
+    clearHold();
+    press.current = null;
+  }
+
+  function onGripCancel() {
+    clearHold();
+    press.current = null;
+    setDraggingId(null);
+    draggingIdRef.current = null;
+    setDragOrder(null);
+  }
+
+  const onSet = useCallback(
+    function onSet(item: ChecklistItem, status: ChecklistStatus) {
+      setArmedId(null);
+      startTransition(() => {
+        setOptimistic({ objectiveId: item.objectiveId, status });
+        void setDailyObjectiveStatusAction({
+          date,
+          objectiveId: item.objectiveId,
+          status,
+        });
+      });
+    },
+    [date, setOptimistic]
+  );
+
+  const visible = dragOrder ?? optimisticItems;
+
+  if (visible.length === 0 && !dragOrder) {
     return (
       <p className="cyb-hint text-sm">
         Todavía no hay objetivos definidos. Andá a Ajustes para crearlos.
@@ -46,19 +147,42 @@ export function ObjectivesChecklist({
     );
   }
 
+  const dragging = dragOrder !== null;
+
   return (
-    <ul className="space-y-2">
-      {optimisticItems.map((item) => {
+    <ul className={"space-y-2" + (dragging ? " select-none" : "")}>
+      {visible.map((item) => {
+        const isDragging = item.objectiveId === draggingId;
+
         if (item.status === "ignored") {
           return (
-            <li key={item.objectiveId} className="opacity-50">
+            <li
+              key={item.objectiveId}
+              data-obj-id={item.objectiveId}
+              className={"opacity-50" + (isDragging ? " cyb-dragging" : "")}
+            >
               <div className="flex items-center justify-between gap-2">
-                <span>
-                  <span className="line-through">{item.title}</span>
-                  {item.description ? (
-                    <span className="block text-sm cyb-hint">{item.description}</span>
-                  ) : null}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className="cyb-grip"
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Mantener y arrastrar para reordenar"
+                    title="Mantener y arrastrar para ordenar"
+                    onPointerDown={(e) => onGripDown(e, item.objectiveId)}
+                    onPointerMove={onGripMove}
+                    onPointerUp={onGripUp}
+                    onPointerCancel={onGripCancel}
+                  >
+                    ⋮⋮
+                  </span>
+                  <span>
+                    <span className="line-through">{item.title}</span>
+                    {item.description ? (
+                      <span className="block text-sm cyb-hint">{item.description}</span>
+                    ) : null}
+                  </span>
+                </div>
                 <button
                   type="button"
                   onClick={() => onSet(item, "none")}
@@ -74,8 +198,25 @@ export function ObjectivesChecklist({
 
         const armed = armedId === item.objectiveId;
         return (
-          <li key={item.objectiveId}>
+          <li
+            key={item.objectiveId}
+            data-obj-id={item.objectiveId}
+            className={isDragging ? "cyb-dragging" : ""}
+          >
             <div className="flex items-start gap-2">
+              <span
+                className="cyb-grip"
+                role="button"
+                tabIndex={0}
+                aria-label="Mantener y arrastrar para reordenar"
+                title="Mantener y arrastrar para ordenar"
+                onPointerDown={(e) => onGripDown(e, item.objectiveId)}
+                onPointerMove={onGripMove}
+                onPointerUp={onGripUp}
+                onPointerCancel={onGripCancel}
+              >
+                ⋮⋮
+              </span>
               <div className="cyb-trio" role="group" aria-label="Estado del objetivo">
                 {ORDER.map((status) => {
                   const active = item.status === status;

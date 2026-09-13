@@ -88,7 +88,7 @@ async function tryOpenRouter(
           "Content-Type": "application/json",
           Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
           "HTTP-Referer": process.env.SITE_URL || "http://localhost:3000",
-          "X-Title": "LA_BITAK0R4_",
+          "X-Title": "BitAK0R4_",
         },
         body: JSON.stringify({
           model,
