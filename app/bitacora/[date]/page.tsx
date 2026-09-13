@@ -151,7 +151,7 @@ export default async function DayPage({
     { data: flagsInMonth },
     { data: journalDates },
   ] = await Promise.all([
-    supabase.from("days").select("id, date, mood"),
+    supabase.from("days").select("id, date"),
     supabase.from("daily_objectives").select("*"),
     supabase
       .from("notes")
@@ -245,10 +245,6 @@ export default async function DayPage({
   const thoughtDates = new Set(
     ((journalDates ?? []) as { date: string }[]).map((row) => row.date)
   );
-  const moodDates = new Map<string, number>();
-  for (const row of (allDays ?? []) as Day[]) {
-    if (row.mood) moodDates.set(row.date, row.mood);
-  }
 
   const marks: Record<string, DayMark> = {};
   const allMarkedDates = new Set([
@@ -256,7 +252,6 @@ export default async function DayPage({
     ...noteDates,
     ...learningDates,
     ...thoughtDates,
-    ...moodDates.keys(),
   ]);
   for (const markedDate of allMarkedDates) {
     marks[markedDate] = {
@@ -265,7 +260,6 @@ export default async function DayPage({
       learn: learningDates.has(markedDate),
       thought: thoughtDates.has(markedDate),
       reminder: (remindersByDate[markedDate]?.length ?? 0) > 0,
-      mood: moodDates.get(markedDate),
     };
   }
 

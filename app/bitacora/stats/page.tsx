@@ -123,26 +123,6 @@ export default async function StatsPage() {
 
   const efficiency = Math.round((periodPoints / RANGE_DAYS) * 100);
 
-  // Ánimo: promedio sobre los días con mood y racha de buen ánimo (>= 4).
-  const moods = dayRows
-    .map((row) => row.mood)
-    .filter((mood): mood is number => mood !== null && mood !== undefined);
-  const avgMood = moods.length
-    ? (moods.reduce((sum, mood) => sum + mood, 0) / moods.length).toFixed(1)
-    : "—";
-  const moodByDate = new Map<string, number>(
-    dayRows
-      .filter((row) => row.mood !== null && row.mood !== undefined)
-      .map((row) => [row.date, row.mood as number])
-  );
-  let goodStreak = 0;
-  for (let i = points.length - 1; i >= 0; i--) {
-    const mood = moodByDate.get(points[i].date);
-    if (points[i].date === toISO && mood === undefined) continue;
-    if (mood !== undefined && mood >= 4) goodStreak++;
-    else break;
-  }
-
   const chartData = points.map((point) => ({
     date: shortDayLabel(point.date),
     percent: point.percent,
@@ -158,7 +138,7 @@ export default async function StatsPage() {
 
       <section>
         <h2 className="blk-tag">Resumen</h2>
-        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-8">
+        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           <div className="blk">
             <dt className="cyb-hint text-sm">Racha actual</dt>
             <dd className="text-2xl font-bold">{streak} días</dd>
@@ -187,20 +167,6 @@ export default async function StatsPage() {
             <dd className="cyb-hint text-sm">
               {periodPoints.toFixed(1)} / {RANGE_DAYS} pts
             </dd>
-          </div>
-          <div className="blk">
-            <dt className="cyb-hint text-sm">Ánimo promedio</dt>
-            <dd className="text-2xl font-bold">
-              {avgMood}
-              <span className="cyb-hint text-sm font-normal"> / 5</span>
-            </dd>
-            <dd className="cyb-hint text-sm">
-              {moods.length} {moods.length === 1 ? "día" : "días"} con registro
-            </dd>
-          </div>
-          <div className="blk">
-            <dt className="cyb-hint text-sm">Racha de buen ánimo</dt>
-            <dd className="text-2xl font-bold">{goodStreak} días</dd>
           </div>
         </dl>
       </section>

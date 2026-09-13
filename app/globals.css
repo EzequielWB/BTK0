@@ -479,60 +479,6 @@ body {
   z-index: 2;
 }
 
-/* Halo de ánimo: rectángulo translúcido más grande que la celda, detrás.
-   1 (mal) rojo → 3 amarillo → 5 (genial) verde neón. opacity 80%. */
-.cyb-num {
-  z-index: 1;
-}
-.cyb-mood-glow {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 32px;
-  height: 32px;
-  transform: translate(-50%, -50%);
-  border-radius: 3px;
-  opacity: 0.8;
-  z-index: 0;
-  pointer-events: none;
-}
-
-/* Picker de ánimo (caritas :D :) :| :( D:) + batería de 5 niveles */
-.cyb-mood-btn {
-  font-family: inherit;
-  font-size: 18px;
-  line-height: 1;
-  color: var(--cyb-dim);
-  background: var(--cyb-field);
-  border: 1px solid var(--cyb-track);
-  border-radius: 0;
-  padding: 6px 0;
-  width: 100%;
-  cursor: pointer;
-}
-.cyb-mood-btn:hover:not(:disabled) {
-  border-color: var(--cyb-neon);
-  color: var(--cyb-fg);
-}
-.cyb-mood-btn:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-.cyb-mood-btn.on {
-  border-color: var(--cyb-neon);
-  color: var(--cyb-neon);
-  box-shadow: 0 0 6px rgba(var(--cyb-green-rgb), 0.4);
-}
-.cyb-mood-battery {
-  display: flex;
-  height: 4px;
-  gap: 2px;
-}
-.cyb-mood-battery i {
-  flex: 1;
-  background: var(--cyb-track);
-}
-
 /* Metas temporales completadas */
 .cyb-goal-completed {
   text-decoration: line-through;
