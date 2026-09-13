@@ -8,6 +8,7 @@ import {
   updateTemporalGoalAction,
 } from "@/lib/actions";
 import { formatDateRange } from "@/lib/utils";
+import { TemporalGoalDone } from "@/components/temporal-goal-done";
 import type { TemporalGoal } from "@/lib/types";
 
 function GoalToggleAndDelete({ goal }: { goal: TemporalGoal }) {
@@ -173,9 +174,16 @@ export function TemporalGoalManager({ goals }: { goals: TemporalGoal[] }) {
               ) : (
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <strong className={goal.is_active ? "" : "cyb-dim"}>
-                      {goal.title}
-                    </strong>
+                    <div className="flex items-center gap-2">
+                      <strong className={goal.is_active ? "" : "cyb-dim"}>
+                        {goal.title}
+                      </strong>
+                      {goal.completed_at ? (
+                        <span className="cyb-hint text-xs whitespace-nowrap text-[#00ff9d]">
+                          ✓ Hecha
+                        </span>
+                      ) : null}
+                    </div>
                     <p className="cyb-hint text-xs">{formatDateRange(goal.start_date, goal.end_date)}</p>
                     {goal.description ? (
                       <p className="cyb-muted text-sm mt-1">{goal.description}</p>
@@ -185,6 +193,7 @@ export function TemporalGoalManager({ goals }: { goals: TemporalGoal[] }) {
                     ) : null}
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">
+                    <TemporalGoalDone goal={goal} />
                     <button
                       type="button"
                       onClick={() => setEditingId(goal.id)}

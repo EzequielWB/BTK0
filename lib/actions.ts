@@ -453,6 +453,22 @@ export async function toggleTemporalGoalActiveAction(formData: FormData): Promis
   revalidatePath("/bitacora/settings");
 }
 
+export async function toggleTemporalGoalCompleteAction(
+  id: string,
+  completed: boolean
+): Promise<void> {
+  await requireAuth();
+
+  const supabase = await createClient();
+  await supabase
+    .from("temporal_goals")
+    .update({ completed_at: completed ? new Date().toISOString() : null })
+    .eq("id", id);
+
+  revalidatePath("/bitacora/settings");
+  revalidatePath("/bitacora");
+}
+
 export async function deleteTemporalGoalAction(formData: FormData): Promise<void> {
   await requireAuth();
 

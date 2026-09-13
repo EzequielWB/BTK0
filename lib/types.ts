@@ -14,6 +14,8 @@ export type TemporalGoal = {
   start_date: string;
   end_date: string;
   is_active: boolean;
+  /** Fecha en que se completó la meta (null = pendiente). */
+  completed_at?: string | null;
   created_at: string;
 };
 

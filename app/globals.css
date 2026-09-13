@@ -532,6 +532,16 @@ body {
   flex: 1;
   background: var(--cyb-track);
 }
+
+/* Metas temporales completadas */
+.cyb-goal-completed {
+  text-decoration: line-through;
+  color: var(--cyb-dim);
+}
+.cyb-goal-done-on {
+  border-color: rgba(var(--cyb-green-rgb), 0.7);
+  color: var(--cyb-green);
+}
 .cyb-num.today {
   background: var(--cyb-green);
   border-color: var(--cyb-green);

@@ -1,4 +1,5 @@
 import { formatDateRange } from "@/lib/utils";
+import { TemporalGoalDone } from "@/components/temporal-goal-done";
 import type { TemporalGoal } from "@/lib/types";
 
 export function TemporalGoalsSection({ goals }: { goals: TemporalGoal[] }) {
@@ -8,19 +9,34 @@ export function TemporalGoalsSection({ goals }: { goals: TemporalGoal[] }) {
     <section className="blk">
       <h2 className="blk-tag">Metas_activas</h2>
       <ul className="space-y-2">
-        {goals.map((goal) => (
-          <li key={goal.id} className="enrow">
-            <div className="flex items-center justify-between gap-2">
-              <strong>{goal.title}</strong>
-              <span className="cyb-hint text-xs whitespace-nowrap">
-                {formatDateRange(goal.start_date, goal.end_date)}
-              </span>
-            </div>
-            {goal.description ? (
-              <p className="cyb-muted text-sm mt-1">{goal.description}</p>
-            ) : null}
-          </li>
-        ))}
+        {goals.map((goal) => {
+          const done = Boolean(goal.completed_at);
+          return (
+            <li key={goal.id} className="enrow">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <strong className={done ? "cyb-goal-completed" : ""}>
+                      {goal.title}
+                    </strong>
+                    {done ? (
+                      <span className="cyb-hint text-xs whitespace-nowrap text-[#00ff9d]">
+                        ✓ Hecha
+                      </span>
+                    ) : null}
+                  </div>
+                  <span className="cyb-hint text-xs whitespace-nowrap">
+                    {formatDateRange(goal.start_date, goal.end_date)}
+                  </span>
+                </div>
+                <TemporalGoalDone goal={goal} />
+              </div>
+              {goal.description ? (
+                <p className="cyb-muted text-sm mt-1">{goal.description}</p>
+              ) : null}
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

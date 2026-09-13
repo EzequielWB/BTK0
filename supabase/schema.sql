@@ -93,6 +93,9 @@ create table if not exists temporal_goals (
   check (end_date >= start_date)
 );
 
+-- Fecha en que la meta temporal se marcó completada (null = pendiente).
+alter table temporal_goals add column if not exists completed_at timestamptz;
+
 -- ------------------------------------------------------------
 -- settings: configuración general (fila única id=1)
 -- completion_mode: "off" | "count" | "percent" -> cómo se define

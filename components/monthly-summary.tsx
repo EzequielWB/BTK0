@@ -48,7 +48,7 @@ export function MonthlySummary() {
       >
         {state.phase === "loading"
           ? "Analizando el mes..."
-          : "¿Cómo estuvo el mes?"}
+          : "¿Cómo va el mes?"}
       </button>
 
       {state.phase === "loading" ? (

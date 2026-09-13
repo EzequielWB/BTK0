@@ -1,7 +1,7 @@
 import { isAuthenticated } from "@/lib/session";
 import { statusOf, statusValue } from "@/lib/completion";
 import { createClient } from "@/lib/supabase/server";
-import { addDays, todayISO } from "@/lib/utils";
+import { addDays, monthLabel, monthRangeISO, todayISO } from "@/lib/utils";
 import { chatWithFallback } from "@/lib/llm";
 import type {
   DailyObjective,
@@ -15,7 +15,6 @@ import type {
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const RANGE_DAYS = 30;
 const MAX_SAMPLES = 15;
 const SAMPLE_CHARS = 300;
 
@@ -38,6 +37,7 @@ function clip(text: string): string {
 
 type Fact = {
   rangeLabel: string;
+  rangeDays: number;
   objectives: string[];
   daily: DayStatsPoint[];
   best: Array<{ iso: string; percent: number }>;
@@ -55,7 +55,8 @@ type Fact = {
 async function buildFacts(): Promise<Fact> {
   const supabase = await createClient();
   const toISO = todayISO();
-  const fromISO = addDays(toISO, -(RANGE_DAYS - 1));
+  const { start: fromISO } = monthRangeISO(toISO);
+  const rangeDays = Number(toISO.slice(8, 10));
 
   const { data: days } = await supabase
     .from("days")
@@ -113,7 +114,7 @@ async function buildFacts(): Promise<Fact> {
 
   const points: DayStatsPoint[] = [];
   let periodPoints = 0;
-  for (let i = 0; i < RANGE_DAYS; i++) {
+  for (let i = 0; i < rangeDays; i++) {
     const date = addDays(fromISO, i);
     const day = dayRows.find((row) => row.date === date);
     const todosForDay = day ? (byDayId.get(day.id) ?? []) : [];
@@ -158,10 +159,10 @@ async function buildFacts(): Promise<Fact> {
     .map((p) => ({ iso: p.date, percent: p.percent }));
 
   const daysWithData = withData.length;
-  const emptyDays = RANGE_DAYS - daysWithData;
+  const emptyDays = rangeDays - daysWithData;
   const daysWithNotes = noteDates.size;
   const daysWithLearnings = learningDates.size;
-  const efficiency = Math.round((periodPoints / RANGE_DAYS) * 100);
+  const efficiency = Math.round((periodPoints / rangeDays) * 100);
 
   const notes = ((noteRows ?? []) as Note[])
     .slice(0, MAX_SAMPLES)
@@ -175,6 +176,7 @@ async function buildFacts(): Promise<Fact> {
 
   return {
     rangeLabel: `${fmt(fromISO)} al ${fmt(toISO)}`,
+    rangeDays,
     objectives,
     daily: points,
     best,
@@ -216,12 +218,16 @@ function buildPrompt(f: Fact): string {
     "- CIERRE: una sola recomendación accionable y realista para el próximo período."
   );
   lines.push("");
-  lines.push("DATOS DEL PERÍODO (últimos 30 días):");
+  lines.push(
+    "DATOS DEL PERÍODO (mes en curso, hasta hoy):"
+  );
   lines.push(`Rango: ${f.rangeLabel}`);
   lines.push(
     `Objetivos activos: ${f.objectives.length ? f.objectives.join(", ") : "ninguno"}`
   );
-  lines.push(`Días con registro: ${f.daysWithData} de 30 (${f.emptyDays} vacíos)`);
+  lines.push(
+    `Días con registro: ${f.daysWithData} de ${f.rangeDays} (${f.emptyDays} vacíos)`
+  );
   lines.push(`Días con notas: ${f.daysWithNotes}`);
   lines.push(`Días con aprendizajes: ${f.daysWithLearnings}`);
   lines.push(`Racha actual: ${f.streak} día(s)`);
@@ -265,8 +271,10 @@ export async function POST(): Promise<Response> {
   const facts = await buildFacts();
 
   if (!facts.daysWithData) {
+    const now = todayISO();
+    const monthName = monthLabel(Number(now.slice(0, 4)), Number(now.slice(5, 7)) - 1);
     return json({
-      text: "No hay registros en los últimos 30 días. Usá la bitácora unos días y volvé a preguntar.",
+      text: `No hay registros en ${monthName} todavía. Usá la bitácora unos días y volvé a preguntar.`,
     });
   }
 
