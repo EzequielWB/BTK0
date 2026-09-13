@@ -25,6 +25,8 @@ const TABLES = [
   "annual_reminders",
   "annual_categories",
   "journal",
+  "agenda_categories",
+  "agenda_items",
 ];
 
 function defaultSeed(): Store {
@@ -74,6 +76,8 @@ function defaultSeed(): Store {
     annual_reminders: [],
     annual_categories: [],
     journal: [],
+    agenda_categories: [],
+    agenda_items: [],
   };
 }
 

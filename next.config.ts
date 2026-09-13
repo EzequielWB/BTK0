@@ -13,11 +13,6 @@ const withSerwist = withSerwistInit({
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  outputFileTracingIncludes: {
-    // Los .md de personalidad de los dinos se leen con readFileSync en
-    // runtime; en serverless (Vercel) hay que garantizar que entren al bundle.
-    "/api/chat": ["./lib/dinos/**/*.md"],
-  },
 };
 
 export default withSerwist(nextConfig);

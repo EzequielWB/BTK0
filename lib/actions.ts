@@ -905,32 +905,173 @@ export async function toggleDayFlagAction(date: string): Promise<ActionResult> {
 }
 
 // ---------------------------------------------------------------------------
-// Ánimo del día (1-5, columna mood en days)
+// Cuaderno (anotador libre): categorías → ítems de texto plano
 // ---------------------------------------------------------------------------
 
-export async function saveMoodAction(
-  date: string,
-  mood: number | null
+export async function createAgendaCategoryAction(
+  name: string,
+  id: string
 ): Promise<ActionResult> {
   await requireAuth();
 
-  if (!isValidISODate(date)) return { error: "La fecha es inválida." };
-  if (date > todayISO()) return { error: "Días futuros: solo lectura." };
-  if (mood !== null && (!Number.isInteger(mood) || mood < 1 || mood > 5)) {
-    return { error: "El ánimo debe ser un número entre 1 y 5." };
+  const text = sanitizeCategoryName(name);
+  if (!text) return { error: "Escribí el nombre de la categoría." };
+
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("agenda_categories")
+    .select("id")
+    .ilike("name", text);
+
+  if (((existing as Array<{ id: string }> | null)?.length ?? 0) > 0) {
+    return { error: "Ya existe una categoría con ese nombre." };
   }
+
+  const { data: last } = await supabase
+    .from("agenda_categories")
+    .select("sort_order")
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const sortOrder = ((last as { sort_order: number } | null)?.sort_order ?? -1) + 1;
+
+  const { error } = await supabase
+    .from("agenda_categories")
+    .insert({ id, name: text, sort_order: sortOrder });
+
+  revalidatePath("/bitacora/agenda");
+
+  if (error) return { error: "No se pudo crear la categoría." };
+  return { success: "Categoría creada." };
+}
+
+export async function renameAgendaCategoryAction(
+  id: string,
+  name: string
+): Promise<ActionResult> {
+  await requireAuth();
+
+  const text = sanitizeCategoryName(name);
+  if (!text) return { error: "El nombre de la categoría está vacío." };
 
   const supabase = await createClient();
   const { error } = await supabase
-    .from("days")
-    .upsert(
-      { date, mood, updated_at: new Date().toISOString() },
-      { onConflict: "date" }
-    );
+    .from("agenda_categories")
+    .update({ name: text })
+    .eq("id", id);
 
-  revalidatePath(`/bitacora/${date}`);
-  revalidatePath("/bitacora");
+  revalidatePath("/bitacora/agenda");
 
-  if (error) return { error: "No se pudo guardar el ánimo." };
-  return { success: mood ? "Ánimo guardado." : "Ánimo borrado." };
+  if (error) return { error: "No se pudo renombrar la categoría." };
+  return { success: "Categoría renombrada." };
+}
+
+export async function moveAgendaCategoryAction(
+  id: string,
+  direction: "up" | "down"
+): Promise<ActionResult> {
+  await requireAuth();
+
+  const supabase = await createClient();
+  const { data: categories } = await supabase
+    .from("agenda_categories")
+    .select("*")
+    .order("sort_order", { ascending: true });
+
+  const list = (categories ?? []) as { id: string; sort_order: number }[];
+  const index = list.findIndex((c) => c.id === id);
+  if (index < 0) return { error: "Categoría no encontrada." };
+
+  const neighborIndex = direction === "up" ? index - 1 : index + 1;
+  if (neighborIndex < 0 || neighborIndex >= list.length) {
+    return { error: "No se puede mover más en esa dirección." };
+  }
+
+  await supabase
+    .from("agenda_categories")
+    .update({ sort_order: list[neighborIndex].sort_order })
+    .eq("id", list[index].id);
+  const { error } = await supabase
+    .from("agenda_categories")
+    .update({ sort_order: list[index].sort_order })
+    .eq("id", list[neighborIndex].id);
+
+  revalidatePath("/bitacora/agenda");
+
+  if (error) return { error: "No se pudo reordenar la categoría." };
+  return { success: "Categoría reordenada." };
+}
+
+export async function deleteAgendaCategoryAction(id: string): Promise<ActionResult> {
+  await requireAuth();
+
+  const supabase = await createClient();
+  // Los ítems se borran en cascada (FK on delete cascade).
+  const { error } = await supabase.from("agenda_categories").delete().eq("id", id);
+
+  revalidatePath("/bitacora/agenda");
+
+  if (error) return { error: "No se pudo borrar la categoría." };
+  return { success: "Categoría eliminada." };
+}
+
+export async function createAgendaItemAction(
+  categoryId: string,
+  title: string,
+  content: string,
+  id: string
+): Promise<ActionResult> {
+  await requireAuth();
+
+  const itemTitle = title.trim();
+  if (!itemTitle) return { error: "El título del ítem está vacío." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("agenda_items").insert({
+    id,
+    category_id: categoryId,
+    title: itemTitle,
+    content: content.trim(),
+    updated_at: new Date().toISOString(),
+  });
+
+  revalidatePath("/bitacora/agenda");
+
+  if (error) return { error: "No se pudo guardar el ítem." };
+  return { success: "Ítem agregado." };
+}
+
+export async function updateAgendaItemAction(
+  id: string,
+  title: string,
+  content: string
+): Promise<ActionResult> {
+  await requireAuth();
+
+  const itemTitle = title.trim();
+  if (!itemTitle) return { error: "El título del ítem está vacío." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("agenda_items")
+    .update({ title: itemTitle, content: content.trim(), updated_at: new Date().toISOString() })
+    .eq("id", id);
+
+  revalidatePath("/bitacora/agenda");
+
+  if (error) return { error: "No se pudo actualizar el ítem." };
+  return { success: "Ítem actualizado." };
+}
+
+export async function deleteAgendaItemAction(id: string): Promise<ActionResult> {
+  await requireAuth();
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("agenda_items").delete().eq("id", id);
+
+  revalidatePath("/bitacora/agenda");
+
+  if (error) return { error: "No se pudo borrar el ítem." };
+  return { success: "Ítem eliminado." };
 }

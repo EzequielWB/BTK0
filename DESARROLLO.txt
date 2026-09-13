@@ -428,35 +428,10 @@ cyberpunk). Sin errores JS. tsc y lint verdes (HTML/CSS/JS estatico,
       body #030303 mono, celda hoy rgb(0,255,157) con glow y numero blanco,
       seg g idem, ticker #f2f2f2/#030303 invertido, SYS.OK verde acido,
       .caret count 0.
-[2026-09-08] FASE 9 - DINO CHAT (acceso desde la bitacora)
-    - lib/dinosaurs.ts: registro de 6 dinos (tyra, nod0, 4nky, v3l0, br4ch0,
-      tr1l0) con head ASCII 9x9 generado de forma uniforme y verificada por
-      checker automatico (mismo alto, caracteres ASCII).
-    - lib/dinos/*.md (x6): personalidad de cada dino con REGLA DE VOZ en
-      "Frase de registro" (frase rioplatense real aprobada dia a dia).
-    - lib/dino-prompt.ts: arma el system prompt leyendo el .md (cache en
-      memoria); reglas duras de registro rioplatense WhatsApp: voseo, frases
-      cortas (2-4 oraciones), sin saludos/despedidas formales, sin emojis,
-      sin muletillas de IA.
-    - app/api/chat/route.ts: streaming a OpenRouter con autenticacion,
-      historial sanitizado (max 20 msgs), sanitizado de campo, retorno de
-      error en stream. Modelos: env (google/gemma-4-31b-it:free) con cadena
-      de fallback (gemma-4-26b-a4b-it:free, dots-studio/dots-3-note-preview:
-      free, thinkingmachines/inkling-small:free), backoff 900ms y mensaje
-      "Todos los modelos gratis estan saturados" (429) si ninguno anda.
-      temperature 0.5, max_tokens 800, ATTEMPT_TIMEOUT_MS 25s.
-    - components/dino-chat/dino-chat.tsx: dock flotante (solo la cara ASCII,
-      sin label) abajo a la derecha; panel de chat con lista de dinos,
-      cambio de contacto, sesion en sessionStorage (db_dino_chat_v1,
-      DEFAULT_DINO "nod0", MAX_THREAD 40). El dock desaparece cuando el
-      panel esta abierto; solo se cierra con la X (o ESC).
-    - app/globals.css: clases .cyb-dock, .cyb-dchat, .cyb-msg*, etc (blanco
-      neon). Integrado en app/bitacora/layout.tsx.
-    - .env.local / .env.local.example: OPENROUTER_API_KEY (solo .local),
-      OPENROUTER_MODEL y SITE_URL. next.config.ts: outputFileTracingIncludes
-      para que los .md de lib/dinos entren al trace de build de /api/chat.
-    - Verificado: tsc, lint, build, probe del endpoint (200 con respuesta
-      rioplatense real) y smoke con el panel de chat completo.
+[2026-09-08] FASE 9 - IA DE LA BITACORA (OPENROUTER)
+    - Claves de IA integradas: OPENROUTER_API_KEY (solo .local),
+      OPENROUTER_MODEL y SITE_URL en .env.local(.example).
+    - Verificado: tsc, lint y build en verde.
 [2026-09-08] FASE 10 - DÃAS FUTUROS SOLO LECTURA + RECORDATORIOS
     - DÃ­as futuros bloqueados: en app/bitacora/[date]/page.tsx, si date > hoy
       se muestra banner "Vista futura Â· solo lectura" y se ocultan Votos,
@@ -489,7 +464,7 @@ cyberpunk). Sin errores JS. tsc y lint verdes (HTML/CSS/JS estatico,
       si hay activos) con el mismo panel editable.
     - app/globals.css: .cyb-num.future, .has-reminder, .cyb-cal-grid
       (user-select) y .cyb-modal / .cyb-modal-panel (overlay fijo z100, encima
-      incluso del chat), .blk.reminder-blk, .blk.future-blk.
+      de todo), .blk.reminder-blk, .blk.future-blk.
     - Verificado: tsc, lint, next build --webpack. Smoke extendido PASANDO
       TODO: vista futura sin editores y celda gris, long-press abre modal,
       crear/editar/borrar recordatorio, recuadro rojo aparece y persiste tras
@@ -523,11 +498,9 @@ NOTA FASE 11 (ajuste de visual):
     se marca la que quieras; al tocarla aparece el simbolo en su color (X roja,
     '-' amarillo, tick verde) con fondo y glow de ese color. El simbolo solo se
     ve en la casilla elegida.
-  - Bug CSS corregido: el @media (max-width:640px) del .cyb-dchat estaba SIN
-    CERRAR y se tragaba todas las reglas .cyb-trio/.cyb-rem-fab (solo se
-    veian en pantallas <=640px). Se cierra el media y se limpia un bloque
-    .cyb-dock fantasma duplicado. Barra: smoke completo PASANDO, tsc+lint+
-    build OK.
+  - Bug CSS corregido: un @media (max-width:640px) sin cerrar se tragaba las
+    reglas .cyb-trio/.cyb-rem-fab (solo se veian en pantallas <=640px). Se
+    cierra el media. Barra: smoke completo PASANDO, tsc+lint+build OK.
 
 FASE 12 (2026-09-08):
   - Se elimina el ticker "ACCESO PERMITIDO / LA BITACORA NO SE DETIENE"
@@ -549,30 +522,8 @@ FASE 12 (2026-09-08):
   - Smoke actualizado (ticker ausente, header con % y baja con "-", renames)
     PASANDO TODO. tsc + lint + next build OK. Sin errores JS.
 
-FASE 13 (2026-09-08):
-  - Chat: botones "Cï¿½MO VA EL Dï¿½A" y "Cï¿½MO VA EL MES" (+ input mm/yy
-    precargado con el mes actual, editable) sobre el input del chat.
-  - Slot de contexto en memoria por request (lib/chat-context.ts):
-    buildDayContext() arma un texto plano compacto del dï¿½a actual (hora,
-    objetivos con ?/-/? y %, cant. de notas con la ultima truncada,
-    aprendizajes y recordatorios, cap ~700 chars); buildMonthContext(mm, yy)
-    arma el resumen del mes literal (dias con registro, puntos, eficiencia %,
-    mejor dia) + una linea por dia con datos (dd/mm puntos % n a, cap 24
-    lineas, ~1200 chars). Ambas regeneran el mismo slot en cada request
-    (sobrescribe el anterior) y no entran al historial guardado en el cliente.
-  - app/api/chat/route.ts: acepta dataQuery ("day" | {kind:"month",month,year}
-    validado) e inyecta el snapshot como mensaje system de contexto entre el
-    prompt y el historial, con instruccion de comentar sin repetir ni enumerar.
-  - Cliente: send() suma dataQuery; los botones mandan el mensaje visible
-    ("ï¿½Cï¿½mo va el dï¿½a?" / "ï¿½Cï¿½mo va el mes (mm/yy)?") + el contexto oculto.
-    CSS .cyb-dchat-quick (fila de botones + input mm/yy).
-  - Smoke extendido (botones presentes, mm/yy precargado, ambos responden con
-    streaming) PASANDO TODO. tsc + lint + build OK. Sin errores JS.
 
 NOTA FASE 13 (2026-09-09):
-  - Los botones Cï¿½MO VA EL Dï¿½A / MES (+ input mm/yy) pasaron a la cabecera del
-    panel, recien debajo de la fila del nombre del dino (.cyb-dchat-head en
-    columna + .cyb-dchat-head-top). Se quito la fila de arriba del input.
   - La hora del snapshot del dia ahora se calcula forzando la zona horaria de
     Argentina ("America/Argentina/Buenos_Aires", UTC-3) con Intl en vez de
     depender de la zona del server: hora HH:MM real y fecha "hoy" real en
@@ -584,11 +535,6 @@ NOTA PRE-DEPLOY (2026-09-09):
     de Argentina (America/Argentina/Buenos_Aires) con Intl (helper arNow(),
     tambien devuelve hora HH:MM). Toda la app (dias, stats, guard de dias
     futuros, calendario) queda consistente aunque el server corra en UTC
-    (Vercel). chat-context.ts reutiliza arNow() en vez de su helper propio.
-  - Arte de dinos redisenado (poses mixtas frontales/perfil) en dinosaurs.ts.
-  - Boton Cï¿½MO VA EL MES ahora pide el mes al apretar: aparece un mini-form
-    inline mm/yy precargado (autofocus) + OK/?, Enter envia la pregunta y se
-    oculta. Flujo "cï¿½mo va el dï¿½a" directo. Verificado con smoke completo.
   - Mobile: @media (max-width:640px) agrega body { zoom: 0.8 } (todo al 80%).
   - Build (webpack)+lint+tsc y smoke al 100% en verde.
 
@@ -643,9 +589,6 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
       se arma dd/mm/aa al guardar (parseShortDate). Labels:
       "DÃ­a del recordatorio (dd)"/"Mes del recordatorio (mm)"/"AÃ±o del
       recordatorio (aa)".
-    * Chat "CÃ³mo va el mes": 2 inputs [mm] / [aa], precargados con el mes
-      actual, OK/âœ•/Enter. Labels "Mes (mm)"/"AÃ±o (aa)". CSS .cyb-dchat-month
-      con wrap y entradas de 34px.
   - Reloj: se quitÃ³ la animaciÃ³n "blk" de .cyb-clock u -> los segundos
     avanzan sin parpadear (mantienen el verde neÃ³n).
   - Login mÃ³vil: main pasa a min-h-dvh + overflow-x-hidden (scrollea si hace
@@ -669,13 +612,9 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
     partes; se reemplazÃ³ el mmInput viejo por monthInput/yearInput.
   - VerificaciÃ³n: tsc, lint, build y smoke completos en verde (solo queda el
     429 de rate-limit del modelo gratuito de OpenRouter, tolerado y con
-    fallback; no rompe el chat).
+    fallback; no rompe la asistente).
 
-[2026-09-09] CHAT DE DINOS DESHABILITADO + RESUMEN MENSUAL CON IA EN STATS
-  - Chat de dinosaurios deshabilitado: se comento el import y el render de
-    <DinoChat /> en app/bitacora/layout.tsx (el dock .cyb-dock desaparece).
-    Todo el codigo (componentes, lib/dino-prompt.ts, chat-context, /api/chat)
-    queda intacto para retomarlo mas adelante.
+[2026-09-09] RESUMEN MENSUAL CON IA EN STATS
   - Stats: boton "Â¿Como estuvo el mes?" justo debajo de los graficos:
     * app/api/monthly/route.ts (POST, nodejs, maxDuration 60): autenticacion,
       levanta los ultimos 30 dias (mismo rango que los graficos): % diario por
@@ -690,21 +629,13 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
     * Montado en app/bitacora/stats/page.tsx tras <StatsCharts />.
   - FIX tipos: LocalQuery no tiene .limit() -> las muestras de notas/
     aprendizajes se recortan en JS (slice). daily usa DayStatsPoint (date).
-  - smoke-test.js: se quito el bloque del chat (dock/panel/streaming/dia-mes/
-    cierre) por "Chat de dinos deshabilitado (sin dock ni panel)" y se
     agregaron asserts del resumen: boton presente, estado analizando y
     .cyb-month-summary con texto (tolerante: acepta resumen o error).
 - Verificacion: tsc, lint, build y smoke en verde. El resumen funciono de
     punta a punta; los modelos :free de OpenRouter estaban saturados (429/502)
     y el bloque mostro el aviso con Reintentar (esperado).
 
-[2026-09-09] CHAT DE NUEVO + RECORDATORIOS COMPLETOS + DÃAS DESTACADOS
-  - Chat de dinosaurios REHABILITADO: se descomentaron el import y el
-    <DinoChat /> en app/bitacora/layout.tsx (vuelve el dock y el panel).
-    Modelo sigue gratis a pedido del usuario; se agrega "openrouter/free"
-    como ULTIMO respaldo en app/api/chat/route.ts y app/api/monthly/route.ts
-    (router gratuito que deriva a cualquier modelo :free disponible -> absorbe
-    la saturaciÃ³n/intermitencia del tier sin pagar).
+[2026-09-09] RECORDATORIOS COMPLETOS + DÍAS DESTACADOS
   - Recordatorios "completo":
     * supabase/schema.sql: reminders ganÃ³ completed_at timestamptz (en el
       create + alter table add column if not exists para DB ya creada).
@@ -730,7 +661,6 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
       .cyb-flag-btn (.on dorado) y .cyb-rem-done (tachado).
   - Banner de dÃ­as futuros: se quitÃ³ "PodÃ©s mirarlo en gris y" -> queda
     "PodÃ©s dejar recordatorios" (se mantiene el aviso de solo lectura).
-  - smoke-test.js: chat reactivado (dock -> panel -> 6 dinos -> cierra),
     banner sin "en gris", marcar/desmarcar completo (rojo desaparece/vuelve),
     destacar/quitar (anillo dorado aparece, persiste al reload y desaparece).
   - Verificacion: tsc, lint, build y smoke en verde. El Ãºnico error JS es el
@@ -744,7 +674,7 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
     gratis como respaldo. No se pierde nada: se conservan los modelos :free +
     openrouter/free.
   - lib/llm.ts (nuevo, server-only): chatWithFallback() unifica la lÃ³gica que
-    estaba duplicada en /api/chat y /api/monthly:
+    estaba duplicada en los endpoints de IA:
     * Orden de intentos: 1) OpenRouter (env + :free + router gratuito),
       2) Groq (openai/gpt-oss-120b) si hay GROQ_API_KEY. Si ambos se agotan
       (429/403/404/5xx) -> mensaje "Los modelos gratis estÃ¡n saturados".
@@ -752,8 +682,8 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
       completa (resumen mensual, stream:false -> parsea choices[0].message.
       content; respuesta vacÃ­a -> intenta el siguiente proveedor).
     * Sin ninguna clave -> 503 con aviso.
-  - app/api/chat/route.ts: queda fino (auth, validaciÃ³n, dataQuery, prompt) y
-    delega en chatWithFallback{stream:true, temp 0.5, max 800}.
+  - app/api/chat/route.ts (endpoint del chat): quedó fino (auth, validación, dataQuery, prompt) y
+    delega en chatWithFallback{stream:true, temp 0.5, max 800} (eliminado el 2026-09-13).
   - app/api/monthly/route.ts: se eliminaron DEFAULT_MODELS/MODELS/fetch/
     summarize; el POST llama a chatWithFallback{stream:false, temp 0.3,
     max 700} y devuelve {text} o {error} (502/503).
@@ -769,30 +699,6 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
     OpenRouter se saturÃ³): en el smoke entrÃ³ y devolviÃ³ "RESUMEN ... 2 dÃ­as
     (06%)...". Server de producciÃ³n reiniciado en http://localhost:3000.
 
-[2026-09-09] VOCES DE LOS DINO: MÃS PERSONALIDAD + RIO PLATENSE FUERTE
-  - FIX BUG: la personalidad del anquilosaurio nunca cargaba. El registro usa
-    id "ank" pero el archivo era lib/dinos/4nky.md -> readPersonality(id)
-    devolvÃ­a "" y entraba con reglas genÃ©ricas nomÃ¡s. git mv 4nky.md -> ank.md.
-  - lib/dino-prompt.ts (GLOBAL_RULES reforzado):
-    * Voseo explÃ­cito: imperativos -Ã¡/-Ã©/-Ã­; prohibido espaÃ±ol neutro (tÃº,
-      usted, vosotros, haz, hazlo, recuerda, puedes, "ten en cuenta",
-      "sin embargo", "por lo tanto", "no dudes en").
-    * LÃ©xico rioplatense natural sin amontonar: che, dale, bancÃ¡, re-, Â¿viste?,
-      ta, ni en pedo, de onda, pila de, tranqui/cortito. Prohibido deformar
-      palabras.
-    * Cierre del prompt (resumen): "usÃ¡ el registro de los ejemplos de TU VOZ".
-  - 6 .md reescritos con formato comÃºn: TU VOZ (rasgos lÃ©xicos + frase fetiche)
-    + REGLA DE ORO + 3 EJEMPLOS few-shot (dueÃ±o -> dino) en rioplatense.
-    Distintivos: TYrA_ seco/imperativo + "boludo" esporÃ¡dico; N0d-0 cÃ¡lido,
-    sin boludo; 4nky monolito de 1-2 frases, sin jerga fuerte; V3L0 chispa +
-    "Â¿Esperar? Ni en pedo, boludo"; BR4ch0 pausa/panorama, sin jerga fuerte;
-    Tr1l0_ orden/listas de 3 pasos, sin jerga fuerte. Se conservan rol y
-    especie.
-  - Verificacion: tsc, lint, build, smoke TODO VERDE sin errores JS.
-  - Auditoria por voz (script temporal node -> /api/chat con cookie calculada):
-    los 6 suenan distinto y en rioplatense, tirando contexto real del dÃ­a
-    (ej. ank: "No hay que correr. AguantÃ¡: a las veinte y cuarenta y tres
-    tenÃ©s una meta cumplida..."). Server reiniciado.
 
 [2026-09-09] FRASES MOTIVACIONALES: POOL GRANDE (REALES + JUEGOS + ANIME) + GLITCH MÃS LENTO
   - lib/quotes.ts reescrito: 123 frases en total.
@@ -828,16 +734,6 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
     build en verde. Server de producciÃ³n reiniciado en http://localhost:3000 (smoke
     completo no corrido: el cambio es solo de datos frases + animaciÃ³n CSS).
 
-[2026-09-09] CHAT DE DINOS DESHABILITADO (de nuevo)
-  - app/bitacora/layout.tsx: se quitÃ³ el import y el render de <DinoChat /> (el dock
-    .cyb-dock desaparece). Todo el cÃ³digo (componentes, lib/dino-prompt.ts,
-    chat-context, /api/chat) queda intacto para retomarlo mÃ¡s adelante.
-  - scripts/smoke-test.js: el bloque del chat (dock -> panel -> 6 dinos -> cierre)
-    se reemplazÃ³ por la aserciÃ³n "Chat de dinos deshabilitado (sin dock)" +
-    "Sin botÃ³n de abrir chat".
-  - VerificaciÃ³n: tsc, lint, build en verde + probe rÃ¡pido (playwright): vista dÃ­a
-    carga, sin .cyb-dock, sin botÃ³n abrir chat y sin panel; sin errores JS. Server
-    de producciÃ³n reiniciado en http://localhost:3000.
 
 [2026-09-11] PUSH ELIMINADO + IGNORAR OBJETIVO
   - Se borró todo el stack de notificaciones web push (no funcionaba y se decidió
@@ -860,7 +756,7 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
   - NUEVO: "ignorar objetivo" por día. 4to estado en daily_objectives
     (status='ignored') que excluye el objetivo del numerador Y del denominador del
     % del día, del marcado verde del calendario, de stats/eficiencia y del contexto
-    de chat. Si un día queda con TODOS los objetivos ignorados es día NEUTRO (no
+    de la asistente de ánimo. Si un día queda con TODOS los objetivos ignorados es día NEUTRO (no
     castiga la eficiencia).
   - lib/types.ts: ChecklistStatus suma "ignored". lib/completion.ts: statusOf lo
     acepta, statusValue=0, dayPercent y el nuevo countedItems() descartan los
@@ -871,7 +767,7 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
     ignorado la fila queda atenuada con "ignorado · quitar".
   - app/bitacora/[date]/page.tsx: header "Objetivos · X/Y · Z%" y marcado verde del
     calendario usan solo objetivos en cuenta (activos - ignorados del día).
-  - app/bitacora/stats/page.tsx, /api/monthly y lib/chat-context.ts: por día,
+  - app/bitacora/stats/page.tsx y /api/monthly: por día,
     denominador = totales - ignorados (días todo-ignorados neutros).
   - scripts/smoke-test.js: bloque "2b) Notificaciones push" -> aserciones de que la
     sección NO existe ("Sin sección Notificaciones_push", "Sin Activar
@@ -1093,3 +989,13 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
     de effect ni mutar refs en render -> boot/typewriter/osd usan setState
     sól desde callbacks de interval, y los refs de callback solo se actualizan
     en effectos.
+  - CHATBOT DESHABILITADO (S4GR3t_): se retira de la app el asistente de ánimo
+    completo (selector de ánimo + globo conversacional + POST /api/mood + el
+    avatar /munieco.png). Todo lo relacionado se archivó en la carpeta oculta
+    .retirado/ (con README con pasos de restauración). app/bitacora/[date]/page.tsx:
+    fuera el import de MoodPicker, la card "Ánimo · ¿cómo estuvo?" y el cómputo de
+    previousMoods. Se mantiene lib/mood.ts (MOOD_COLORS sigue pintando las celdas
+    del calendario según el mood ya guardado en calendar-nav.tsx) y el resumen
+    mensual (/api/monthly) sigue activo. Verificación: npm run check, build y smoke
+    en verde; /api/mood responde 404.
+

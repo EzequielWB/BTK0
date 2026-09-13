@@ -76,6 +76,29 @@ export type JournalEntry = {
   updated_at: string;
 };
 
+/** Categoría del anotador libre (Cuaderno). Grupos de ítems de texto. */
+export type AgendaCategory = {
+  id: string;
+  name: string;
+  sort_order: number;
+  created_at: string;
+};
+
+/** Ítem dentro de una categoría del Cuaderno: título + texto libre. */
+export type AgendaItem = {
+  id: string;
+  category_id: string;
+  title: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AgendaCategoryWithCount = AgendaCategory & {
+  /** Cantidad de ítems que tiene la categoría. */
+  count: number;
+};
+
 export type DayMark = {
   complete: boolean;
   note: boolean;

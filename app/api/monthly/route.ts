@@ -196,7 +196,7 @@ function buildPrompt(f: Fact): string {
   const lines: string[] = [];
 
   lines.push(
-    "Eres un analista objetivo que revisa la bitácora personal del usuario. Trabajas SOLO con los datos que te dan: no inventes cifras, fechas ni situaciones. Estilo sobrio, directo y neutral, en español; nada de elogios vacíos ni dramatismo."
+    "Eres un analista objetivo que revisa la bitácora personal del usuario. Trabajas SOLO con los datos que te dan: no inventes cifras, fechas ni situaciones. Estilo sobrio, directo y neutral, en español; nada de elogios vacíos ni dramatismo. Sin emojis ni caritas de texto."
   );
   lines.push("");
   lines.push("Estructura EXACTA de tu respuesta (encabezados textuales):");

@@ -180,6 +180,31 @@ create table if not exists journal (
 );
 
 -- ------------------------------------------------------------
+-- agenda_categories: categorías del "Cuaderno" (anotador libre).
+-- Cada categoría agrupa ítems de texto plano (recetas, ideas...).
+-- ------------------------------------------------------------
+create table if not exists agenda_categories (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null,
+  sort_order int not null default 0,
+  created_at timestamptz not null default now()
+);
+
+-- ------------------------------------------------------------
+-- agenda_items: notas dentro de una categoría. Título + texto libre.
+-- Siempre pertenecen a una categoría; si se borra la categoría,
+-- se borran con ella (on delete cascade).
+-- ------------------------------------------------------------
+create table if not exists agenda_items (
+  id          uuid primary key default gen_random_uuid(),
+  category_id uuid not null references agenda_categories(id) on delete cascade,
+  title       text not null,
+  content     text not null default '',
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+
+-- ------------------------------------------------------------
 -- Índices útiles
 -- ------------------------------------------------------------
 create index if not exists idx_days_date on days(date);
@@ -191,6 +216,7 @@ create index if not exists idx_daily_objectives_day on daily_objectives(day_id);
 create index if not exists idx_daily_objectives_objective on daily_objectives(objective_id);
 create index if not exists idx_temporal_goals_range on temporal_goals(start_date, end_date);
 create index if not exists idx_day_flags_date on day_flags(date);
+create index if not exists idx_agenda_items_category on agenda_items(category_id, created_at);
 
 -- ------------------------------------------------------------
 -- Row Level Security:
@@ -212,3 +238,5 @@ alter table temporal_goals enable row level security;
 alter table annual_reminders enable row level security;
 alter table annual_categories enable row level security;
 alter table journal enable row level security;
+alter table agenda_categories enable row level security;
+alter table agenda_items enable row level security;

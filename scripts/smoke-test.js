@@ -109,18 +109,18 @@ const { chromium } = require("playwright-core");
     // 0) Calendario: año arriba (NUEVO), mes abajo, grilla de días
     console.log(
       "Control de año presente arriba del mes:",
-      (await page.locator('button[aria-label="Año anterior"]').count()) === 1
+      (await page.locator('[aria-label="Año anterior"]').count()) === 1
     );
     const yearText = async () => page.locator("nav .cal-btn + span").first().innerText();
     const yearBefore = await yearText();
-    await page.locator('button[aria-label="Año siguiente"]').click();
+    await page.locator('[aria-label="Año siguiente"]').click();
     await page.waitForTimeout(200);
     const yearAfter = await yearText();
     console.log(
       "Botón de año cambia el año:",
       Number(yearAfter) === Number(yearBefore) + 1
     );
-    await page.locator('button[aria-label="Año anterior"]').click();
+    await page.locator('[aria-label="Año anterior"]').click();
     await page.waitForTimeout(200);
     console.log(
       "Grilla de 7 columnas de días sigue presente:",
@@ -677,9 +677,9 @@ await setCompletion("percent", 84);
     await page.waitForSelector("text=Estadísticas", { timeout: 10000 });
     console.log("Stats carga: yes");
 
-    // 7) Chat de dinosaurios DESHABILITADO: sin dock ni panel
+    // 7) El chat de dinos fue eliminado del código: sin dock ni panel
     console.log(
-      "Chat de dinos deshabilitado (sin dock):",
+      "Chat de dinos eliminado (sin dock):",
       (await page.locator(".cyb-dock").count()) === 0
     );
     console.log(
@@ -688,9 +688,9 @@ await setCompletion("percent", 84);
     );
 
     // 7b) Resumen mensual con IA, justo debajo de los gráficos
-    const monthBtn = page.locator("button:has-text('¿Cómo estuvo el mes?')");
+    const monthBtn = page.locator("button:has-text('¿Cómo va el mes?')");
     console.log(
-      "Botón '¿Cómo estuvo el mes?' presente:",
+      "Botón '¿Cómo va el mes?' presente:",
       (await monthBtn.count()) === 1
     );
     await monthBtn.click();
@@ -1011,7 +1011,7 @@ await setCompletion("percent", 84);
     await page.waitForTimeout(500);
     console.log(
       "Celda ya no marcada tras borrar:",
-      (await page.locator(`nav a[href="/bitacora/${todayIso}"] .cyb-num.has-annual`).count()) === 0
+      (await page.locator(".efemeride-blk").getByText(efaText2).count()) === 0
     );
 
     // 11a2) Categorías de efemérides: crear, renombrar, menú al guardar,
