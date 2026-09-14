@@ -1,5 +1,4 @@
 import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
 import { CalendarNav } from "@/components/calendar-nav";
 import { DayFlagButton } from "@/components/day-flag-button";
 import { LearningsEditor } from "@/components/learnings-editor";
@@ -287,12 +286,6 @@ export default async function DayPage({
   return (
     <div className="space-y-4">
       <div className="blk">
-        <Link
-          href="/bitacora/agenda"
-          className="cyb-link inline-block text-xs mb-2"
-        >
-          ▸ Cuaderno
-        </Link>
         <div className="flex items-center justify-between gap-2 mb-2">
           <span className="blk-tag">
             Agenda - {monthLabel(parsed.getFullYear(), parsed.getMonth())}
