@@ -999,3 +999,25 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
     mensual (/api/monthly) sigue activo. Verificación: npm run check, build y smoke
     en verde; /api/mood responde 404.
 
+
+[2026-09-14] OBJETIVOS DEL DÍA: LISTA POR DÍA (SE ARMA SOLO EN LA VISTA DEL DÍA)
+  - Nueva tabla day_goals (id, date, title, completed_at null = pendiente, created_at)
+    + índice (date, created_at) + RLS en supabase/schema.sql. Independiente de la
+    eficiencia y del marcado verde del calendario (como metas temporales).
+  - lib/types.ts: DayGoal. lib/local-client.ts: tabla "day_goals" + seed [].
+  - lib/actions.ts: createDayGoalAction (bloquea días futuros, permite backfill de
+    pasados), updateDayGoalAction, deleteDayGoalAction y toggleDayGoalCompleteAction
+    (setea/limpia completed_at), todas con requireAuth + revalidatePath.
+    deleteDayDataAction ahora también borra day_goals del día.
+  - components/day-goals.tsx (client): lista con tick ✓ (casilla .cyb-goal-tick),
+    pendiente/completado, en días pasados los pendientes muestran "quedó pendiente"
+    en ámbar, Editar inline / Borrar, input "Agregar objetivo", useOptimistic con
+    id generado en el cliente (patrón reminder-panel/notas).
+  - app/bitacora/[date]/page.tsx: fetch de day_goals por fecha; sección
+    "Objetivos_del_día · X/Y" justo después de "Objetivos" (solo cuando !isFuture).
+  - Resúmenes IA: lib/analytics.ts PeriodFacts suma dayGoals (muestras con estado
+    completado/pendiente, no tocan percent/hasData); prompts de /api/monthly y
+    /api/yearly agregan bloque "Objetivos del día" para que la IA los analice sin
+    contar en la eficiencia.
+  - PENDIENTE EN SUPABASE (hosted): correr el create table de day_goals (idempotente,
+    ya está en supabase/schema.sql).

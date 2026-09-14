@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { CalendarNav } from "@/components/calendar-nav";
 import { DayFlagButton } from "@/components/day-flag-button";
+import { DayGoals } from "@/components/day-goals";
 import { LearningsEditor } from "@/components/learnings-editor";
 import { MotivationalQuote } from "@/components/motivational-quote";
 import { JournalSheet } from "@/components/journal-sheet";
@@ -33,6 +34,7 @@ import type {
   ChecklistStatus,
   DailyObjective,
   Day,
+  DayGoal,
   DayMark,
   JournalEntry,
   Learning,
@@ -56,7 +58,7 @@ export default async function DayPage({
 
   const supabase = await createClient();
 
-  const [{ data: objectives }, { data: day }, { data: goals }, { data: noteRows }, { data: learningRows }, { data: reminderRows }, { data: annualRows }, { data: journalRow }] =
+  const [{ data: objectives }, { data: day }, { data: goals }, { data: noteRows }, { data: learningRows }, { data: reminderRows }, { data: annualRows }, { data: journalRow }, { data: dayGoalRows }] =
     await Promise.all([
       supabase
         .from("objectives")
@@ -92,6 +94,12 @@ export default async function DayPage({
         .order("id"),
       supabase.from("annual_reminders").select("*"),
       supabase.from("journal").select("date, content").eq("date", date).maybeSingle(),
+      supabase
+        .from("day_goals")
+        .select("*")
+        .eq("date", date)
+        .order("created_at")
+        .order("id"),
     ]);
 
   const dayRow = (day ?? null) as Day | null;
@@ -274,6 +282,7 @@ export default async function DayPage({
       entry.day === Number(date.slice(8, 10))
   );
   const journal = (journalRow ?? null) as Pick<JournalEntry, "content"> | null;
+  const dayGoals = (dayGoalRows ?? []) as DayGoal[];
   const annualDates = new Set<string>();
   for (const entry of efemerides) {
     if (entry.month !== parsed.getMonth() + 1) continue;
@@ -357,6 +366,22 @@ export default async function DayPage({
             )}
           </h2>
           <ObjectivesChecklist date={date} items={checklistItems} />
+        </section>
+      )}
+
+      {!isFuture && (
+        <section className="blk">
+          <h2 className="blk-tag">
+            Objetivos_del_día
+            {dayGoals.length > 0 && (
+              <span className="normal-case tracking-normal text-xs opacity-80">
+                {" "}
+                {dayGoals.filter((goal) => Boolean(goal.completed_at)).length}/
+                {dayGoals.length}
+              </span>
+            )}
+          </h2>
+          <DayGoals key={`day-goals-${date}`} date={date} initialGoals={dayGoals} />
         </section>
       )}
 

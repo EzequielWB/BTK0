@@ -4,6 +4,7 @@ import { addDays, parseISODate, todayISO } from "@/lib/utils";
 import type {
   DailyObjective,
   Day,
+  DayGoal,
   DayStatsPoint,
   Learning,
   Note,
@@ -31,6 +32,7 @@ export type PeriodFacts = {
   efficiency: number;
   notes: { iso: string; content: string }[];
   learnings: { iso: string; content: string }[];
+  dayGoals: { iso: string; content: string }[];
 };
 
 function fmt(iso: string): string {
@@ -129,6 +131,15 @@ export async function buildPeriodFacts(
         .order("date", { ascending: false })
     : { data: [] as Learning[] };
 
+  const { data: dayGoalRows } = rangeDays > 0
+    ? await supabase
+        .from("day_goals")
+        .select("date, title, completed_at")
+        .gte("date", startISO)
+        .lte("date", toISO)
+        .order("date", { ascending: false })
+    : { data: [] as DayGoal[] };
+
   const { data: objectiveRows } = await supabase
     .from("objectives")
     .select("title")
@@ -207,6 +218,12 @@ export async function buildPeriodFacts(
       iso: learning.date,
       content: clip(learning.content),
     }));
+  const dayGoals = ((dayGoalRows ?? []) as DayGoal[])
+    .slice(0, MAX_SAMPLES)
+    .map((goal) => ({
+      iso: goal.date,
+      content: `${goal.title} (${goal.completed_at ? "completado" : "pendiente"})`,
+    }));
 
   return {
     rangeLabel: `${fmt(startISO)} al ${fmt(toISO)}`,
@@ -224,5 +241,6 @@ export async function buildPeriodFacts(
     efficiency,
     notes,
     learnings,
+    dayGoals,
   };
 }

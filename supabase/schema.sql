@@ -180,6 +180,20 @@ create table if not exists journal (
 );
 
 -- ------------------------------------------------------------
+-- day_goals: "objetivos del día" — lista por día que se arma SOLO
+-- desde la vista del día (a diferencia de objectives, que son
+-- globales). Independiente de la eficiencia/estadísticas y del
+-- marcado verde del calendario. completed_at: null = pendiente.
+-- ------------------------------------------------------------
+create table if not exists day_goals (
+  id           uuid primary key default gen_random_uuid(),
+  date         date not null,
+  title        text not null,
+  completed_at timestamptz,
+  created_at   timestamptz not null default now()
+);
+
+-- ------------------------------------------------------------
 -- agenda_categories: categorías del "Cuaderno" (anotador libre).
 -- Cada categoría agrupa ítems de texto plano (recetas, ideas...).
 -- ------------------------------------------------------------
@@ -217,6 +231,7 @@ create index if not exists idx_daily_objectives_objective on daily_objectives(ob
 create index if not exists idx_temporal_goals_range on temporal_goals(start_date, end_date);
 create index if not exists idx_day_flags_date on day_flags(date);
 create index if not exists idx_agenda_items_category on agenda_items(category_id, created_at);
+create index if not exists idx_day_goals_date on day_goals(date, created_at);
 
 -- ------------------------------------------------------------
 -- Row Level Security:
@@ -240,3 +255,4 @@ alter table annual_categories enable row level security;
 alter table journal enable row level security;
 alter table agenda_categories enable row level security;
 alter table agenda_items enable row level security;
+alter table day_goals enable row level security;

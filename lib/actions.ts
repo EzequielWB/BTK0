@@ -529,6 +529,86 @@ export async function deleteTemporalGoalAction(formData: FormData): Promise<void
 }
 
 // ---------------------------------------------------------------------------
+// Objetivos del día (lista por día, se arma solo desde la vista del día)
+// ---------------------------------------------------------------------------
+
+export async function createDayGoalAction(
+  date: string,
+  title: string,
+  id: string
+): Promise<ActionResult> {
+  await requireAuth();
+  if (isFutureDay(date)) return { error: "Días futuros: solo lectura." };
+
+  const text = title.trim();
+  if (!text) return { error: "Escribí el objetivo del día." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("day_goals").insert({ id, date, title: text });
+
+  revalidatePath(`/bitacora/${date}`);
+
+  if (error) return { error: "No se pudo agregar el objetivo del día." };
+  return { success: "Objetivo del día agregado." };
+}
+
+export async function updateDayGoalAction(
+  id: string,
+  title: string,
+  date: string
+): Promise<ActionResult> {
+  await requireAuth();
+
+  const text = title.trim();
+  if (!text) return { error: "Escribí el objetivo del día." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("day_goals")
+    .update({ title: text })
+    .eq("id", id);
+
+  revalidatePath(`/bitacora/${date}`);
+
+  if (error) return { error: "No se pudo actualizar el objetivo del día." };
+  return { success: "Objetivo del día actualizado." };
+}
+
+export async function deleteDayGoalAction(
+  id: string,
+  date: string
+): Promise<ActionResult> {
+  await requireAuth();
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("day_goals").delete().eq("id", id);
+
+  revalidatePath(`/bitacora/${date}`);
+
+  if (error) return { error: "No se pudo borrar el objetivo del día." };
+  return { success: "Objetivo del día eliminado." };
+}
+
+export async function toggleDayGoalCompleteAction(
+  id: string,
+  date: string,
+  completed: boolean
+): Promise<ActionResult> {
+  await requireAuth();
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("day_goals")
+    .update({ completed_at: completed ? new Date().toISOString() : null })
+    .eq("id", id);
+
+  revalidatePath(`/bitacora/${date}`);
+
+  if (error) return { error: "No se pudo actualizar el objetivo del día." };
+  return { success: completed ? "Objetivo del día completado." : "Objetivo del día desmarcado." };
+}
+
+// ---------------------------------------------------------------------------
 // Borrado total de un día (triple tap en el calendario)
 // ---------------------------------------------------------------------------
 
@@ -552,7 +632,8 @@ export async function deleteDayDataAction(date: string): Promise<ActionResult> {
   const { error: notesErr } = await supabase.from("notes").delete().eq("date", date);
   const { error: learnErr } = await supabase.from("learnings").delete().eq("date", date);
   const { error: remErr } = await supabase.from("reminders").delete().eq("date", date);
-  if (notesErr || learnErr || remErr) failure = true;
+  const { error: dayGoalsErr } = await supabase.from("day_goals").delete().eq("date", date);
+  if (notesErr || learnErr || remErr || dayGoalsErr) failure = true;
 
   if (dayId) {
     const { error: dailyErr } = await supabase

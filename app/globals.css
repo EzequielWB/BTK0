@@ -318,6 +318,33 @@ body {
   line-height: 1;
 }
 
+/* Tick de "objetivo del día": casilla que se marca/desmarca */
+.cyb-goal-tick {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 2px solid var(--cyb-neon);
+  color: var(--cyb-neon);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: none;
+}
+.cyb-goal-tick.done {
+  background: var(--cyb-neon);
+  color: var(--cyb-bg);
+  box-shadow: 0 0 8px rgba(var(--cyb-neon-rgb), 0.6);
+}
+.cyb-goal-tick:hover {
+  box-shadow: 0 0 6px rgba(var(--cyb-neon-rgb), 0.4);
+}
+
 /* Link neón chico */
 .cyb-link {
   background: none;

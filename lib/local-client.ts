@@ -27,6 +27,7 @@ const TABLES = [
   "journal",
   "agenda_categories",
   "agenda_items",
+  "day_goals",
 ];
 
 function defaultSeed(): Store {
@@ -78,6 +79,7 @@ function defaultSeed(): Store {
     journal: [],
     agenda_categories: [],
     agenda_items: [],
+    day_goals: [],
   };
 }
 

@@ -672,6 +672,154 @@ await setCompletion("percent", 84);
     );
     console.log("Al vaciar la hoja, la fila se borra y el segmento desaparece: yes");
 
+    // 5c) Objetivos del día: lista por día (no Ajustes), completar/desmarcar,
+    //     editar inline, borrar; pendientes visibles en días pasados; sin
+    //     sección en días futuros
+    await page.goto(todayUrl, { waitUntil: "networkidle" });
+    const dayGoalsSection = page
+      .locator("section.blk", { hasText: "Objetivos_del_día" })
+      .last();
+    await dayGoalsSection
+      .locator("input[aria-label='Nuevo objetivo del día']")
+      .waitFor({ timeout: 10000 });
+    console.log("Sección 'Objetivos_del_día' en la vista del día: yes");
+
+    // Limpiar sobras de corridas anteriores
+    let leftoverGoals = await dayGoalsSection.locator(".enrow").count();
+    while (leftoverGoals > 0) {
+      await dayGoalsSection.locator("button:has-text('Borrar')").first().click();
+      await page.waitForTimeout(400);
+      leftoverGoals = await dayGoalsSection.locator(".enrow").count();
+    }
+
+    const goalTitle = "blabla-" + Date.now();
+    await dayGoalsSection
+      .locator("input[aria-label='Nuevo objetivo del día']")
+      .fill(goalTitle);
+    await dayGoalsSection.locator("button:has-text('Agregar objetivo')").click();
+    await page.waitForFunction(
+      (t) =>
+        [...document.querySelectorAll(".enrow")].some((r) =>
+          r.textContent.includes(t)
+        ),
+      goalTitle,
+      { timeout: 10000 }
+    );
+    console.log("Agrega un objetivo del día en la lista: yes");
+    console.log(
+      "Nuevo pendiente (sin tick lleno):",
+      (await dayGoalsSection.locator(".cyb-goal-tick.done").count()) === 0
+    );
+
+    await dayGoalsSection.locator(".cyb-goal-tick").first().click();
+    await page.waitForFunction(
+      () => document.querySelectorAll(".cyb-goal-tick.done").length === 1,
+      { timeout: 10000 }
+    );
+    console.log("Marcar completado -> tick lleno: yes");
+
+    await page.reload({ waitUntil: "networkidle" });
+    const dayGoalsSection2 = page
+      .locator("section.blk", { hasText: "Objetivos_del_día" })
+      .last();
+    await dayGoalsSection2
+      .locator(".cyb-goal-tick.done")
+      .first()
+      .waitFor({ timeout: 10000 });
+    console.log("Completado persiste tras reload: yes");
+
+    await dayGoalsSection2.locator(".cyb-goal-tick.done").first().click();
+    await page.waitForFunction(
+      () => document.querySelectorAll(".cyb-goal-tick.done").length === 0,
+      { timeout: 10000 }
+    );
+    console.log("Desmarcar vuelve a pendiente: yes");
+
+    await dayGoalsSection2.locator("button:has-text('Editar')").first().click();
+    const editedTitle = goalTitle + "-edit";
+    await dayGoalsSection2
+      .locator("input[aria-label='Editar objetivo del día']")
+      .fill(editedTitle);
+    await dayGoalsSection2.locator("button:has-text('Guardar')").click();
+    await page.waitForFunction(
+      (t) =>
+        [...document.querySelectorAll(".enrow")].some((r) =>
+          r.textContent.includes(t)
+        ),
+      editedTitle,
+      { timeout: 10000 }
+    );
+    console.log("Editar inline actualiza el título: yes");
+
+    // Día pasado: un pendiente se ve como "quedó pendiente"
+    const pastIso = iso(new Date(Date.now() - 86400000));
+    await page.goto(base + "/bitacora/" + pastIso, {
+      waitUntil: "networkidle",
+    });
+    const pastGoalsSection = page
+      .locator("section.blk", { hasText: "Objetivos_del_día" })
+      .last();
+    await pastGoalsSection
+      .locator("input[aria-label='Nuevo objetivo del día']")
+      .waitFor({ timeout: 10000 });
+    let pastLeftover = await pastGoalsSection.locator(".enrow").count();
+    while (pastLeftover > 0) {
+      await pastGoalsSection.locator("button:has-text('Borrar')").first().click();
+      await page.waitForTimeout(400);
+      pastLeftover = await pastGoalsSection.locator(".enrow").count();
+    }
+    await pastGoalsSection
+      .locator("input[aria-label='Nuevo objetivo del día']")
+      .fill("ayer-" + Date.now());
+    await pastGoalsSection.locator("button:has-text('Agregar objetivo')").click();
+    await pastGoalsSection
+      .locator("text=quedó pendiente")
+      .first()
+      .waitFor({ timeout: 10000 });
+    console.log("Día pasado con pendiente -> 'quedó pendiente': yes");
+    let pastRemaining = await pastGoalsSection.locator(".enrow").count();
+    while (pastRemaining > 0) {
+      await pastGoalsSection.locator("button:has-text('Borrar')").first().click();
+      await page.waitForTimeout(400);
+      pastRemaining = await pastGoalsSection.locator(".enrow").count();
+    }
+    console.log("Limpieza del objetivo en día pasado: yes");
+
+    // Día futuro: la sección NO existe
+    const futureIso = iso(new Date(Date.now() + 86400000));
+    await page.goto(base + "/bitacora/" + futureIso, {
+      waitUntil: "networkidle",
+    });
+    console.log(
+      "Día futuro sin sección 'Objetivos_del_día':",
+      (await page.locator("h2:has-text('Objetivos_del_día')").count()) === 0
+    );
+
+    // Limpiar: borrar el objetivo del día de hoy
+    await page.goto(todayUrl, { waitUntil: "networkidle" });
+    const dayGoalsSection3 = page
+      .locator("section.blk", { hasText: "Objetivos_del_día" })
+      .last();
+    await dayGoalsSection3
+      .locator("button:has-text('Borrar')")
+      .first()
+      .click();
+    await page.waitForFunction(
+      (t) =>
+        ![...document.querySelectorAll(".enrow")].some((r) =>
+          r.textContent.includes(t)
+        ),
+      editedTitle,
+      { timeout: 10000 }
+    );
+    let goalCleanup = await dayGoalsSection3.locator(".enrow").count();
+    while (goalCleanup > 0) {
+      await dayGoalsSection3.locator("button:has-text('Borrar')").first().click();
+      await page.waitForTimeout(400);
+      goalCleanup = await dayGoalsSection3.locator(".enrow").count();
+    }
+    console.log("Borrar objetivo del día (sin rastro): yes");
+
     // 6) Stats carga
     await page.click("a:has-text('Stats')");
     await page.waitForSelector("text=Estadísticas", { timeout: 10000 });

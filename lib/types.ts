@@ -97,6 +97,17 @@ export type AgendaCategoryWithCount = AgendaCategory & {
   count: number;
 };
 
+/** "Objetivo del día": lista por día que se arma SOLO desde la vista
+ * del día. Independiente de la eficiencia y del marcado verde.
+ * completed_at null = pendiente (si el día terminó, quedó sin hacer). */
+export type DayGoal = {
+  id: string;
+  date: string;
+  title: string;
+  completed_at?: string | null;
+  created_at: string;
+};
+
 export type DayMark = {
   complete: boolean;
   note: boolean;

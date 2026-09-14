@@ -96,8 +96,18 @@ function buildPrompt(f: PeriodFacts): string {
       lines.push(`- [${fmt(learning.iso)}] ${learning.content}`);
     lines.push("");
   }
+  if (f.dayGoals.length) {
+    const total = f.dayGoals.length;
+    const done = f.dayGoals.filter((g) => g.content.includes("completado")).length;
+    lines.push(
+      `Objetivos del día (muestra ${done}/${total} completados):`
+    );
+    for (const goal of f.dayGoals)
+      lines.push(`- [${fmt(goal.iso)}] ${goal.content}`);
+    lines.push("");
+  }
   lines.push(
-    "Usa las notas/aprendizajes solo como contexto para detectar altos y bajos; no los repitas textualmente. Responde únicamente el resumen, sin preámbulos."
+    "Usa las notas/aprendizajes/objetivos del día solo como contexto para detectar altos y bajos; no los repitas textualmente. Responde únicamente el resumen, sin preámbulos."
   );
 
   return lines.join("\n");
