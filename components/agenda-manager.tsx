@@ -530,11 +530,10 @@ export function AgendaManager({
                         </>
                       ) : (
                         <>
-                          <h3 className="font-semibold [overflow-wrap:anywhere]" style={{ maxWidth: 250 }}>{item.title}</h3>
+                          <h3 className="font-semibold [overflow-wrap:anywhere]">{item.title}</h3>
                           {item.content && (
                             <p
                               className="cyb-muted text-sm whitespace-pre-wrap [overflow-wrap:anywhere] mt-1"
-                              style={{ maxWidth: 250 }}
                             >
                               {expandedItems.has(item.id) ||
                               item.content.length <= PREVIEW_MAX
