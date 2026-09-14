@@ -10,6 +10,7 @@ import {
 } from "@/lib/actions";
 import type { Reminder } from "@/lib/types";
 import { formatShortDate, parseShortDate, todayISO } from "@/lib/utils";
+import { ClampText } from "@/components/clamp-text";
 
 function formatTime(iso: string): string {
   return new Intl.DateTimeFormat("es-AR", {
@@ -182,7 +183,7 @@ export function ReminderPanel({
                   <span className="cyb-hint text-xs block">
                     {formatShortDate(reminder.date)} · {formatTime(reminder.created_at)}
                   </span>
-                  <p className="whitespace-pre-wrap">{reminder.content}</p>
+                  <ClampText text={reminder.content} className="whitespace-pre-wrap" />
                 </>
               )}
               <div className="flex items-center justify-between mt-2">

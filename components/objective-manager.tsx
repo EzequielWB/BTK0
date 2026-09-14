@@ -9,6 +9,7 @@ import {
   updateObjectiveAction,
 } from "@/lib/actions";
 import type { Objective } from "@/lib/types";
+import { ClampText } from "@/components/clamp-text";
 
 function ToggleAndDeleteButtons({
   objective,
@@ -93,7 +94,7 @@ function ObjectiveRow({
           {objective.title}
         </strong>
         {objective.description ? (
-          <p className="cyb-muted text-sm">{objective.description}</p>
+          <ClampText text={objective.description} className="cyb-muted text-sm" />
         ) : null}
         {!objective.is_active ? (
           <p className="cyb-hint text-xs mt-1">Desactivado</p>

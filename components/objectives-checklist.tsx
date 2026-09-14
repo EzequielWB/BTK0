@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useTransition, useOptimistic } from "react";
 import { useRouter } from "next/navigation";
 import { reorderObjectivesAction, setDailyObjectiveStatusAction } from "@/lib/actions";
+import { ClampText } from "@/components/clamp-text";
 import type { ChecklistItem, ChecklistStatus } from "@/lib/types";
 
 const ORDER: ChecklistStatus[] = ["none", "partial", "done"];
@@ -176,12 +177,12 @@ export function ObjectivesChecklist({
                   >
                     ⋮⋮
                   </span>
-                  <span>
+                  <div className="min-w-0">
                     <span className="line-through">{item.title}</span>
                     {item.description ? (
-                      <span className="block text-sm cyb-hint">{item.description}</span>
+                      <ClampText text={item.description} className="text-sm cyb-hint" />
                     ) : null}
-                  </span>
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -256,7 +257,7 @@ export function ObjectivesChecklist({
                   );
                 })}
               </div>
-              <span>
+              <div className="min-w-0">
                 <span
                   className={
                     item.status === "done"
@@ -269,9 +270,9 @@ export function ObjectivesChecklist({
                   {item.title}
                 </span>
                 {item.description ? (
-                  <span className="block text-sm cyb-hint">{item.description}</span>
+                  <ClampText text={item.description} className="text-sm cyb-hint" />
                 ) : null}
-              </span>
+              </div>
               <span className="ml-auto shrink-0">
                 {armed ? (
                   <span className="flex items-center gap-1 text-sm">

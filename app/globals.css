@@ -17,6 +17,9 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* Ningún texto debe escaparse de su contenedor: las líneas largas sin
+     espacios se cortan en cualquier punto (heredado por todos los elementos). */
+  overflow-wrap: anywhere;
 }
 
 /* ==================================================================

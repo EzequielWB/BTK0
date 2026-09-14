@@ -8,6 +8,7 @@ import { NotesEditor } from "@/components/notes-editor";
 import { ObjectivesChecklist } from "@/components/objectives-checklist";
 import { ReminderPanel } from "@/components/reminder-panel";
 import { TemporalGoalsSection } from "@/components/temporal-goals-section";
+import { ClampText } from "@/components/clamp-text";
 import {
   completionConfigFromRow,
   countedItems,
@@ -335,7 +336,7 @@ export default async function DayPage({
           <ul className="space-y-2">
             {dayEfemerides.map((entry) => (
               <li key={entry.id} className="enrow">
-                <p className="whitespace-pre-wrap">{entry.content}</p>
+                <ClampText text={entry.content} className="whitespace-pre-wrap" />
               </li>
             ))}
           </ul>

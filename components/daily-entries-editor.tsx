@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useOptimistic } from "react";
 import type { ActionResult } from "@/lib/actions";
+import { ClampText } from "@/components/clamp-text";
 
 export type EntryItem = {
   id: string;
@@ -107,7 +108,7 @@ export function DailyEntriesEditor({
         <ul className="space-y-2 mb-3">
           {optimisticEntries.map((entry) => (
             <li key={entry.id} className="enrow">
-              <p className="whitespace-pre-wrap">{entry.content}</p>
+              <ClampText text={entry.content} className="whitespace-pre-wrap" />
               <div className="flex items-center justify-between mt-2">
                 <time className="cyb-hint text-xs">
                   {formatTime(entry.created_at)}

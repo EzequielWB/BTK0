@@ -26,6 +26,9 @@ type ItemAction =
   | { type: "update"; item: AgendaItem }
   | { type: "delete"; id: string };
 
+/** Largo máximo del texto visible antes de pedir "Ver más". */
+const PREVIEW_MAX = 180;
+
 export function AgendaManager({
   initialCategories,
   initialItems,
@@ -53,6 +56,7 @@ export function AgendaManager({
 
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(() => new Set());
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<Message | null>(null);
 
@@ -121,6 +125,7 @@ export function AgendaManager({
     setItemEditingId(null);
     setItemArmId(null);
     setItemSearch("");
+    setExpandedItems(new Set());
   }
 
   function handleAddCategory() {
@@ -262,6 +267,15 @@ export function AgendaManager({
     });
   }
 
+  function toggleExpanded(itemId: string) {
+    setExpandedItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  }
+
   const rowBase =
     "flex items-center gap-1.5 border px-2 py-1.5 text-sm cursor-pointer select-none";
 
@@ -269,7 +283,7 @@ export function AgendaManager({
     <div className="space-y-3">
       <div className="grid gap-4 md:grid-cols-[250px_1fr]">
         {/* Categorías */}
-        <section className="blk" aria-label="Categorías">
+        <section className="blk min-w-0" aria-label="Categorías">
           <span className="blk-tag">Categorías</span>
           <input
             value={categorySearch}
@@ -447,7 +461,7 @@ export function AgendaManager({
         </section>
 
         {/* Ítems de la categoría seleccionada */}
-        <section className="blk" aria-label="Ítems de la categoría">
+        <section className="blk min-w-0" aria-label="Ítems de la categoría">
           <span className="blk-tag">
             {activeCategory ? activeCategory.name : "Sin categoría"}
           </span>
@@ -516,25 +530,43 @@ export function AgendaManager({
                         </>
                       ) : (
                         <>
-                          <h3 className="font-semibold">{item.title}</h3>
+                          <h3 className="font-semibold [overflow-wrap:anywhere]" style={{ maxWidth: 250 }}>{item.title}</h3>
                           {item.content && (
-                            <p className="cyb-muted text-sm whitespace-pre-wrap mt-1">
-                              {item.content}
+                            <p
+                              className="cyb-muted text-sm whitespace-pre-wrap [overflow-wrap:anywhere] mt-1"
+                              style={{ maxWidth: 250 }}
+                            >
+                              {expandedItems.has(item.id) ||
+                              item.content.length <= PREVIEW_MAX
+                                ? item.content
+                                : `${item.content.slice(0, PREVIEW_MAX).trimEnd()}…`}
                             </p>
                           )}
                           <div className="mt-2 flex items-center justify-between gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setItemEditingId(item.id);
-                                setItemEditTitle(item.title);
-                                setItemEditContent(item.content);
-                              }}
-                              disabled={pending}
-                              className="cyb-link disabled:opacity-40"
-                            >
-                              Editar
-                            </button>
+                            <div className="flex items-center gap-3">
+                              {item.content.length > PREVIEW_MAX && (
+                                <button
+                                  type="button"
+                                  onClick={() => toggleExpanded(item.id)}
+                                  disabled={pending}
+                                  className="cyb-link disabled:opacity-40"
+                                >
+                                  {expandedItems.has(item.id) ? "Ver menos" : "Ver más"}
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setItemEditingId(item.id);
+                                  setItemEditTitle(item.title);
+                                  setItemEditContent(item.content);
+                                }}
+                                disabled={pending}
+                                className="cyb-link disabled:opacity-40"
+                              >
+                                Editar
+                              </button>
+                            </div>
                             <button
                               type="button"
                               onClick={() => handleDeleteItem(item)}

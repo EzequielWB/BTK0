@@ -16,6 +16,7 @@ import {
   annualOccurrenceISO,
   formatMonthDay,
 } from "@/lib/utils";
+import { ClampText } from "@/components/clamp-text";
 
 const SIN_SEPARAR = "Sin separar";
 
@@ -427,7 +428,7 @@ export function AnnualReminders({
                           {formatMonthDay(reminder.month, reminder.day)} · próxima:{" "}
                           {occurrenceLabel(reminder)}
                         </span>
-                        <p className="whitespace-pre-wrap">{reminder.content}</p>
+                        <ClampText text={reminder.content} className="whitespace-pre-wrap" />
                       </>
                     )}
                     <div className="flex flex-wrap items-center justify-between gap-2 mt-2">

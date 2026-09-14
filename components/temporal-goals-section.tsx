@@ -1,5 +1,6 @@
 import { formatDateRange } from "@/lib/utils";
 import { TemporalGoalDone } from "@/components/temporal-goal-done";
+import { ClampText } from "@/components/clamp-text";
 import type { TemporalGoal } from "@/lib/types";
 
 export function TemporalGoalsSection({ goals }: { goals: TemporalGoal[] }) {
@@ -16,9 +17,12 @@ export function TemporalGoalsSection({ goals }: { goals: TemporalGoal[] }) {
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="flex items-center gap-2">
-                    <strong className={done ? "cyb-goal-completed" : ""}>
-                      {goal.title}
-                    </strong>
+                    <ClampText
+                        as="strong"
+                        text={goal.title}
+                        max={80}
+                        className={done ? "cyb-goal-completed" : ""}
+                      />
                     {done ? (
                       <span className="cyb-hint text-xs whitespace-nowrap text-[#00ff9d]">
                         ✓ Hecha
@@ -32,7 +36,7 @@ export function TemporalGoalsSection({ goals }: { goals: TemporalGoal[] }) {
                 <TemporalGoalDone goal={goal} />
               </div>
               {goal.description ? (
-                <p className="cyb-muted text-sm mt-1">{goal.description}</p>
+                <ClampText text={goal.description} className="cyb-muted text-sm mt-1" />
               ) : null}
             </li>
           );
