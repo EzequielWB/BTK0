@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { ChangePasswordForm } from "@/components/change-password-form";
 import { CompletionSettingsForm } from "@/components/completion-settings-form";
+import { DaySectionsOrder } from "@/components/day-sections-order";
 import { ObjectiveManager } from "@/components/objective-manager";
 import { TemporalGoalManager } from "@/components/temporal-goal-manager";
 import { isAuthenticated } from "@/lib/session";
@@ -25,6 +26,7 @@ export default async function SettingsPage() {
     <div className="space-y-8">
       <ObjectiveManager objectives={(objectives ?? []) as Objective[]} />
       <TemporalGoalManager goals={(goals ?? []) as TemporalGoal[]} />
+      <DaySectionsOrder sectionOrder={(settings ?? null)?.section_order} />
       <CompletionSettingsForm settings={(settings ?? null) as Settings | null} />
       <ChangePasswordForm />
     </div>

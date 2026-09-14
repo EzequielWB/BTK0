@@ -41,7 +41,9 @@ function defaultSeed(): Store {
     password_config: [
       { id: 1, salt, password_hash: passwordHash, updated_at: now },
     ],
-    settings: [{ id: 1, completion_mode: "off", threshold: 1, updated_at: now }],
+    settings: [
+      { id: 1, completion_mode: "off", threshold: 1, section_order: null, updated_at: now },
+    ],
     objectives: [
       {
         id: randomUUID(),

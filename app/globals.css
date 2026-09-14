@@ -771,6 +771,27 @@ body {
   color: var(--cyb-amber);
 }
 
+/* Metas activas (metas con rango de fechas): dorado llamativo pero suave */
+.blk.metas-blk {
+  border-color: rgba(255, 225, 74, 0.55);
+  background: rgba(255, 225, 74, 0.045);
+  box-shadow: 0 0 20px rgba(255, 225, 74, 0.1);
+}
+.blk.metas-blk::before,
+.blk.metas-blk::after {
+  border-color: var(--cyb-amber);
+  filter: drop-shadow(0 0 4px rgba(255, 225, 74, 0.45));
+}
+.blk.metas-blk .blk-tag {
+  color: var(--cyb-amber);
+}
+.blk.metas-blk .blk-tag::before {
+  color: var(--cyb-amber);
+}
+.blk.metas-blk .cyb-hint {
+  color: rgba(255, 225, 74, 0.55);
+}
+
 /* ==================================================================
    LA HOJA — botón hoja + cuaderno con renglones (pensamientos del día)
    ================================================================== */

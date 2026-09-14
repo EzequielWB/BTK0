@@ -7,7 +7,7 @@ export function TemporalGoalsSection({ goals }: { goals: TemporalGoal[] }) {
   if (goals.length === 0) return null;
 
   return (
-    <section className="blk">
+    <section className="blk metas-blk">
       <h2 className="blk-tag">Metas_activas</h2>
       <ul className="space-y-2">
         {goals.map((goal) => {

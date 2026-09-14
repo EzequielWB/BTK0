@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AUTH_COOKIE, AUTH_DAY_COOKIE, generateSalt, hashPassword, isAuthenticated } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
+import { isDaySectionOrder } from "@/lib/sections";
 import { arNow, isValidISODate, isValidMonthDay, todayISO } from "@/lib/utils";
 
 export type ActionResult = { error?: string; success?: string };
@@ -350,6 +351,44 @@ export async function saveSettingsAction(
   revalidatePath("/bitacora");
 
   return { success: "Ajustes guardados." };
+}
+
+// ---------------------------------------------------------------------------
+// Orden de las tarjetas de la bitácora (vista del día)
+// ---------------------------------------------------------------------------
+
+export async function reorderDaySectionsAction(
+  ids: string[]
+): Promise<ActionResult> {
+  await requireAuth();
+
+  const seen = new Set<string>();
+  const uniqueIds: string[] = [];
+  for (const raw of ids) {
+    const id = String(raw).trim();
+    if (id && !seen.has(id)) {
+      seen.add(id);
+      uniqueIds.push(id);
+    }
+  }
+  if (!isDaySectionOrder(uniqueIds)) {
+    return { error: "El orden de secciones es inválido." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("settings")
+    .update({
+      section_order: JSON.stringify(uniqueIds),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", 1);
+
+  revalidatePath("/bitacora/settings");
+  revalidatePath("/bitacora");
+
+  if (error) return { error: "No se pudo guardar el orden." };
+  return { success: "Orden actualizado." };
 }
 
 export async function toggleObjectiveActiveAction(formData: FormData): Promise<void> {

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { notFound, redirect } from "next/navigation";
 import { CalendarNav } from "@/components/calendar-nav";
 import { DayFlagButton } from "@/components/day-flag-button";
@@ -18,6 +19,8 @@ import {
   statusOf,
   statusValue,
 } from "@/lib/completion";
+import { parseDaySectionOrder } from "@/lib/sections";
+import type { DaySectionKey } from "@/lib/sections";
 import { isAuthenticated } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -138,12 +141,15 @@ export default async function DayPage({
   ).length;
   const { data: settingsRow } = await supabase
     .from("settings")
-    .select("id, completion_mode, threshold")
+    .select("id, completion_mode, threshold, section_order")
     .eq("id", 1)
     .maybeSingle();
 
   const config = completionConfigFromRow(
-    (settingsRow ?? null) as Pick<Settings, "completion_mode" | "threshold"> | null
+    (settingsRow ?? null) as Pick<
+      Settings,
+      "completion_mode" | "threshold"
+    > | null
   );
 
   // Marcado del calendario con 3 componentes por día:
@@ -293,6 +299,137 @@ export default async function DayPage({
     if (isValidISODate(iso)) annualDates.add(iso);
   }
 
+  const rawSectionOrder =
+    ((settingsRow ?? null) as { section_order?: string | null } | null)
+      ?.section_order ?? null;
+  const sectionOrderKeys = parseDaySectionOrder(rawSectionOrder);
+  const orderIndex = new Map(
+    sectionOrderKeys.map((key, index) => [key, index])
+  );
+
+  const daySections: Array<[DaySectionKey, ReactNode]> = [
+    [
+      "efemerides",
+      dayEfemerides.length > 0 ? (
+        <section className="blk efemeride-blk" key="efemerides">
+          <span className="blk-tag">
+            Efemérides
+            <span className="normal-case tracking-normal text-xs opacity-80">
+              {" "}
+              {formatMonthDay(
+                dayEfemerides[0].month,
+                dayEfemerides[0].day
+              )}
+            </span>
+          </span>
+          <ul className="space-y-2">
+            {dayEfemerides.map((entry) => (
+              <li key={entry.id} className="enrow">
+                <ClampText text={entry.content} className="whitespace-pre-wrap" />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null,
+    ],
+    [
+      "cita",
+      <MotivationalQuote key="cita" date={date} />,
+    ],
+    [
+      "objetivos",
+      !isFuture ? (
+        <section className="blk" key="objetivos">
+          <h2 className="blk-tag">
+            Objetivos ·
+            {counted.length > 0 && (
+              <span className="normal-case tracking-normal text-xs opacity-80">
+                {" "}
+                {completedCount}/{counted.length} · {dayPercent(checklistItems)}%
+              </span>
+            )}
+          </h2>
+          <ObjectivesChecklist date={date} items={checklistItems} />
+        </section>
+      ) : null,
+    ],
+    [
+      "objetivos_dia",
+      !isFuture ? (
+        <section className="blk" key="objetivos_dia">
+          <h2 className="blk-tag">
+            Objetivos_del_día
+            {dayGoals.length > 0 && (
+              <span className="normal-case tracking-normal text-xs opacity-80">
+                {" "}
+                {dayGoals.filter((goal) => Boolean(goal.completed_at)).length}/
+                {dayGoals.length}
+              </span>
+            )}
+          </h2>
+          <DayGoals
+            key={`day-goals-${date}`}
+            date={date}
+            initialGoals={dayGoals}
+          />
+        </section>
+      ) : null,
+    ],
+    [
+      "metas_activas",
+      <TemporalGoalsSection
+        key="metas_activas"
+        goals={(goals ?? []) as TemporalGoal[]}
+      />,
+    ],
+    [
+      "recordatorios",
+      <div
+        key="recordatorios"
+        className={hasActiveReminder ? "blk reminder-blk" : "blk"}
+      >
+        <span className="blk-tag">
+          Recordatorios
+          {reminders.length > 0 && (
+            <span className="normal-case tracking-normal text-xs opacity-80">
+              {" "}
+              ({reminders.length})
+            </span>
+          )}
+        </span>
+        <ReminderPanel date={date} initialReminders={reminders} />
+      </div>,
+    ],
+    [
+      "notas_aprendizajes",
+      !isFuture ? (
+        <div className="grid gap-4 md:grid-cols-2" key="notas_aprendizajes">
+          <div className="blk">
+            <NotesEditor
+              key={`notes-${date}`}
+              date={date}
+              initialNotes={notes}
+            />
+          </div>
+          <div className="blk">
+            <LearningsEditor
+              key={`learnings-${date}`}
+              date={date}
+              initialLearnings={learnings}
+            />
+          </div>
+        </div>
+      ) : null,
+    ],
+  ];
+
+  const daySectionsSorted = [...daySections]
+    .sort(
+      (a, b) => (orderIndex.get(a[0]) ?? 0) - (orderIndex.get(b[0]) ?? 0)
+    )
+    .filter(([, node]) => node !== null)
+    .map(([, node]) => node);
+
   return (
     <div className="space-y-4">
       <div className="blk">
@@ -330,86 +467,7 @@ export default async function DayPage({
         </div>
       )}
 
-      {dayEfemerides.length > 0 && (
-        <section className="blk efemeride-blk">
-          <span className="blk-tag">
-            Efemérides
-            <span className="normal-case tracking-normal text-xs opacity-80">
-              {" "}
-              {formatMonthDay(
-                dayEfemerides[0].month,
-                dayEfemerides[0].day
-              )}
-            </span>
-          </span>
-          <ul className="space-y-2">
-            {dayEfemerides.map((entry) => (
-              <li key={entry.id} className="enrow">
-                <ClampText text={entry.content} className="whitespace-pre-wrap" />
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <MotivationalQuote date={date} />
-
-      {!isFuture && (
-        <section className="blk">
-          <h2 className="blk-tag">
-            Objetivos ·
-            {counted.length > 0 && (
-              <span className="normal-case tracking-normal text-xs opacity-80">
-                {" "}
-                {completedCount}/{counted.length} · {dayPercent(checklistItems)}%
-              </span>
-            )}
-          </h2>
-          <ObjectivesChecklist date={date} items={checklistItems} />
-        </section>
-      )}
-
-      {!isFuture && (
-        <section className="blk">
-          <h2 className="blk-tag">
-            Objetivos_del_día
-            {dayGoals.length > 0 && (
-              <span className="normal-case tracking-normal text-xs opacity-80">
-                {" "}
-                {dayGoals.filter((goal) => Boolean(goal.completed_at)).length}/
-                {dayGoals.length}
-              </span>
-            )}
-          </h2>
-          <DayGoals key={`day-goals-${date}`} date={date} initialGoals={dayGoals} />
-        </section>
-      )}
-
-      <TemporalGoalsSection goals={((goals ?? []) as TemporalGoal[])} />
-
-      <div className={hasActiveReminder ? "blk reminder-blk" : "blk"}>
-        <span className="blk-tag">
-          Recordatorios
-          {reminders.length > 0 && (
-            <span className="normal-case tracking-normal text-xs opacity-80">
-              {" "}
-              ({reminders.length})
-            </span>
-          )}
-        </span>
-        <ReminderPanel date={date} initialReminders={reminders} />
-      </div>
-
-      {!isFuture && (
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="blk">
-            <NotesEditor key={`notes-${date}`} date={date} initialNotes={notes} />
-          </div>
-          <div className="blk">
-            <LearningsEditor key={`learnings-${date}`} date={date} initialLearnings={learnings} />
-          </div>
-        </div>
-      )}
+      {daySectionsSorted}
     </div>
   );
 }

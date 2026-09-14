@@ -111,6 +111,9 @@ create table if not exists settings (
   updated_at      timestamptz not null default now()
 );
 
+-- Orden de las tarjetas de la vista del día (JSON: array de claves de sección).
+alter table settings add column if not exists section_order text;
+
 insert into settings (id, completion_mode, threshold)
 values (1, 'off', 1)
 on conflict (id) do nothing;

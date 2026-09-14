@@ -122,6 +122,8 @@ export type Settings = {
   id: number;
   completion_mode: CompletionMode;
   threshold: number;
+  /** Orden de las tarjetas de la vista del día (JSON: array de claves). */
+  section_order?: string | null;
   updated_at: string;
 };
 
