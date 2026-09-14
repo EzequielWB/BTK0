@@ -902,6 +902,18 @@ body {
   background: var(--cyb-amber);
   color: var(--cyb-bg);
 }
+.chip-btn.active {
+  background: var(--cyb-amber);
+  color: var(--cyb-bg);
+}
+.chip-btn.white {
+  border-color: var(--cyb-fg);
+  color: var(--cyb-fg);
+}
+.chip-btn.white:hover:not(:disabled) {
+  background: var(--cyb-fg);
+  color: var(--cyb-bg);
+}
 .cat-move-select {
   max-width: 210px;
 }

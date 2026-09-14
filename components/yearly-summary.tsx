@@ -8,22 +8,16 @@ type State =
   | { phase: "done"; text: string }
   | { phase: "error"; message: string };
 
-export function MonthlySummary({
-  mes,
-  anio,
-}: {
-  mes: string;
-  anio: string;
-}) {
+export function YearlySummary({ anio }: { anio: string }) {
   const [state, setState] = useState<State>({ phase: "idle" });
 
   async function run() {
     setState({ phase: "loading" });
     try {
-      const res = await fetch("/api/monthly", {
+      const res = await fetch("/api/yearly", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ year: Number(anio), month: Number(mes) }),
+        body: JSON.stringify({ year: Number(anio) }),
       });
       const body = (await res.json().catch(() => null)) as
         | { text?: string; error?: string }
@@ -57,8 +51,8 @@ export function MonthlySummary({
         className="cyb-btn disabled:opacity-40"
       >
         {state.phase === "loading"
-          ? "Analizando el mes..."
-          : "¿Cómo va el mes?"}
+          ? "Analizando el año..."
+          : "¿Cómo va el año?"}
       </button>
 
       {state.phase === "loading" ? (

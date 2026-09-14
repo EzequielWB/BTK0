@@ -14,8 +14,10 @@ const AXIS_TICK = { fontSize: 10, fill: "#8f8f8f" };
 
 export function StatsCharts({
   data,
+  interval = "preserveStartEnd",
 }: {
   data: { date: string; percent: number }[];
+  interval?: number | "preserveStartEnd";
 }) {
   return (
     <div className="w-full h-72">
@@ -26,7 +28,7 @@ export function StatsCharts({
             dataKey="date"
             tick={AXIS_TICK}
             stroke="#4d4d4d"
-            interval="preserveStartEnd"
+            interval={interval}
           />
           <YAxis
             domain={[0, 100]}

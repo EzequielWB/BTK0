@@ -1,5 +1,5 @@
 import { isAuthenticated } from "@/lib/session";
-import { monthLabel, monthRangeISO, todayISO } from "@/lib/utils";
+import { todayISO } from "@/lib/utils";
 import { buildPeriodFacts, type PeriodFacts } from "@/lib/analytics";
 import { chatWithFallback } from "@/lib/llm";
 
@@ -18,6 +18,27 @@ function fmt(iso: string): string {
   return `${dd}/${mm}`;
 }
 
+const MONTH_SHORT = Array.from({ length: 12 }, (_, i) =>
+  new Intl.DateTimeFormat("es-AR", { month: "short" })
+    .format(new Date(2020, i, 1))
+    .replace(/\./g, "")
+);
+
+function monthBreakdown(f: PeriodFacts): string {
+  const elapsed = new Array(12).fill(0);
+  const ratio = new Array(12).fill(0);
+  for (const point of f.daily) {
+    const m = Number(point.date.slice(5, 7)) - 1;
+    elapsed[m]++;
+    ratio[m] += point.ratio;
+  }
+  return MONTH_SHORT.map((label, m) => {
+    const percent =
+      elapsed[m] > 0 ? Math.round((ratio[m] / elapsed[m]) * 100) : 0;
+    return `${label}: ${percent}% (${elapsed[m]}d)`;
+  }).join(", ");
+}
+
 function buildPrompt(f: PeriodFacts): string {
   const lines: string[] = [];
 
@@ -32,21 +53,19 @@ function buildPrompt(f: PeriodFacts): string {
   lines.push("CIERRE");
   lines.push("");
   lines.push(
-    "- RESUMEN: 3 a 4 líneas sobre cómo estuvo el período en general, con números concretos."
+    "- RESUMEN: 3 a 4 líneas sobre cómo va el año en general, con números concretos."
   );
   lines.push(
-    "- ALTOS: 2 a 4 puntos específicos de lo que funcionó (apoyado en los datos)."
+    "- ALTOS: 2 a 4 puntos específicos de lo que funcionó (apoyado en los datos, podés nombrar meses puntuales)."
   );
   lines.push(
-    "- BAJOS: 2 a 4 puntos concretos de lo que faltó o se estancó (también con datos)."
+    "- BAJOS: 2 a 4 puntos concretos de lo que faltó o se estancó (también con datos, nombrá meses puntuales)."
   );
   lines.push(
-    "- CIERRE: una sola recomendación accionable y realista para el próximo período."
+    "- CIERRE: una sola recomendación accionable y realista para lo que queda del año."
   );
   lines.push("");
-  lines.push(
-    `DATOS DEL PERÍODO (hasta ${f.rangeLabel}):`
-  );
+  lines.push(`DATOS DEL AÑO (hasta ${f.rangeLabel}):`);
   lines.push(`Rango: ${f.rangeLabel}`);
   lines.push(
     `Objetivos activos: ${f.objectives.length ? f.objectives.join(", ") : "ninguno"}`
@@ -56,20 +75,15 @@ function buildPrompt(f: PeriodFacts): string {
   );
   lines.push(`Días con notas: ${f.daysWithNotes}`);
   lines.push(`Días con aprendizajes: ${f.daysWithLearnings}`);
-  lines.push(`Racha actual: ${f.streak} día(s)`);
-  lines.push(`Eficiencia: ${f.efficiency}%`);
+  lines.push(`Mejor racha: ${f.longestStreak} día(s)`);
+  lines.push(`Eficiencia anual: ${f.efficiency}%`);
   lines.push(
     `Mejores días: ${f.best.length ? f.best.map((d) => `${fmt(d.iso)} (${d.percent}%)`).join(", ") : "sin registros"}`
   );
   lines.push(
     `Peores días con registro: ${f.worst.length ? f.worst.map((d) => `${fmt(d.iso)} (${d.percent}%)`).join(", ") : "sin registros"}`
   );
-  lines.push(
-    `% por día (solo días con registro): ${f.daily
-      .filter((d) => d.hasData)
-      .map((d) => `${fmt(d.date)}: ${d.percent}%`)
-      .join(", ") || "ninguno"}`
-  );
+  lines.push(`Eficiencia por mes: ${monthBreakdown(f)}`);
   lines.push("");
   if (f.notes.length) {
     lines.push("NOTAS (más recientes, tal cual escribió el usuario):");
@@ -94,15 +108,10 @@ export async function POST(req: Request): Promise<Response> {
     return json({ error: "Fuera de alcance. 401." }, 401);
   }
 
-  const body = (await req.json().catch(() => null)) as {
-    year?: number;
-    month?: number;
-  } | null;
+  const body = (await req.json().catch(() => null)) as { year?: number } | null;
   const today = todayISO();
   const currentYear = Number(today.slice(0, 4));
-  const currentMonth = Number(today.slice(5, 7));
   const requestedYear = body?.year;
-  const requestedMonth = body?.month;
   const year =
     typeof requestedYear === "number" &&
     Number.isInteger(requestedYear) &&
@@ -110,29 +119,18 @@ export async function POST(req: Request): Promise<Response> {
     requestedYear <= 2100
       ? requestedYear
       : currentYear;
-  const month =
-    typeof requestedMonth === "number" &&
-    Number.isInteger(requestedMonth) &&
-    requestedMonth >= 1 &&
-    requestedMonth <= 12
-      ? requestedMonth
-      : currentMonth;
 
-  const { start, end } = monthRangeISO(
-    `${year}-${String(month).padStart(2, "0")}-01`
-  );
-  const facts = await buildPeriodFacts(start, end);
+  const facts = await buildPeriodFacts(`${year}-01-01`, `${year}-12-31`);
 
   if (!facts.daysWithData) {
-    const monthName = monthLabel(year, month - 1);
     return json({
-      text: `No hay registros en ${monthName} todavía. Usá la bitácora unos días y volvé a preguntar.`,
+      text: `No hay registros en ${year} todavía. Usá la bitácora unos días y volvé a preguntar.`,
     });
   }
 
   const result = await chatWithFallback({
     system: buildPrompt(facts),
-    maxTokens: 700,
+    maxTokens: 800,
     temperature: 0.3,
     stream: false,
   });
