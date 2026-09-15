@@ -33,10 +33,22 @@ const COLOR_META: Record<keyof BitacoraColors, { label: string; hint: string }> 
   border: { label: "Borde", hint: "Bordes generales" },
   g1: { label: "Rojo", hint: "Aprendizaje · recuerdos · ✕" },
   g2: { label: "Cian", hint: "Glitch de la cita" },
+  dotNote: { label: "Pelotita nota", hint: "Calendario · hay notas ese día" },
+  dotLearn: { label: "Pelotita aprendizaje", hint: "Calendario · se aprendió algo" },
+  dotThought: { label: "Pelotita pensamiento", hint: "Calendario · journal ese día" },
   grad0: { label: "Degradé 0%", hint: "Calendario · sin objetivos completados" },
   grad50: { label: "Degradé 50%", hint: "Calendario · mitad de objetivos" },
   grad100: { label: "Degradé 100%", hint: "Calendario · día completamente cumplido" },
 };
+
+const DOT_KEYS: (keyof BitacoraColors)[] = [
+  "dotNote",
+  "dotLearn",
+  "dotThought",
+];
+const GENERAL_KEYS = COLOR_KEYS.filter(
+  (key) => !DOT_KEYS.includes(key)
+);
 
 export function ColorThemeForm({ colors }: { colors: string | null }) {
   const [state, formAction, pending] = useActionState(saveColorSchemeAction, {});
@@ -47,6 +59,24 @@ export function ColorThemeForm({ colors }: { colors: string | null }) {
 
   const setValue = (key: keyof BitacoraColors, value: string) =>
     setValues((prev) => ({ ...prev, [key]: value }));
+
+  const renderColorRow = (key: keyof BitacoraColors) => (
+    <label key={key} className="flex items-center gap-2 cursor-pointer">
+      <input
+        type="color"
+        name={key}
+        value={values[key]}
+        onChange={(event) => setValue(key, event.target.value)}
+        className="h-8 w-10 shrink-0 cursor-pointer bg-transparent border border-[var(--cyb-num)] p-0"
+      />
+      <span className="leading-tight">
+        <span className="block text-xs">{COLOR_META[key].label}</span>
+        <span className="block text-[10px] cyb-hint">
+          {COLOR_META[key].hint}
+        </span>
+      </span>
+    </label>
+  );
 
   const applyPreset = (preset: PresetDesign) => {
     setValues({ ...preset.colors });
@@ -99,28 +129,16 @@ export function ColorThemeForm({ colors }: { colors: string | null }) {
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {COLOR_KEYS.map((key) => (
-            <label
-              key={key}
-              className="flex items-center gap-2 cursor-pointer"
-            >
-              <input
-                type="color"
-                name={key}
-                value={values[key]}
-                onChange={(event) => setValue(key, event.target.value)}
-                className="h-8 w-10 shrink-0 cursor-pointer bg-transparent border border-[var(--cyb-num)] p-0"
-              />
-              <span className="leading-tight">
-                <span className="block text-xs">
-                  {COLOR_META[key].label}
-                </span>
-                <span className="block text-[10px] cyb-hint">
-                  {COLOR_META[key].hint}
-                </span>
-              </span>
-            </label>
-          ))}
+          {GENERAL_KEYS.map((key) => renderColorRow(key))}
+        </div>
+
+        <div className="pt-3 border-t border-[var(--cyb-lines)]">
+          <span className="cyb-hint text-sm block mb-2">
+            Calendario · pelotitas por día
+          </span>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {DOT_KEYS.map((key) => renderColorRow(key))}
+          </div>
         </div>
 
         {state.error ? (
