@@ -340,5 +340,29 @@ class LocalQuery {
 export function createLocalClient() {
   return {
     from: (table: string) => new LocalQuery(table),
+    rpc: async (name: string): Promise<ExecResult> => {
+      if (name === "auto_complete_expired_reminders") {
+        const db = load();
+        const today = new Intl.DateTimeFormat("en-CA", {
+          timeZone: "America/Argentina/Buenos_Aires",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).format(new Date());
+        let changed = false;
+        for (const row of db.reminders ?? []) {
+          if (!row.completed_at && (row.date as string) < today) {
+            row.completed_at = row.date;
+            changed = true;
+          }
+        }
+        if (changed) save(db);
+        return { data: null, error: null };
+      }
+      return {
+        data: null,
+        error: { message: `RPC '${name}' no implementado en modo local.` },
+      };
+    },
   };
 }

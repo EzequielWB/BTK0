@@ -157,29 +157,31 @@ export default async function DayPage({
   const { start: monthStart, end: monthEnd } = monthRangeISO(date);
 
   const [
-    { data: allDays },
-    { data: allDailyObjectives },
+    { data: monthDays },
     { data: notesInMonth },
     { data: learningsInMonth },
     { data: remindersInMonth },
     { data: flagsInMonth },
     { data: journalDates },
   ] = await Promise.all([
-    supabase.from("days").select("id, date"),
-    supabase.from("daily_objectives").select("*"),
+    supabase
+      .from("days")
+      .select("id, date, objectives: daily_objectives(status)")
+      .gte("date", monthStart)
+      .lte("date", monthEnd),
     supabase
       .from("notes")
-      .select("date, content")
+      .select("date")
       .gte("date", monthStart)
       .lte("date", monthEnd),
     supabase
       .from("learnings")
-      .select("date, content")
+      .select("date")
       .gte("date", monthStart)
       .lte("date", monthEnd),
     supabase
       .from("reminders")
-      .select("*")
+      .select("id, date, content, completed_at, created_at")
       .gte("date", monthStart)
       .lte("date", monthEnd)
       .order("created_at"),
@@ -190,27 +192,39 @@ export default async function DayPage({
       .lte("date", monthEnd),
     supabase
       .from("journal")
-      .select("date, content")
+      .select("date")
       .gte("date", monthStart)
       .lte("date", monthEnd),
   ]);
 
-  // Auto-completar recordatorios vencidos: si un recordatorio tiene
-  // date < hoy y completed_at es null, se marca como completado
-  // usando la fecha del recordatorio como completed_at.
+  // El mes se resuelve en una sola consulta: days del rango con sus
+  // daily_objectives embebidos (solo status). Se aplanan en dos
+  // estructuras para no tocar el resto del pipeline.
+  type MonthDayRow = {
+    id: string;
+    date: string;
+    objectives?: { status: string }[] | null;
+  };
+  const monthDayRows = ((monthDays ?? []) as MonthDayRow[]);
+  const allDays = monthDayRows.map((row) => ({ id: row.id, date: row.date }));
+  const allDailyObjectives: DailyObjective[] = monthDayRows.flatMap((row) =>
+    (row.objectives ?? []).map((objective) => ({
+      id: "",
+      day_id: row.id,
+      objective_id: "",
+      status: objective.status as DailyObjective["status"],
+    }))
+  );
+
+  // Auto-completar recordatorios vencidos: se marca en un solo UPDATE
+  // masivo en la base (RPC) en vez de un update por recordatorio.
+  // completed_at queda con la fecha del recordatorio.
   const today = todayISO();
+  await supabase.rpc("auto_complete_expired_reminders");
   const expiredPending = ((remindersInMonth ?? []) as Reminder[]).filter(
     (r) => r.date < today && !(r.completed_at ?? null)
   );
   if (expiredPending.length > 0) {
-    await Promise.all(
-      expiredPending.map((r) =>
-        supabase
-          .from("reminders")
-          .update({ completed_at: r.date })
-          .eq("id", r.id)
-      )
-    );
     for (const r of expiredPending) {
       r.completed_at = r.date;
     }

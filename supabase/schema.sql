@@ -263,3 +263,23 @@ alter table journal enable row level security;
 alter table agenda_categories enable row level security;
 alter table agenda_items enable row level security;
 alter table day_goals enable row level security;
+
+-- ------------------------------------------------------------
+-- Función: auto-completar recordatorios vencidos
+-- Marca completed_at = fecha del recordatorio para todos los
+-- recordatorios que ya pasaron (date < hoy en Argentina) y están
+-- pendientes. Idempotente: una vez completados no vuelve a tocarlos.
+-- Se invoca desde el render del día con un solo RPC (en vez de un
+-- update por recordatorio).
+-- ------------------------------------------------------------
+create or replace function auto_complete_expired_reminders()
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  update reminders r
+  set completed_at = r.date::timestamptz
+  where r.date < (now() at time zone 'America/Argentina/Buenos_Aires')::date
+    and r.completed_at is null;
+$$;
