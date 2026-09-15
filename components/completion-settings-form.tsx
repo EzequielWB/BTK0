@@ -53,10 +53,10 @@ export function CompletionSettingsForm({
         </label>
 
         {state.error ? (
-          <p className="text-sm text-[#ff3b5c]">{state.error}</p>
+          <p className="text-sm text-[var(--cyb-g1)]">{state.error}</p>
         ) : null}
         {state.success ? (
-          <p className="text-sm text-[#00ff9d]">{state.success}</p>
+          <p className="text-sm text-[var(--cyb-green)]">{state.success}</p>
         ) : null}
 
         <button

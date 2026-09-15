@@ -324,8 +324,8 @@ export function AgendaManager({
                       rowBase +
                       " " +
                       (isActive
-                        ? "border-[#00ff9d] text-[#00ff9d] bg-[rgba(0,255,157,0.08)]"
-                        : "border-[#242424] text-[#f2f2f2] hover:border-[#00ff9d]") +
+                        ? "border-[var(--cyb-green)] text-[var(--cyb-green)] bg-[rgba(var(--cyb-green-rgb),0.08)]"
+                        : "border-[var(--cyb-border)] text-[var(--cyb-fg)] hover:border-[var(--cyb-green)]") +
                       (pending ? " pointer-events-none opacity-70" : "")
                     }
                   >
@@ -628,7 +628,7 @@ export function AgendaManager({
           role="status"
           aria-live="polite"
           className={`block text-sm ${
-            message.kind === "error" ? "text-[#ff3b5c]" : "cyb-muted"
+            message.kind === "error" ? "text-[var(--cyb-g1)]" : "cyb-muted"
           }`}
         >
           {message.text}

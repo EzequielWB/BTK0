@@ -326,7 +326,7 @@ export function ReminderPanel({
                 role="status"
                 aria-live="polite"
                 className={`text-sm ${
-                  message.kind === "error" ? "text-[#ff3b5c]" : "cyb-muted"
+                  message.kind === "error" ? "text-[var(--cyb-g1)]" : "cyb-muted"
                 }`}
               >
                 {message.text}

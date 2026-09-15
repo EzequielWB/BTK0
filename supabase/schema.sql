@@ -114,6 +114,10 @@ create table if not exists settings (
 -- Orden de las tarjetas de la vista del día (JSON: array de claves de sección).
 alter table settings add column if not exists section_order text;
 
+-- Colores del tema de la bitácora (JSON: objeto de hex #rrggbb para cada
+-- variable --cyb-* del shell; coincide con lib/colors.ts).
+alter table settings add column if not exists colors text;
+
 insert into settings (id, completion_mode, threshold)
 values (1, 'off', 1)
 on conflict (id) do nothing;

@@ -24,7 +24,7 @@ export function TemporalGoalsSection({ goals }: { goals: TemporalGoal[] }) {
                         className={done ? "cyb-goal-completed" : ""}
                       />
                     {done ? (
-                      <span className="cyb-hint text-xs whitespace-nowrap text-[#00ff9d]">
+                      <span className="cyb-hint text-xs whitespace-nowrap text-[var(--cyb-green)]">
                         ✓ Hecha
                       </span>
                     ) : null}

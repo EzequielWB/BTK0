@@ -63,9 +63,9 @@ export function BootLog({ onDone }: { onDone: () => void }) {
         return (
           <p
             key={line}
-            className="font-mono text-xs tracking-widest text-zinc-500 sm:text-sm"
+            className="font-mono text-xs tracking-widest text-[var(--cyb-mut)] sm:text-sm"
           >
-            <span className="text-zinc-600">&gt; </span>
+            <span className="text-[var(--cyb-dim)]">&gt; </span>
             {text}
             {active && <span className="tw-caret">▌</span>}
           </p>

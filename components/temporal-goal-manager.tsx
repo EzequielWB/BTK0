@@ -126,7 +126,7 @@ export function TemporalGoalManager({ goals }: { goals: TemporalGoal[] }) {
       </p>
 
       <div className="blk mb-4">
-        <h3 className="mb-1 text-[12px] uppercase tracking-wide font-medium text-[#f2f2f2]">
+        <h3 className="mb-1 text-[12px] uppercase tracking-wide font-medium text-[var(--cyb-fg)]">
           + Agregar meta
         </h3>
         <GoalFields
@@ -136,10 +136,10 @@ export function TemporalGoalManager({ goals }: { goals: TemporalGoal[] }) {
           pending={createPending}
         />
         {createState.error ? (
-          <p className="text-sm text-[#ff3b5c] mt-2">{createState.error}</p>
+          <p className="text-sm text-[var(--cyb-g1)] mt-2">{createState.error}</p>
         ) : null}
         {createState.success ? (
-          <p className="text-sm text-[#00ff9d] mt-2">{createState.success}</p>
+          <p className="text-sm text-[var(--cyb-green)] mt-2">{createState.success}</p>
         ) : null}
       </div>
 
@@ -158,10 +158,10 @@ export function TemporalGoalManager({ goals }: { goals: TemporalGoal[] }) {
                     pending={editPending}
                   />
                   {editState.error ? (
-                    <p className="text-sm text-[#ff3b5c] mt-2">{editState.error}</p>
+                    <p className="text-sm text-[var(--cyb-g1)] mt-2">{editState.error}</p>
                   ) : null}
                   {editState.success ? (
-                    <p className="text-sm text-[#00ff9d] mt-2">{editState.success}</p>
+                    <p className="text-sm text-[var(--cyb-green)] mt-2">{editState.success}</p>
                   ) : null}
                   <button
                     type="button"
@@ -179,7 +179,7 @@ export function TemporalGoalManager({ goals }: { goals: TemporalGoal[] }) {
                         {goal.title}
                       </strong>
                       {goal.completed_at ? (
-                        <span className="cyb-hint text-xs whitespace-nowrap text-[#00ff9d]">
+                        <span className="cyb-hint text-xs whitespace-nowrap text-[var(--cyb-green)]">
                           ✓ Hecha
                         </span>
                       ) : null}

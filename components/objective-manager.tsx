@@ -138,8 +138,8 @@ function EditForm({ objective, onCancel }: { objective: Objective; onCancel: () 
           className="cyb-in"
         />
       </label>
-      {state.error ? <p className="text-sm text-[#ff3b5c]">{state.error}</p> : null}
-      {state.success ? <p className="text-sm text-[#00ff9d]">{state.success}</p> : null}
+      {state.error ? <p className="text-sm text-[var(--cyb-g1)]">{state.error}</p> : null}
+      {state.success ? <p className="text-sm text-[var(--cyb-green)]">{state.success}</p> : null}
       <div className="flex gap-3">
         <button
           type="submit"
@@ -196,7 +196,7 @@ export function ObjectiveManager({ objectives }: { objectives: Objective[] }) {
       </p>
 
       <form action={formAction} className="blk mb-4 space-y-2">
-        <h3 className="mb-1 text-[12px] uppercase tracking-wide font-medium text-[#f2f2f2]">
+        <h3 className="mb-1 text-[12px] uppercase tracking-wide font-medium text-[var(--cyb-fg)]">
           + Agregar objetivo
         </h3>
         <label className="block">
@@ -216,8 +216,8 @@ export function ObjectiveManager({ objectives }: { objectives: Objective[] }) {
             className="cyb-in"
           />
         </label>
-        {state.error ? <p className="text-sm text-[#ff3b5c]">{state.error}</p> : null}
-        {state.success ? <p className="text-sm text-[#00ff9d]">{state.success}</p> : null}
+        {state.error ? <p className="text-sm text-[var(--cyb-g1)]">{state.error}</p> : null}
+        {state.success ? <p className="text-sm text-[var(--cyb-green)]">{state.success}</p> : null}
         <button
           type="submit"
           disabled={pending}

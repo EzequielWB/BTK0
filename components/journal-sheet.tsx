@@ -159,9 +159,9 @@ export function JournalSheet({
                 aria-live="polite"
                 className={`paper-status ${
                   status === "error"
-                    ? "text-[#ff3b5c]"
+                    ? "text-[var(--cyb-g1)]"
                     : status === "saved"
-                      ? "text-[#00ff9d]"
+                      ? "text-[var(--cyb-green)]"
                       : status === "idle"
                         ? "cyb-muted"
                         : ""

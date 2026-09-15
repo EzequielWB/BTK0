@@ -3,13 +3,30 @@ import Link from "next/link";
 import { CybClock } from "@/components/cyb-clock";
 import { LogoffButton } from "@/components/logoff-button";
 import { ReminderFab } from "@/components/reminder-fab";
-import { isLocalMode } from "@/lib/supabase/server";
+import { colorsToStyleVars, parseColors } from "@/lib/colors";
+import { createClient, isLocalMode } from "@/lib/supabase/server";
 
-export default function BitacoraLayout({ children }: { children: ReactNode }) {
+export const dynamic = "force-dynamic";
+
+export default async function BitacoraLayout({ children }: { children: ReactNode }) {
   const local = isLocalMode();
 
+  const supabase = await createClient();
+  const { data: settingsRow } = await supabase
+    .from("settings")
+    .select("colors")
+    .eq("id", 1)
+    .maybeSingle();
+
+  const colors = parseColors(
+    (settingsRow as { colors?: string | null } | null)?.colors ?? null
+  );
+
   return (
-    <div className="cyb-shell flex min-h-full flex-col">
+    <div
+      className="cyb-shell flex min-h-full flex-col"
+      style={colorsToStyleVars(colors)}
+    >
       <header className="cyb-deck">
         <Link href="/bitacora" className="cyb-logo no-underline">
           BitAK0R4_

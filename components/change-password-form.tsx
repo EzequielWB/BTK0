@@ -41,12 +41,12 @@ export function ChangePasswordForm() {
           />
         </label>
         {state.error ? (
-          <p className="text-sm text-[#ff3b5c]" role="alert">
+          <p className="text-sm text-[var(--cyb-g1)]" role="alert">
             {state.error}
           </p>
         ) : null}
         {state.success ? (
-          <p className="text-sm text-[#00ff9d]" role="status">
+          <p className="text-sm text-[var(--cyb-green)]" role="status">
             {state.success}
           </p>
         ) : null}

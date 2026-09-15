@@ -105,8 +105,8 @@ export function LoginScreen({
           text={success ? "IDENTIDAD\nVERIFICADA" : phrase}
           className={
             success
-              ? "font-pixel text-sm leading-relaxed whitespace-pre-line text-[#00ff9d] [text-shadow:0_0_12px_rgba(0,255,157,0.55)] sm:text-base"
-              : "font-pixel text-sm leading-relaxed whitespace-pre-line text-zinc-200 [text-shadow:0_0_8px_rgba(255,255,255,0.35)] sm:text-base"
+              ? "font-pixel text-sm leading-relaxed whitespace-pre-line text-[var(--cyb-green)] [text-shadow:0_0_12px_rgba(var(--cyb-green-rgb),0.55)] sm:text-base"
+              : "font-pixel text-sm leading-relaxed whitespace-pre-line text-[var(--cyb-fg)] [text-shadow:0_0_8px_rgba(var(--cyb-fg-rgb),0.35)] sm:text-base"
           }
         />
         <PasswordGate

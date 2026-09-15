@@ -149,7 +149,7 @@ export function DailyEntriesEditor({
         {message && (
           <span
             className={`text-sm ${
-              message.kind === "error" ? "text-[#ff3b5c]" : "cyb-muted"
+              message.kind === "error" ? "text-[var(--cyb-g1)]" : "cyb-muted"
             }`}
             role="status"
             aria-live="polite"

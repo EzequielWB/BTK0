@@ -3,6 +3,7 @@ import { StatsCharts } from "@/components/stats-charts";
 import { StatsPeriodSelector } from "@/components/stats-period-selector";
 import { MonthlySummary } from "@/components/monthly-summary";
 import { YearlySummary } from "@/components/yearly-summary";
+import { parseColors } from "@/lib/colors";
 import { statusOf, statusValue } from "@/lib/completion";
 import { isAuthenticated } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
@@ -86,6 +87,15 @@ export default async function StatsPage({
     ) + 1;
 
   const supabase = await createClient();
+
+  const { data: settingsRow } = await supabase
+    .from("settings")
+    .select("colors")
+    .eq("id", 1)
+    .maybeSingle();
+  const colors = parseColors(
+    (settingsRow as { colors?: string | null } | null)?.colors ?? null
+  );
 
   const { data: days } = rangeDays > 0
     ? await supabase
@@ -236,7 +246,7 @@ export default async function StatsPage({
             {periodLabel}
           </span>
           {rangeDays > 0 ? (
-            <StatsCharts data={chartData} interval={chartInterval} />
+            <StatsCharts data={chartData} interval={chartInterval} colors={colors} />
           ) : (
             <p className="cyb-hint text-sm">
               Este período todavía no alcanzó a empezar.

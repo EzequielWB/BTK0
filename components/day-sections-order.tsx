@@ -95,7 +95,7 @@ export function DaySectionsOrder({
         {message ? (
           <span
             className={`text-sm ${
-              message.includes("actualizado") ? "text-[#00ff9d]" : "text-[#ff3b5c]"
+              message.includes("actualizado") ? "text-[var(--cyb-green)]" : "text-[var(--cyb-g1)]"
             }`}
           >
             {message}

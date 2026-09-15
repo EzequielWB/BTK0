@@ -118,12 +118,40 @@ export type DayMark = {
 
 export type CompletionMode = "off" | "count" | "percent";
 
+/** Paleta de la bitácora: cada campo es un hex #rrggbb que alimenta una
+ * variable --cyb-* del shell (ver globals.css). */
+export type BitacoraColors = {
+  bg: string;
+  fg: string;
+  neon: string;
+  green: string;
+  amber: string;
+  mut: string;
+  dim: string;
+  faint: string;
+  deep: string;
+  lines: string;
+  deckBg: string;
+  panel: string;
+  blk: string;
+  btn: string;
+  num: string;
+  trackBg: string;
+  track: string;
+  field: string;
+  border: string;
+  g1: string;
+  g2: string;
+};
+
 export type Settings = {
   id: number;
   completion_mode: CompletionMode;
   threshold: number;
   /** Orden de las tarjetas de la vista del día (JSON: array de claves). */
   section_order?: string | null;
+  /** Colores del tema (JSON de BitacoraColors) o null = valores originales. */
+  colors?: string | null;
   updated_at: string;
 };
 

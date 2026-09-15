@@ -7,6 +7,8 @@ import { AUTH_COOKIE, AUTH_DAY_COOKIE, generateSalt, hashPassword, isAuthenticat
 import { createClient } from "@/lib/supabase/server";
 import { isDaySectionOrder } from "@/lib/sections";
 import { arNow, isValidISODate, isValidMonthDay, todayISO } from "@/lib/utils";
+import { COLOR_KEYS, stringifyColors } from "@/lib/colors";
+import type { BitacoraColors } from "@/lib/types";
 
 export type ActionResult = { error?: string; success?: string };
 
@@ -351,6 +353,42 @@ export async function saveSettingsAction(
   revalidatePath("/bitacora");
 
   return { success: "Ajustes guardados." };
+}
+
+// ---------------------------------------------------------------------------
+// Colores del tema de la bitácora
+// ---------------------------------------------------------------------------
+
+export async function saveColorSchemeAction(
+  _prevState: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  await requireAuth();
+
+  const colors = {} as BitacoraColors;
+  for (const key of COLOR_KEYS) {
+    const value = String(formData.get(key) ?? "").trim();
+    if (!/^#[0-9a-fA-F]{6}$/.test(value)) {
+      return { error: `El color "${key}" no es un hex válido (#rrggbb).` };
+    }
+    colors[key] = value.toLowerCase();
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("settings")
+    .update({
+      colors: stringifyColors(colors),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", 1);
+
+  revalidatePath("/bitacora/settings");
+  revalidatePath("/bitacora", "layout");
+  revalidatePath("/");
+
+  if (error) return { error: "No se pudieron guardar los colores." };
+  return { success: "Colores actualizados." };
 }
 
 // ---------------------------------------------------------------------------

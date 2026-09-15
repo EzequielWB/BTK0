@@ -28,11 +28,13 @@ body {
 .cyb-shell {
   --cyb-bg: #030303;
   --cyb-fg: #f2f2f2;
+  --cyb-fg-rgb: 242, 242, 242;
   --cyb-neon: #f2f2f2;
   --cyb-neon-rgb: 242, 242, 242;
   --cyb-green: #00ff9d;
   --cyb-green-rgb: 0, 255, 157;
   --cyb-amber: #ffe14a;
+  --cyb-amber-rgb: 255, 225, 74;
   --cyb-mut: #8f8f8f;
   --cyb-dim: #6f6f6f;
   --cyb-faint: #555;
@@ -48,6 +50,7 @@ body {
   --cyb-field: #080808;
   --cyb-border: #242424;
   --cyb-g1: #ff3b5c;
+  --cyb-g1-rgb: 255, 59, 92;
   --cyb-g2: #00e5ff;
   min-height: 100%;
   background: var(--cyb-bg);
@@ -561,16 +564,16 @@ body {
 
 /* Días que todavía no llegaron: solo lectura, apagados */
 .cyb-num.future {
-  border-color: rgba(242, 242, 242, 0.16);
-  background: rgba(242, 242, 242, 0.03);
-  color: rgba(242, 242, 242, 0.35);
+  border-color: rgba(var(--cyb-fg-rgb), 0.16);
+  background: rgba(var(--cyb-fg-rgb), 0.03);
+  color: rgba(var(--cyb-fg-rgb), 0.35);
   opacity: 0.55;
 }
 
 /* Recuadro rojo: días con recordatorio activo (hoy o futuro) */
 .cyb-num.has-reminder {
   border-color: var(--cyb-g1);
-  box-shadow: 0 0 8px rgba(255, 59, 92, 0.4);
+  box-shadow: 0 0 8px rgba(var(--cyb-g1-rgb), 0.4);
 }
 .cyb-num.has-reminder .cyb-day-num {
   color: #fff;
@@ -589,7 +592,7 @@ body {
 .cyb-num.has-reminder.today {
   background: var(--cyb-green);
   border-color: var(--cyb-green);
-  box-shadow: 0 0 8px rgba(255, 59, 92, 0.6), 0 0 8px rgba(0, 255, 157, 0.45);
+  box-shadow: 0 0 8px rgba(var(--cyb-g1-rgb), 0.6), 0 0 8px rgba(var(--cyb-green-rgb), 0.45);
 }
 
 /* Un día futuro con recordatorio sigue en solo lectura pero muestra
@@ -603,16 +606,16 @@ body {
 /* Día destacado: anillo dorado (amber) alrededor del número */
 .cyb-num.has-flag {
   border-color: var(--cyb-amber);
-  box-shadow: 0 0 8px rgba(255, 225, 74, 0.5);
+  box-shadow: 0 0 8px rgba(var(--cyb-amber-rgb), 0.5);
 }
 .cyb-num.has-flag.today {
-  box-shadow: 0 0 8px rgba(255, 225, 74, 0.6), 0 0 8px rgba(0, 255, 157, 0.45);
+  box-shadow: 0 0 8px rgba(var(--cyb-amber-rgb), 0.6), 0 0 8px rgba(var(--cyb-green-rgb), 0.45);
 }
 .cyb-num.has-flag.has-reminder {
-  box-shadow: 0 0 8px rgba(255, 225, 74, 0.55), 0 0 8px rgba(255, 59, 92, 0.4);
+  box-shadow: 0 0 8px rgba(var(--cyb-amber-rgb), 0.55), 0 0 8px rgba(var(--cyb-g1-rgb), 0.4);
 }
 .cyb-num.has-flag.has-reminder.today {
-  box-shadow: 0 0 8px rgba(255, 225, 74, 0.6), 0 0 8px rgba(255, 59, 92, 0.6), 0 0 8px rgba(0, 255, 157, 0.45);
+  box-shadow: 0 0 8px rgba(var(--cyb-amber-rgb), 0.6), 0 0 8px rgba(var(--cyb-g1-rgb), 0.6), 0 0 8px rgba(var(--cyb-green-rgb), 0.45);
 }
 /* Un día futuro destacado se ve (no queda apagado) */
 .cyb-num.future.has-flag {
@@ -623,14 +626,14 @@ body {
 /* Efeméride: fecha que se repite todos los años (borde punteado blanco) */
 .cyb-num.has-annual {
   border-style: dashed;
-  border-color: rgba(242, 242, 242, 0.6);
+  border-color: rgba(var(--cyb-fg-rgb), 0.6);
 }
 .cyb-num.has-annual.today {
-  box-shadow: 0 0 8px rgba(242, 242, 242, 0.35);
+  box-shadow: 0 0 8px rgba(var(--cyb-fg-rgb), 0.35);
 }
 .cyb-num.has-flag.has-annual {
   border-style: dashed;
-  border-color: rgba(255, 225, 74, 0.9);
+  border-color: rgba(var(--cyb-amber-rgb), 0.9);
 }
 .cyb-num.has-reminder.has-annual {
   border-style: dashed;
@@ -666,7 +669,7 @@ body {
   color: var(--cyb-bg);
   background: var(--cyb-amber);
   border-color: var(--cyb-amber);
-  box-shadow: 0 0 8px rgba(255, 225, 74, 0.45);
+  box-shadow: 0 0 8px rgba(var(--cyb-amber-rgb), 0.45);
 }
 
 /* Recordatorio completo: tachado y apagado */
@@ -704,11 +707,11 @@ body {
   border: 1px solid var(--cyb-neon);
   background: var(--cyb-bg);
   padding: 16px;
-  box-shadow: 0 0 24px rgba(0, 255, 157, 0.15);
+  box-shadow: 0 0 24px rgba(var(--cyb-green-rgb), 0.15);
 }
 .cyb-modal-danger {
   border: 2px solid var(--cyb-g1);
-  box-shadow: 0 0 28px rgba(255, 59, 92, 0.35);
+  box-shadow: 0 0 28px rgba(var(--cyb-g1-rgb), 0.35);
 }
 .cyb-danger-btn {
   border: 1px solid var(--cyb-g1);
@@ -732,7 +735,7 @@ body {
 }
 .cyb-danger-btn-fire {
   border-width: 2px;
-  box-shadow: 0 0 10px rgba(255, 59, 92, 0.3);
+  box-shadow: 0 0 10px rgba(var(--cyb-g1-rgb), 0.3);
 }
 
 /* Tarjeta de recordatorios con actividad (acento rojo en vez del verde) */
@@ -750,13 +753,13 @@ body {
 /* Banner de vista futura */
 .blk.future-blk::before,
 .blk.future-blk::after {
-  border-color: rgba(242, 242, 242, 0.25);
+  border-color: rgba(var(--cyb-fg-rgb), 0.25);
 }
 .blk.future-blk {
-  border-color: rgba(242, 242, 242, 0.2);
+  border-color: rgba(var(--cyb-fg-rgb), 0.2);
 }
 .blk.future-blk .blk-tag {
-  color: rgba(242, 242, 242, 0.55);
+  color: rgba(var(--cyb-fg-rgb), 0.55);
 }
 
 /* Tarjeta de efemérides (acento ámbar: fechas que se repiten cada año) */
@@ -773,14 +776,14 @@ body {
 
 /* Metas activas (metas con rango de fechas): dorado llamativo pero suave */
 .blk.metas-blk {
-  border-color: rgba(255, 225, 74, 0.55);
-  background: rgba(255, 225, 74, 0.045);
-  box-shadow: 0 0 20px rgba(255, 225, 74, 0.1);
+  border-color: rgba(var(--cyb-amber-rgb), 0.55);
+  background: rgba(var(--cyb-amber-rgb), 0.045);
+  box-shadow: 0 0 20px rgba(var(--cyb-amber-rgb), 0.1);
 }
 .blk.metas-blk::before,
 .blk.metas-blk::after {
   border-color: var(--cyb-amber);
-  filter: drop-shadow(0 0 4px rgba(255, 225, 74, 0.45));
+  filter: drop-shadow(0 0 4px rgba(var(--cyb-amber-rgb), 0.45));
 }
 .blk.metas-blk .blk-tag {
   color: var(--cyb-amber);
@@ -789,7 +792,7 @@ body {
   color: var(--cyb-amber);
 }
 .blk.metas-blk .cyb-hint {
-  color: rgba(255, 225, 74, 0.55);
+  color: rgba(var(--cyb-amber-rgb), 0.55);
 }
 
 /* ==================================================================
@@ -1007,20 +1010,20 @@ body {
 .cyb-trio-slot.tri-none.active {
   border-color: var(--cyb-g1);
   color: var(--cyb-g1);
-  background: rgba(255, 59, 92, 0.12);
-  box-shadow: 0 0 8px rgba(255, 59, 92, 0.35);
+  background: rgba(var(--cyb-g1-rgb), 0.12);
+  box-shadow: 0 0 8px rgba(var(--cyb-g1-rgb), 0.35);
 }
 .cyb-trio-slot.tri-partial.active {
   border-color: var(--cyb-amber);
   color: var(--cyb-amber);
-  background: rgba(255, 225, 74, 0.12);
-  box-shadow: 0 0 8px rgba(255, 225, 74, 0.35);
+  background: rgba(var(--cyb-amber-rgb), 0.12);
+  box-shadow: 0 0 8px rgba(var(--cyb-amber-rgb), 0.35);
 }
 .cyb-trio-slot.tri-done.active {
   border-color: var(--cyb-green);
   color: var(--cyb-green);
-  background: rgba(0, 255, 157, 0.12);
-  box-shadow: 0 0 8px rgba(0, 255, 157, 0.35);
+  background: rgba(var(--cyb-green-rgb), 0.12);
+  box-shadow: 0 0 8px rgba(var(--cyb-green-rgb), 0.35);
 }
 
 /* Rectángulo flotante "REC+" (recordatorio con fecha propia) */
@@ -1040,10 +1043,10 @@ body {
   background: var(--cyb-deck-bg);
   cursor: pointer;
   font-family: inherit;
-  box-shadow: 0 0 14px rgba(255, 59, 92, 0.25);
+  box-shadow: 0 0 14px rgba(var(--cyb-g1-rgb), 0.25);
 }
 .cyb-rem-fab:hover {
-  box-shadow: 0 0 18px rgba(255, 59, 92, 0.4);
+  box-shadow: 0 0 18px rgba(var(--cyb-g1-rgb), 0.4);
 }
 .cyb-rem-fab-tag {
   font-size: 13px;
@@ -1084,7 +1087,7 @@ body {
   }
 }
 .tw-caret {
-  color: #00ff9d;
+  color: var(--cyb-green);
   animation: tw-caret-blink 1s steps(1) infinite;
 }
 @keyframes tw-caret-blink {
@@ -1113,8 +1116,8 @@ body {
 .granted-flash {
   background: radial-gradient(
     ellipse at center,
-    rgba(0, 255, 157, 0.35) 0%,
-    rgba(0, 255, 157, 0.08) 45%,
+    rgba(var(--cyb-green-rgb), 0.35) 0%,
+    rgba(var(--cyb-green-rgb), 0.08) 45%,
     transparent 75%
   );
   animation: granted-flash-fade 0.9s ease-out forwards;

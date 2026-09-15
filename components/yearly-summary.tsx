@@ -69,7 +69,7 @@ export function YearlySummary({ anio }: { anio: string }) {
               {state.text}
             </p>
           ) : (
-            <p className="text-sm text-[#ff3b5c]" role="status">
+            <p className="text-sm text-[var(--cyb-g1)]" role="status">
               {state.message}
             </p>
           )}

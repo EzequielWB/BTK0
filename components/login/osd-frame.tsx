@@ -17,17 +17,17 @@ export function OsdFrame() {
 
   return (
     <>
-      <div className="pointer-events-none fixed inset-0 z-20 flex flex-col justify-between p-3 font-mono text-[10px] uppercase tracking-[0.28em] text-zinc-500 sm:text-[11px]">
-        <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
+      <div className="pointer-events-none fixed inset-0 z-20 flex flex-col justify-between p-3 font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--cyb-mut)] sm:text-[11px]">
+        <div className="flex items-center justify-between border-b border-[var(--cyb-lines)] pb-2">
           <span>Acceso restringido</span>
           <span className="flex items-center gap-2">
             <span className="dot-live h-1.5 w-1.5 rounded-full bg-red-600" />
             <span>LIVE</span>
           </span>
         </div>
-        <div className="flex items-center justify-between border-t border-zinc-800/80 pt-2">
+        <div className="flex items-center justify-between border-t border-[var(--cyb-lines)] pt-2">
           <span>Bitákora OS v0.1</span>
-          <span className="osd-clock text-zinc-400">#{now}</span>
+          <span className="osd-clock text-[var(--cyb-dim)]">#{now}</span>
         </div>
       </div>
       <div aria-hidden className="login-scanlines pointer-events-none fixed inset-0 z-[60]" />
