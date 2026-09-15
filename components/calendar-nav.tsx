@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { ReminderPanel } from "@/components/reminder-panel";
 import { deleteDayDataAction } from "@/lib/actions";
@@ -129,14 +129,27 @@ export function CalendarNav({
           if (!cell) return <span key={`empty-${i}`} />;
 
           const mark = marks[cell];
-          const segs = [
-            mark?.complete ? "segs-g" : null,
-            mark?.note ? "segs-a" : null,
-            mark?.learn ? "segs-r" : null,
-            mark?.thought ? "segs-w" : null,
+          const dots = [
+            mark?.note ? "dot-a" : null,
+            mark?.learn ? "dot-r" : null,
+            mark?.thought ? "dot-w" : null,
           ].filter((className): className is string => Boolean(className));
 
           const isFuture = cell > today;
+          // Color del día en base al % de objetivos completados. Solo se
+          // pinta para días que YA pasaron; hoy y futuros mantienen su
+          // estilo propio. 0% = rojo, 50% = amarillo, 100% = verde.
+          const isPast = cell < today;
+          const percent = isPast ? mark?.percent : undefined;
+          const numStyle: CSSProperties =
+            percent != null
+              ? {
+                  background:
+                    percent <= 50
+                      ? `color-mix(in srgb, var(--cyb-grad50) ${(percent / 50) * 100}%, var(--cyb-grad0))`
+                      : `color-mix(in srgb, var(--cyb-grad100) ${((percent - 50) / 50) * 100}%, var(--cyb-grad50))`,
+                }
+              : {};
           // Recuadro rojo: solo recordatorios PENDIENTES (sin completar)
           // de hoy o futuro. Los completados y los vencidos quedan en la
           // tarjeta del día pero sin marcar el calendario.
@@ -148,7 +161,8 @@ export function CalendarNav({
 
           const numClass = ["cyb-num"]
             .concat(cell === date ? "today" : "")
-            .concat(segs.length > 0 ? "has-segs" : "")
+            .concat(dots.length > 0 ? "has-dots" : "")
+            .concat(percent != null ? "has-fill" : "")
             .concat(isFuture ? "future" : "")
             .concat(hasReminder ? "has-reminder" : "")
             .concat(isFlagged ? "has-flag" : "")
@@ -212,10 +226,10 @@ export function CalendarNav({
                 }
               }}
             >
-              <span className={numClass}>
-                {segs.length > 0 && (
-                  <span aria-hidden className="cyb-segs">
-                    {segs.map((className) => (
+              <span className={numClass} style={numStyle}>
+                {dots.length > 0 && (
+                  <span aria-hidden className="cyb-dots">
+                    {dots.map((className) => (
                       <i key={className} className={className} />
                     ))}
                   </span>

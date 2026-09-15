@@ -195,6 +195,31 @@ export default async function DayPage({
       .lte("date", monthEnd),
   ]);
 
+  // Auto-completar recordatorios vencidos: si un recordatorio tiene
+  // date < hoy y completed_at es null, se marca como completado
+  // usando la fecha del recordatorio como completed_at.
+  const today = todayISO();
+  const expiredPending = ((remindersInMonth ?? []) as Reminder[]).filter(
+    (r) => r.date < today && !(r.completed_at ?? null)
+  );
+  if (expiredPending.length > 0) {
+    await Promise.all(
+      expiredPending.map((r) =>
+        supabase
+          .from("reminders")
+          .update({ completed_at: r.date })
+          .eq("id", r.id)
+      )
+    );
+    for (const r of expiredPending) {
+      r.completed_at = r.date;
+    }
+    const expiredIds = new Set(expiredPending.map((r) => r.id));
+    for (const r of reminders) {
+      if (expiredIds.has(r.id)) r.completed_at = r.date;
+    }
+  }
+
   // Recordatorios del mes. El calendario pinta el recuadro rojo solo para
   // días activos (date <= hoy) con recordatorios PENDIENTES; los futuros se
   // pueden ver/editar/borrar desde el modal pero todavía no marcan el
@@ -215,15 +240,16 @@ export default async function DayPage({
   const isFlagged = flaggedDates.includes(date);
 
   const completedDates = new Set<string>();
+  const percentByDate = new Map<string, number>();
   const activeTotal = countedItems(checklistItems).length;
-  if (config.mode !== "off" && activeTotal > 0) {
+  if (activeTotal > 0) {
     const dateByDayId = new Map(
       ((allDays ?? []) as { id: string; date: string }[]).map((row) => [
         row.id,
         row.date,
       ])
     );
-    const completedByDate = new Map<string, number>();
+    const pointsByDate = new Map<string, number>();
     const ignoredByDate = new Map<string, number>();
     for (const entry of (allDailyObjectives ?? []) as DailyObjective[]) {
       const entryDate = dateByDayId.get(entry.day_id);
@@ -234,17 +260,21 @@ export default async function DayPage({
         continue;
       }
       const entryPoints = statusValue(entryStatus);
-      if (entryPoints > 0) {
-        completedByDate.set(
-          entryDate,
-          (completedByDate.get(entryDate) ?? 0) + entryPoints
-        );
-      }
+      pointsByDate.set(
+        entryDate,
+        (pointsByDate.get(entryDate) ?? 0) + entryPoints
+      );
     }
 
-    for (const [entryDate, points] of completedByDate) {
+    for (const [entryDate, points] of pointsByDate) {
       const totalForDate = Math.max(0, activeTotal - (ignoredByDate.get(entryDate) ?? 0));
-      if (isDayFulfilled(config, totalForDate, points)) {
+      if (totalForDate > 0) {
+        percentByDate.set(
+          entryDate,
+          Math.min(100, Math.round((points / totalForDate) * 100))
+        );
+      }
+      if (config.mode !== "off" && isDayFulfilled(config, totalForDate, points)) {
         completedDates.add(entryDate);
       }
     }
@@ -266,6 +296,7 @@ export default async function DayPage({
     ...noteDates,
     ...learningDates,
     ...thoughtDates,
+    ...percentByDate.keys(),
   ]);
   for (const markedDate of allMarkedDates) {
     marks[markedDate] = {
@@ -274,6 +305,7 @@ export default async function DayPage({
       learn: learningDates.has(markedDate),
       thought: thoughtDates.has(markedDate),
       reminder: (remindersByDate[markedDate]?.length ?? 0) > 0,
+      percent: percentByDate.get(markedDate),
     };
   }
 

@@ -114,6 +114,9 @@ export type DayMark = {
   learn: boolean;
   thought: boolean;
   reminder: boolean;
+  /** % de objetivos completados del día (0-100). Solo días pasados con
+   * objetivos contables tienen valor; si no hay, undefined. */
+  percent?: number;
 };
 
 export type CompletionMode = "off" | "count" | "percent";
@@ -142,6 +145,12 @@ export type BitacoraColors = {
   border: string;
   g1: string;
   g2: string;
+  /** Degradé del calendario: color en 0% de completado (default rojo). */
+  grad0: string;
+  /** Degradé del calendario: color en 50% de completado (default ámbar). */
+  grad50: string;
+  /** Degradé del calendario: color en 100% de completado (default verde). */
+  grad100: string;
 };
 
 export type Settings = {

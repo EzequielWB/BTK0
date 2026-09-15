@@ -33,6 +33,9 @@ const COLOR_META: Record<keyof BitacoraColors, { label: string; hint: string }> 
   border: { label: "Borde", hint: "Bordes generales" },
   g1: { label: "Rojo", hint: "Aprendizaje · recuerdos · ✕" },
   g2: { label: "Cian", hint: "Glitch de la cita" },
+  grad0: { label: "Degradé 0%", hint: "Calendario · sin objetivos completados" },
+  grad50: { label: "Degradé 50%", hint: "Calendario · mitad de objetivos" },
+  grad100: { label: "Degradé 100%", hint: "Calendario · día completamente cumplido" },
 };
 
 export function ColorThemeForm({ colors }: { colors: string | null }) {

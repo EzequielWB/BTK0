@@ -24,6 +24,9 @@ export const DEFAULT_COLORS: BitacoraColors = {
   border: "#242424",
   g1: "#ff3b5c",
   g2: "#00e5ff",
+  grad0: "#ff3b5c",
+  grad50: "#ffe14a",
+  grad100: "#00ff9d",
 };
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;
@@ -231,5 +234,8 @@ export function colorsToStyleVars(colors: BitacoraColors): CSSProperties {
     "--cyb-g1": colors.g1,
     "--cyb-g1-rgb": hexToRgbTriplet(colors.g1),
     "--cyb-g2": colors.g2,
+    "--cyb-grad0": colors.grad0,
+    "--cyb-grad50": colors.grad50,
+    "--cyb-grad100": colors.grad100,
   } as CSSProperties;
 }
