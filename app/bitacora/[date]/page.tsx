@@ -119,20 +119,25 @@ export default async function DayPage({
         .eq("day_id", dayRow.id)
     : { data: [] as DailyObjective[] };
 
-  const statusById = new Map<string, ChecklistStatus>(
+  const statusById = new Map<string, { status: ChecklistStatus; note?: string | null }>(
     ((dailyObjectives ?? []) as DailyObjective[]).map((entry) => [
       entry.objective_id,
-      statusOf(entry),
+      { status: statusOf(entry), note: entry.note },
     ])
   );
 
   const checklistItems: ChecklistItem[] = ((objectives ?? []) as Objective[]).map(
-    (objective) => ({
-      objectiveId: objective.id,
-      title: objective.title,
-      description: objective.description,
-      status: statusById.get(objective.id) ?? "none",
-    })
+    (objective) => {
+      const todays = statusById.get(objective.id);
+      return {
+        objectiveId: objective.id,
+        title: objective.title,
+        description: objective.description,
+        status: todays?.status ?? "none",
+        completable: objective.completable,
+        note: todays?.note ?? null,
+      };
+    }
   );
 
   const counted = countedItems(checklistItems);

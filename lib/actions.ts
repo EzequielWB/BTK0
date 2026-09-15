@@ -271,6 +271,59 @@ export async function setDailyObjectiveStatusAction(args: {
   revalidatePath(`/bitacora/${date}`);
 }
 
+export async function setObjectiveNoteAction(args: {
+  date: string;
+  objectiveId: string;
+  note: string;
+}): Promise<void> {
+  await requireAuth();
+
+  const { date, objectiveId } = args;
+  const note = args.note.trim() || null;
+  if (isFutureDay(date)) return;
+
+  const supabase = await createClient();
+
+  const { data: day } = await supabase
+    .from("days")
+    .select("id")
+    .eq("date", date)
+    .maybeSingle();
+
+  let dayId: string;
+  if (day) {
+    dayId = (day as { id: string }).id;
+  } else {
+    const { data: created, error: insertError } = await supabase
+      .from("days")
+      .insert({ date })
+      .select("id")
+      .single();
+    if (insertError || !created) return;
+    dayId = (created as { id: string }).id;
+  }
+
+  const { data: existing } = await supabase
+    .from("daily_objectives")
+    .select("id")
+    .eq("day_id", dayId)
+    .eq("objective_id", objectiveId)
+    .maybeSingle();
+
+  if (existing) {
+    await supabase
+      .from("daily_objectives")
+      .update({ note })
+      .eq("id", (existing as { id: string }).id);
+  } else {
+    await supabase
+      .from("daily_objectives")
+      .insert({ day_id: dayId, objective_id: objectiveId, status: "done", note });
+  }
+
+  revalidatePath(`/bitacora/${date}`);
+}
+
 // ---------------------------------------------------------------------------
 // CRUD objetivos generales
 // ---------------------------------------------------------------------------
@@ -283,10 +336,15 @@ export async function createObjectiveAction(
 
   const title = String(formData.get("title") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim() || null;
+  const completable = ["on", "true"].includes(
+    String(formData.get("completable") ?? "")
+  );
   if (!title) return { error: "El título es obligatorio." };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("objectives").insert({ title, description });
+  const { error } = await supabase
+    .from("objectives")
+    .insert({ title, description, completable });
 
   revalidatePath("/bitacora/settings");
 
@@ -303,12 +361,15 @@ export async function updateObjectiveAction(
   const id = String(formData.get("id") ?? "");
   const title = String(formData.get("title") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim() || null;
+  const completable = ["on", "true"].includes(
+    String(formData.get("completable") ?? "")
+  );
   if (!title) return { error: "El título es obligatorio." };
 
   const supabase = await createClient();
   const { error } = await supabase
     .from("objectives")
-    .update({ title, description })
+    .update({ title, description, completable })
     .eq("id", id);
 
   revalidatePath("/bitacora/settings");
@@ -437,6 +498,23 @@ export async function toggleObjectiveActiveAction(formData: FormData): Promise<v
 
   const supabase = await createClient();
   await supabase.from("objectives").update({ is_active: isActive }).eq("id", id);
+
+  revalidatePath("/bitacora/settings");
+}
+
+export async function toggleObjectiveCompletableAction(
+  formData: FormData
+): Promise<void> {
+  await requireAuth();
+
+  const id = String(formData.get("id") ?? "");
+  const completable = formData.get("completable") === "true";
+
+  const supabase = await createClient();
+  await supabase
+    .from("objectives")
+    .update({ completable })
+    .eq("id", id);
 
   revalidatePath("/bitacora/settings");
 }

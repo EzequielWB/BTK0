@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition, useOptimistic } from "react";
 import { useRouter } from "next/navigation";
-import { reorderObjectivesAction, setDailyObjectiveStatusAction } from "@/lib/actions";
+import {
+  reorderObjectivesAction,
+  setDailyObjectiveStatusAction,
+  setObjectiveNoteAction,
+} from "@/lib/actions";
 import { ClampText } from "@/components/clamp-text";
 import type { ChecklistItem, ChecklistStatus } from "@/lib/types";
 
@@ -19,16 +23,29 @@ export function ObjectivesChecklist({
   const router = useRouter();
   const [optimisticItems, setOptimistic] = useOptimistic(
     items,
-    (state: ChecklistItem[], action: { objectiveId: string; status: ChecklistStatus }) =>
+    (
+      state: ChecklistItem[],
+      action: {
+        objectiveId: string;
+        status?: ChecklistStatus;
+        note?: string;
+      }
+    ) =>
       state.map((item) =>
         item.objectiveId === action.objectiveId
-          ? { ...item, status: action.status }
+          ? {
+              ...item,
+              ...(action.status !== undefined ? { status: action.status } : {}),
+              ...(action.note !== undefined ? { note: action.note } : {}),
+            }
           : item
       )
   );
 
   const [, startTransition] = useTransition();
   const [armedId, setArmedId] = useState<string | null>(null);
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
+  const [editingNote, setEditingNote] = useState<Record<string, boolean>>({});
 
   // Drag & drop: mantener apretado el grip ⋮⋮, mover y soltar.
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -137,6 +154,47 @@ export function ObjectivesChecklist({
     },
     [date, setOptimistic]
   );
+
+  function onSaveNote(item: ChecklistItem, note: string) {
+    const currentNote = item.note ?? "";
+    const next = note.trim();
+    if (next === currentNote) {
+      cancelEditNote(item.objectiveId);
+      return;
+    }
+    setNoteDrafts((prev) => {
+      const copy = { ...prev };
+      delete copy[item.objectiveId];
+      return copy;
+    });
+    setEditingNote((prev) => {
+      const copy = { ...prev };
+      delete copy[item.objectiveId];
+      return copy;
+    });
+    startTransition(() => {
+      setOptimistic({ objectiveId: item.objectiveId, note: next });
+      void setObjectiveNoteAction({ date, objectiveId: item.objectiveId, note: next });
+    });
+  }
+
+  function startEditNote(item: ChecklistItem) {
+    setNoteDrafts((prev) => ({ ...prev, [item.objectiveId]: item.note ?? "" }));
+    setEditingNote((prev) => ({ ...prev, [item.objectiveId]: true }));
+  }
+
+  function cancelEditNote(objectiveId: string) {
+    setNoteDrafts((prev) => {
+      const copy = { ...prev };
+      delete copy[objectiveId];
+      return copy;
+    });
+    setEditingNote((prev) => {
+      const copy = { ...prev };
+      delete copy[objectiveId];
+      return copy;
+    });
+  }
 
   const visible = dragOrder ?? optimisticItems;
 
@@ -257,7 +315,7 @@ export function ObjectivesChecklist({
                   );
                 })}
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <span
                   className={
                     item.status === "done"
@@ -269,7 +327,73 @@ export function ObjectivesChecklist({
                 >
                   {item.title}
                 </span>
-                {item.description ? (
+                {item.completable &&
+                (item.status === "done" || item.status === "partial") ? (
+                  editingNote[item.objectiveId] || !item.note ? (
+                    <>
+                      <input
+                        type="text"
+                        value={noteDrafts[item.objectiveId] ?? item.note ?? ""}
+                        onChange={(event) =>
+                          setNoteDrafts((prev) => ({
+                            ...prev,
+                            [item.objectiveId]: event.target.value,
+                          }))
+                        }
+                        placeholder="¿Qué hiciste?"
+                        aria-label={`Nota de ${item.title}`}
+                        className="cyb-in mt-1 w-full text-sm"
+                      />
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onSaveNote(
+                              item,
+                              noteDrafts[item.objectiveId] ?? item.note ?? ""
+                            )
+                          }
+                          className="cyb-btn small"
+                        >
+                          Guardar nota
+                        </button>
+                        {item.note ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => cancelEditNote(item.objectiveId)}
+                              className="cyb-link"
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onSaveNote(item, "")}
+                              className="cyb-link red"
+                            >
+                              Quitar
+                            </button>
+                          </>
+                        ) : null}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      <span className="cyb-muted text-sm whitespace-pre-wrap break-words min-w-0">
+                        {item.note}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => startEditNote(item)}
+                        aria-label={`Editar nota de ${item.title}`}
+                        title="Editar nota"
+                        className="cyb-link shrink-0 opacity-40 transition-opacity hover:opacity-100"
+                      >
+                        ✎
+                      </button>
+                    </div>
+                  )
+                ) : item.description ? (
                   <ClampText text={item.description} className="text-sm cyb-hint" />
                 ) : null}
               </div>

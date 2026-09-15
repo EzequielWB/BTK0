@@ -222,6 +222,7 @@ body {
   text-transform: uppercase;
   padding: 6px 14px;
   cursor: pointer;
+  white-space: nowrap;
   transition:
     color 0.15s,
     background 0.15s;
@@ -270,7 +271,14 @@ body {
   border-color: var(--cyb-neon);
 }
 .cyb-in::placeholder {
-  color: var(--cyb-faint);
+  color: var(--cyb-dim);
+  opacity: 1;
+}
+.cyb-chk {
+  accent-color: var(--cyb-amber);
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
 }
 
 .cyb-campo-sm {
@@ -727,6 +735,7 @@ body {
   padding: 6px 10px;
   cursor: pointer;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 .cyb-danger-btn:hover:not(:disabled) {
   background: var(--cyb-g1);
@@ -952,6 +961,7 @@ body {
   text-transform: uppercase;
   padding: 6px 10px;
   cursor: pointer;
+  white-space: nowrap;
 }
 .chip-btn:hover:not(:disabled) {
   background: var(--cyb-amber);

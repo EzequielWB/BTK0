@@ -15,7 +15,7 @@ export function TemporalGoalsSection({ goals }: { goals: TemporalGoal[] }) {
           return (
             <li key={goal.id} className="enrow">
               <div className="flex items-start justify-between gap-2">
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <ClampText
                         as="strong"
@@ -29,7 +29,7 @@ export function TemporalGoalsSection({ goals }: { goals: TemporalGoal[] }) {
                       </span>
                     ) : null}
                   </div>
-                  <span className="cyb-hint text-xs whitespace-nowrap">
+                  <span className="cyb-hint text-xs block">
                     {formatDateRange(goal.start_date, goal.end_date)}
                   </span>
                 </div>

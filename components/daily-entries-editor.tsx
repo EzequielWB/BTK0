@@ -137,7 +137,7 @@ export function DailyEntriesEditor({
         rows={3}
         className="cyb-in resize-y"
       />
-      <div className="flex items-center gap-3 mt-2">
+      <div className="flex flex-wrap items-center gap-3 mt-2">
         <button
           type="button"
           onClick={handleAdd}

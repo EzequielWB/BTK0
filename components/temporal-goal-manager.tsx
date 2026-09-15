@@ -173,9 +173,9 @@ export function TemporalGoalManager({ goals }: { goals: TemporalGoal[] }) {
                 </>
               ) : (
                 <div className="flex items-start justify-between gap-2">
-                  <div>
+                  <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <strong className={goal.is_active ? "" : "cyb-dim"}>
+                      <strong className={`${goal.is_active ? "" : "cyb-dim"} break-words`}>
                         {goal.title}
                       </strong>
                       {goal.completed_at ? (

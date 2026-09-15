@@ -24,9 +24,14 @@ create table if not exists objectives (
   title       text not null,
   description text,
   is_active   boolean not null default true,
+  completable boolean not null default false,
   sort_order  int not null default 0,
   created_at  timestamptz not null default now()
 );
+
+-- Para DB ya existentes (idempotente): objetivos "completable" permiten
+-- registrar una nota de qué se hizo ese día.
+alter table objectives add column if not exists completable boolean not null default false;
 
 -- ------------------------------------------------------------
 -- days: un registro por día calendario (id autogenerado por fecha)
@@ -78,6 +83,10 @@ create table if not exists daily_objectives (
     check (status in ('none', 'partial', 'done', 'ignored')),
   unique (day_id, objective_id)
 );
+
+-- Nota del día para objetivos "completable": texto corto de qué se hizo.
+-- Se guarda por día y por objetivo; no influye en % ni en el calendario.
+alter table daily_objectives add column if not exists note text;
 
 -- ------------------------------------------------------------
 -- temporal_goals: metas con rango de fechas ("del X al Y")

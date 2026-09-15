@@ -6,6 +6,7 @@ import {
   deleteObjectiveAction,
   reorderObjectivesAction,
   toggleObjectiveActiveAction,
+  toggleObjectiveCompletableAction,
   updateObjectiveAction,
 } from "@/lib/actions";
 import type { Objective } from "@/lib/types";
@@ -74,6 +75,34 @@ function MoveButtons({
   );
 }
 
+function CompletableSlot({ objective }: { objective: Objective }) {
+  return (
+    <form action={toggleObjectiveCompletableAction} className="inline">
+      <input type="hidden" name="id" value={objective.id} />
+      <input
+        type="hidden"
+        name="completable"
+        value={String(!objective.completable)}
+      />
+      <button
+        type="submit"
+        aria-pressed={objective.completable}
+        title={
+          objective.completable
+            ? "Completable activado: permite anotar qué hiciste ese día (clic para desactivar)"
+            : "Completable desactivado (clic para activar)"
+        }
+        className={`cyb-link${objective.completable ? "" : " cyb-dim"}`}
+      >
+        <span aria-hidden>
+          {objective.completable ? "[✓]" : "[ ]"}
+        </span>{" "}
+        Completable
+      </button>
+    </form>
+  );
+}
+
 function ObjectiveRow({
   objective,
   index,
@@ -99,6 +128,7 @@ function ObjectiveRow({
         {!objective.is_active ? (
           <p className="cyb-hint text-xs mt-1">Desactivado</p>
         ) : null}
+        <CompletableSlot objective={objective} />
       </div>
       <div className="flex flex-col items-end gap-1 shrink-0">
         <MoveButtons index={index} count={count} onMove={onMove} />
@@ -137,6 +167,15 @@ function EditForm({ objective, onCancel }: { objective: Objective; onCancel: () 
           defaultValue={objective.description ?? ""}
           className="cyb-in"
         />
+      </label>
+      <label className="inline-flex items-center gap-1.5">
+        <input
+          type="checkbox"
+          name="completable"
+          defaultChecked={objective.completable}
+          className="cyb-chk"
+        />
+        <span className="cyb-hint text-sm">Completable (permite anotar qué hiciste ese día)</span>
       </label>
       {state.error ? <p className="text-sm text-[var(--cyb-g1)]">{state.error}</p> : null}
       {state.success ? <p className="text-sm text-[var(--cyb-green)]">{state.success}</p> : null}
@@ -215,6 +254,12 @@ export function ObjectiveManager({ objectives }: { objectives: Objective[] }) {
             placeholder="Ej: 30 minutos de caminata"
             className="cyb-in"
           />
+        </label>
+        <label className="inline-flex items-center gap-1.5">
+          <input type="checkbox" name="completable" className="cyb-chk" />
+          <span className="cyb-hint text-sm">
+            Completable (permite anotar qué hiciste ese día)
+          </span>
         </label>
         {state.error ? <p className="text-sm text-[var(--cyb-g1)]">{state.error}</p> : null}
         {state.success ? <p className="text-sm text-[var(--cyb-green)]">{state.success}</p> : null}

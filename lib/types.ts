@@ -3,6 +3,7 @@ export type Objective = {
   title: string;
   description: string | null;
   is_active: boolean;
+  completable: boolean;
   sort_order: number;
   created_at: string;
 };
@@ -171,6 +172,8 @@ export type DailyObjective = {
   day_id: string;
   objective_id: string;
   status: ChecklistStatus;
+  /** Nota opcional del día para objetivos "completable". */
+  note?: string | null;
 };
 
 export type ChecklistItem = {
@@ -178,6 +181,8 @@ export type ChecklistItem = {
   title: string;
   description: string | null;
   status: ChecklistStatus;
+  completable?: boolean;
+  note?: string | null;
 };
 
 export type DayStatsPoint = {

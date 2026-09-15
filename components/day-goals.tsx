@@ -176,7 +176,7 @@ export function DayGoals({
                         {!done && (
                           <span
                             className={
-                              "cyb-hint text-xs block whitespace-nowrap" +
+                              "cyb-hint text-xs block" +
                               (isPast ? " text-[var(--cyb-amber)]" : "")
                             }
                           >
