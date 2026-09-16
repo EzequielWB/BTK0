@@ -1,4 +1,4 @@
-﻿================================================================================
+================================================================================
  LA BITAK0R4_ DE EZEQUIEL - LOG DE DESARROLLO
  Registro paso a paso de todo lo que se va construyendo.
 ================================================================================
@@ -1021,3 +1021,32 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
     contar en la eficiencia.
   - PENDIENTE EN SUPABASE (hosted): correr el create table de day_goals (idempotente,
     ya está en supabase/schema.sql).
+
+[2026-09-16] PESTAÑA "PESO": GRÁFICO POR MES + CIERRE MENSUAL
+  - Nueva ruta /bitacora/peso con pestaña "Peso" en el nav (entre Efemérides y
+    Ajustes). .cyb-nav ahora hace flex-wrap (no desborda en mobile).
+  - Datos: tabla weight (date PK, value numeric(5,1) 20-400, updated_at) y
+    weight_months (month PK = primer día del mes, value_min/max/avg, count) +
+    RLS en supabase/schema.sql; registradas en lib/local-client.ts (TABLES + seed).
+  - lib/types.ts: Weight y WeightMonth. lib/weight.ts: parseKilograms (acepta
+    "84" / "84.5" / "84,5"), kilogramLabel y kilogramAvgLabel (formato es-AR).
+  - lib/actions.ts: saveWeightAction (upsert por date, bloquea días futuros) y
+    deleteWeightAction; ambas llaman a finalizeWeightMonths: recorre desde el mes
+    del primer dato hasta el mes anterior al actual y guarda (upsert idempotente)
+    min/max/avg/count por mes. El resumen de un mes se "congela" al registrar el
+    primer peso del mes siguiente.
+  - app/bitacora/peso/page.tsx (server, searchParams mes/anio): mes actual =
+    formulario + gráfico; meses pasados = solo lectura con resumen Min/Max/Prom si
+    está cerrado; mes futuro = "no alcanzó a empezar"; nav ◀ Previa / Siguiente ▶
+    (Siguiente deshabilitado en el mes en curso); debajo el historial de meses
+    cerrados. El peso inicial = primer punto del gráfico (se guarda con su fecha).
+  - components/weight-chart.tsx (recharts LineChart con puntos + línea, dominio Y
+    ajustado, Tooltip en es-AR, colores del tema) y weight-entry.tsx (form: fecha
+    (límite mes en curso/hoy), peso, Guardar/Actualizar, Borrar con confirm,
+    mensajes de estado por server action).
+  - El peso inicial no requiere setup aparte: es simplemente el primer registro.
+  - Verificación: check (tsc+eslint) y build en verde; E2E por Playwright contra
+    dev (login, render, Guardar/Actualizar/Borrar, y cierre de agosto con
+    min 82 / max 83.5 / avg 82.75 / count 2) sin errores de consola.
+  - PENDIENTE EN SUPABASE (hosted): correr el create table de weight y
+    weight_months (idempotente, ya está en supabase/schema.sql).

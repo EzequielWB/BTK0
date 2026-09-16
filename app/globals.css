@@ -130,6 +130,62 @@ body {
   text-transform: uppercase;
   letter-spacing: 1px;
 }
+/* Contadores del banner (recuadros junto al tag SYNC) */
+.cyb-counters {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.cyb-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 3px 9px;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.cyb-count i {
+  font-style: normal;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.cyb-count b {
+  font-weight: 500;
+}
+/* Contador que ya llegó a su límite: se queda en el tope y cambia de color */
+.cyb-count.reached {
+  background: var(--cyb-g1);
+  border-color: var(--cyb-g1);
+  color: var(--cyb-bg);
+  box-shadow: 0 0 6px rgba(var(--cyb-g1-rgb), 0.5);
+}
+.cyb-count-btn {
+  background: transparent;
+  border: 1px solid currentColor;
+  color: inherit;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0 4px;
+  cursor: pointer;
+  opacity: 0.75;
+}
+.cyb-count-btn:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.12);
+}
+.cyb-count.reached .cyb-count-btn {
+  border-color: var(--cyb-bg);
+  color: var(--cyb-bg);
+}
+.cyb-count.reached .cyb-count-btn:hover {
+  background: var(--cyb-bg);
+  color: var(--cyb-g1);
+}
 .led {
   width: 7px;
   height: 7px;
@@ -150,7 +206,9 @@ body {
 .cyb-nav {
   margin-left: auto;
   display: flex;
-  gap: 14px;
+  flex-wrap: wrap;
+  gap: 14px 14px;
+  row-gap: 6px;
   font-size: 11px;
   letter-spacing: 1.5px;
   text-transform: uppercase;
@@ -373,6 +431,11 @@ body {
 }
 .cyb-link.red {
   color: var(--cyb-g1);
+}
+.cyb-link.icon {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
 }
 
 /* Textos muted */
@@ -991,6 +1054,19 @@ body {
 @media (max-width: 640px) {
   body {
     zoom: 0.8;
+  }
+  /* Contadores compactos para que quepan en el poco espacio del header móvil */
+  .cyb-tags {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .cyb-count {
+    font-size: 11px;
+    padding: 2px 7px;
+    gap: 4px;
+  }
+  .cyb-count-btn {
+    font-size: 10px;
   }
 }
 

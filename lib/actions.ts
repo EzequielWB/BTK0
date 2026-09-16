@@ -6,9 +6,11 @@ import { redirect } from "next/navigation";
 import { AUTH_COOKIE, AUTH_DAY_COOKIE, generateSalt, hashPassword, isAuthenticated } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { isDaySectionOrder } from "@/lib/sections";
-import { arNow, isValidISODate, isValidMonthDay, todayISO } from "@/lib/utils";
+import { addDays, arNow, isValidISODate, isValidMonthDay, monthRangeISO, todayISO } from "@/lib/utils";
 import { COLOR_KEYS, stringifyColors } from "@/lib/colors";
-import type { BitacoraColors } from "@/lib/types";
+import { parseCounters, stringifyCounters } from "@/lib/counters";
+import { parseKilograms } from "@/lib/weight";
+import type { BitacoraColors, CounterItem, CountersConfig } from "@/lib/types";
 
 export type ActionResult = { error?: string; success?: string };
 
@@ -450,6 +452,109 @@ export async function saveColorSchemeAction(
 
   if (error) return { error: "No se pudieron guardar los colores." };
   return { success: "Colores actualizados." };
+}
+
+// ---------------------------------------------------------------------------
+// Contadores del banner (recuadros junto al tag SYNC)
+// ---------------------------------------------------------------------------
+
+/** Límite máximo de contadores configurables para evitar abusos del form. */
+const MAX_COUNTERS = 12;
+
+export async function saveCountersAction(
+  _prevState: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  await requireAuth();
+
+  const box = String(formData.get("box") ?? "").trim();
+  const text = String(formData.get("text") ?? "").trim();
+  if (!/^#[0-9a-fA-F]{6}$/.test(box) || !/^#[0-9a-fA-F]{6}$/.test(text)) {
+    return { error: "Los colores del recuadro y la letra deben ser hex válidos (#rrggbb)." };
+  }
+
+  const items: CounterItem[] = [];
+  for (let index = 0; index < MAX_COUNTERS; index++) {
+    const rawId = formData.get(`item_id_${index}`);
+    if (rawId === null) break;
+
+    const id = String(rawId);
+    const name = String(formData.get(`item_name_${index}`) ?? "").trim().slice(0, 12);
+    if (!name) {
+      return { error: `El nombre del contador ${index + 1} está vacío.` };
+    }
+
+    const days = Number(formData.get(`item_days_${index}`) ?? "0");
+    if (!Number.isInteger(days) || days < 0 || days > 999999) {
+      return { error: `Los días del contador "${name}" deben ser un número entero ≥ 0.` };
+    }
+
+    const limitRaw = String(formData.get(`item_limit_${index}`) ?? "").trim();
+    let limit: number | null = null;
+    if (limitRaw) {
+      const parsed = Number(limitRaw);
+      if (!Number.isInteger(parsed) || parsed < 1) {
+        return { error: `El límite del contador "${name}" debe ser un número entero ≥ 1.` };
+      }
+      limit = parsed;
+    }
+
+    const resettable = ["on", "true"].includes(
+      String(formData.get(`item_resettable_${index}`) ?? "")
+    );
+
+    items.push({ id, name, days, limit, last_date: todayISO(), resettable });
+  }
+
+  const config: CountersConfig = {
+    box: box.toLowerCase(),
+    text: text.toLowerCase(),
+    items,
+  };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("settings")
+    .update({
+      counters: stringifyCounters(config),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", 1);
+
+  revalidatePath("/bitacora/settings");
+  revalidatePath("/bitacora", "layout");
+
+  if (error) return { error: "No se pudieron guardar los contadores." };
+  return { success: "Contadores actualizados." };
+}
+
+/** Reinicia un contador del banner a 0: days = 0 y last_date = hoy (mañana 1). */
+export async function resetCounterAction(id: string): Promise<void> {
+  await requireAuth();
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("settings")
+    .select("counters")
+    .eq("id", 1)
+    .maybeSingle();
+
+  const config = parseCounters((data as { counters?: string | null } | null)?.counters ?? null);
+  const item = config.items.find((counter) => counter.id === id);
+  if (!item) return;
+
+  item.days = 0;
+  item.last_date = todayISO();
+
+  await supabase
+    .from("settings")
+    .update({
+      counters: stringifyCounters(config),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", 1);
+
+  revalidatePath("/bitacora", "layout");
 }
 
 // ---------------------------------------------------------------------------
@@ -1109,6 +1214,107 @@ export async function saveJournalAction(
 
   if (error) return { error: "No se pudo guardar la hoja." };
   return { success: "Hoja guardada." };
+}
+
+// ---------------------------------------------------------------------------
+// Peso (gráfico por mes): una fila por día (upsert por date). Al registrar el
+// primer peso del mes siguiente se "cierra" el resumen mensual guardado.
+// ---------------------------------------------------------------------------
+
+export async function saveWeightAction(
+  date: string,
+  rawValue: string
+): Promise<ActionResult> {
+  await requireAuth();
+  if (!isValidISODate(date)) return { error: "La fecha es inválida." };
+  if (date > todayISO()) return { error: "Días futuros: solo lectura." };
+
+  const value = parseKilograms(rawValue);
+  if (value === null) {
+    return { error: "El peso debe estar entre 20 y 400 kg, con hasta 1 decimal." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("weight")
+    .upsert(
+      { date, value, updated_at: new Date().toISOString() },
+      { onConflict: "date" }
+    );
+
+  if (error) return { error: "No se pudo guardar el peso." };
+
+  await finalizeWeightMonths(supabase);
+
+  revalidatePath("/bitacora/peso");
+  return { success: "Peso guardado." };
+}
+
+export async function deleteWeightAction(date: string): Promise<ActionResult> {
+  await requireAuth();
+  if (!isValidISODate(date)) return { error: "La fecha es inválida." };
+  if (date > todayISO()) return { error: "Días futuros: solo lectura." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("weight").delete().eq("date", date);
+
+  if (error) return { error: "No se pudo borrar el peso." };
+
+  await finalizeWeightMonths(supabase);
+
+  revalidatePath("/bitacora/peso");
+  return { success: "Peso eliminado." };
+}
+
+/** Guarda (upsert) el resumen de todo mes anterior al actual con datos.
+ * Idempotente: recalcula sin importar si ya existía la fila en weight_months.
+ * Se invoca tras cada guardar/borrar de peso. */
+async function finalizeWeightMonths(
+  supabase: Awaited<ReturnType<typeof createClient>>
+): Promise<void> {
+  const { data: firstRows } = await supabase
+    .from("weight")
+    .select("date")
+    .order("date", { ascending: true })
+    .limit(1);
+
+  const first = ((firstRows ?? []) as { date: string }[])[0];
+  if (!first) return;
+
+  const today = todayISO();
+  const currentMonthStart = `${today.slice(0, 7)}-01`;
+  let cursor = `${first.date.slice(0, 7)}-01`;
+
+  while (cursor < currentMonthStart) {
+    const { start, end } = monthRangeISO(cursor);
+    const { data: monthRows, error } = await supabase
+      .from("weight")
+      .select("value")
+      .gte("date", start)
+      .lte("date", end);
+
+    const values = ((monthRows ?? []) as { value: number }[]).map(
+      (row) => Number(row.value)
+    );
+
+    if (error) return;
+    if (values.length > 0) {
+      await supabase.from("weight_months").upsert(
+        {
+          month: start,
+          value_min: Math.min(...values),
+          value_max: Math.max(...values),
+          value_avg:
+            Math.round((values.reduce((sum, v) => sum + v, 0) / values.length) * 100) / 100,
+          count: values.length,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "month" }
+      );
+    }
+
+    cursor = addDays(end, 1);
+  }
 }
 
 // ---------------------------------------------------------------------------

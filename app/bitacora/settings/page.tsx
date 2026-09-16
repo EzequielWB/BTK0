@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { ChangePasswordForm } from "@/components/change-password-form";
 import { ColorThemeForm } from "@/components/color-theme-form";
 import { CompletionSettingsForm } from "@/components/completion-settings-form";
+import { CountersManager } from "@/components/counters-manager";
 import { DaySectionsOrder } from "@/components/day-sections-order";
 import { ObjectiveManager } from "@/components/objective-manager";
 import { TemporalGoalManager } from "@/components/temporal-goal-manager";
@@ -28,6 +29,7 @@ export default async function SettingsPage() {
       <ObjectiveManager objectives={(objectives ?? []) as Objective[]} />
       <TemporalGoalManager goals={(goals ?? []) as TemporalGoal[]} />
       <DaySectionsOrder sectionOrder={(settings ?? null)?.section_order} />
+      <CountersManager counters={(settings ?? null)?.counters ?? null} />
       <CompletionSettingsForm settings={(settings ?? null) as Settings | null} />
       <ColorThemeForm colors={(settings ?? null)?.colors ?? null} />
       <ChangePasswordForm />

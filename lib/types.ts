@@ -75,6 +75,24 @@ export type JournalEntry = {
   updated_at: string;
 };
 
+/** Peso corporal diario: una fila por día (date es PK), en kg con 1 decimal. */
+export type Weight = {
+  date: string;
+  value: number;
+  updated_at: string;
+};
+
+/** Resumen mensual del peso que se GUARDA al cerrar el mes.
+ * month = primer día del mes (PK). value_min/max/avg en kg; avg con 2 decimales. */
+export type WeightMonth = {
+  month: string;
+  value_min: number;
+  value_max: number;
+  value_avg: number;
+  count: number;
+  updated_at: string;
+};
+
 /** Categoría del anotador libre (Cuaderno). Grupos de ítems de texto. */
 export type AgendaCategory = {
   id: string;
@@ -167,7 +185,31 @@ export type Settings = {
   section_order?: string | null;
   /** Colores del tema (JSON de BitacoraColors) o null = valores originales. */
   colors?: string | null;
+  /** Contadores del banner (JSON de CountersConfig) o null = vacío. */
+  counters?: string | null;
   updated_at: string;
+};
+
+/** Contador del banner: cuenta manual de días que suma 1 por día desde
+ * last_date. name = siglas que se muestran en el recuadro.
+ * limit null = sin límite. resettable = muestra el botón ↺ para volver a 0. */
+export type CounterItem = {
+  id: string;
+  name: string;
+  days: number;
+  limit: number | null;
+  /** Fecha (YYYY-MM-DD) del último cambio manual de days; el valor mostrado
+   * es days + días transcurridos desde last_date. */
+  last_date: string;
+  resettable: boolean;
+};
+
+/** Configuración completa de los contadores del banner (settings.counters).
+ * box/text: color global del recuadro y de la letra. */
+export type CountersConfig = {
+  box: string;
+  text: string;
+  items: CounterItem[];
 };
 
 export type ChecklistStatus = "none" | "partial" | "done" | "ignored";

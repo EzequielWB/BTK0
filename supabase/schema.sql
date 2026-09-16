@@ -127,6 +127,11 @@ alter table settings add column if not exists section_order text;
 -- variable --cyb-* del shell; coincide con lib/colors.ts).
 alter table settings add column if not exists colors text;
 
+-- Contadores del banner (JSON: {box, text, items[]} de lib/counters.ts).
+-- Cada ítem cuenta días manuales que suman 1 por día desde last_date;
+-- box/text son el color global del recuadro y de la letra.
+alter table settings add column if not exists counters text;
+
 insert into settings (id, completion_mode, threshold)
 values (1, 'off', 1)
 on conflict (id) do nothing;
@@ -192,6 +197,32 @@ create table if not exists annual_reminders (
 create table if not exists journal (
   date       date primary key,
   content    text not null default '',
+  updated_at timestamptz not null default now()
+);
+
+-- ------------------------------------------------------------
+-- weight: peso corporal diario. UNA fila por día (date es PK),
+-- al estilo de journal: se crea/actualiza con upsert. value en
+-- kg, 1 decimal, rango 20–400.
+-- ------------------------------------------------------------
+create table if not exists weight (
+  date       date primary key,
+  value      numeric(5,1) not null check (value between 20 and 400),
+  updated_at timestamptz not null default now()
+);
+
+-- ------------------------------------------------------------
+-- weight_months: resumen mensual que se "congela" al cerrar un
+-- mes (se recalcula y guarda cuando se registra el primer peso
+-- del mes siguiente). month = primer día del mes (PK).
+-- count = cantidad de días con registro; avg con 2 decimales.
+-- ------------------------------------------------------------
+create table if not exists weight_months (
+  month      date primary key,
+  value_min  numeric(5,1) not null,
+  value_max  numeric(5,1) not null,
+  value_avg  numeric(5,2) not null,
+  count      int not null default 0,
   updated_at timestamptz not null default now()
 );
 
@@ -269,6 +300,8 @@ alter table temporal_goals enable row level security;
 alter table annual_reminders enable row level security;
 alter table annual_categories enable row level security;
 alter table journal enable row level security;
+alter table weight enable row level security;
+alter table weight_months enable row level security;
 alter table agenda_categories enable row level security;
 alter table agenda_items enable row level security;
 alter table day_goals enable row level security;
