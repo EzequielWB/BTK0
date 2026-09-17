@@ -54,8 +54,7 @@ function buildPrompt(f: PeriodFacts): string {
   lines.push(
     `Días con registro: ${f.daysWithData} de ${f.rangeDays} (${f.emptyDays} vacíos)`
   );
-  lines.push(`Días con notas: ${f.daysWithNotes}`);
-  lines.push(`Días con aprendizajes: ${f.daysWithLearnings}`);
+  lines.push(`Días con hoja: ${f.daysWithJournal}`);
   lines.push(`Racha actual: ${f.streak} día(s)`);
   lines.push(`Eficiencia: ${f.efficiency}%`);
   lines.push(
@@ -71,15 +70,10 @@ function buildPrompt(f: PeriodFacts): string {
       .join(", ") || "ninguno"}`
   );
   lines.push("");
-  if (f.notes.length) {
-    lines.push("NOTAS (más recientes, tal cual escribió el usuario):");
-    for (const note of f.notes) lines.push(`- [${fmt(note.iso)}] ${note.content}`);
-    lines.push("");
-  }
-  if (f.learnings.length) {
-    lines.push("APRENDIZAJES (más recientes):");
-    for (const learning of f.learnings)
-      lines.push(`- [${fmt(learning.iso)}] ${learning.content}`);
+  if (f.journal.length) {
+    lines.push("LA HOJA (más recientes, tal cual escribió el usuario):");
+    for (const entry of f.journal)
+      lines.push(`- [${fmt(entry.iso)}] ${entry.content}`);
     lines.push("");
   }
   if (f.dayGoals.length) {
@@ -93,7 +87,7 @@ function buildPrompt(f: PeriodFacts): string {
     lines.push("");
   }
   lines.push(
-    "Usa las notas/aprendizajes/objetivos del día solo como contexto para detectar altos y bajos; no los repitas textualmente. Responde únicamente el resumen, sin preámbulos."
+    "Usa las anotaciones de la hoja y los objetivos del día solo como contexto para detectar altos y bajos; no los repitas textualmente. Responde únicamente el resumen, sin preámbulos."
   );
 
   return lines.join("\n");

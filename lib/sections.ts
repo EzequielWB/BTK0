@@ -6,7 +6,7 @@ export const DEFAULT_DAY_SECTION_ORDER = [
   "objetivos_dia",
   "metas_activas",
   "recordatorios",
-  "notas_aprendizajes",
+  "la_hoja",
 ] as const;
 
 export type DaySectionKey = (typeof DEFAULT_DAY_SECTION_ORDER)[number];
@@ -18,7 +18,7 @@ export const DAY_SECTION_LABELS: Record<DaySectionKey, string> = {
   objetivos_dia: "Objetivos del día",
   metas_activas: "Metas activas",
   recordatorios: "Recordatorios",
-  notas_aprendizajes: "Notas + Aprendizajes",
+  la_hoja: "La Hoja",
 };
 
 /** Devuelve un orden válido (claves canónicas, sin repetir) desde el JSON guardado. */

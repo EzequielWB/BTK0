@@ -24,8 +24,6 @@ export const DEFAULT_COLORS: BitacoraColors = {
   border: "#242424",
   g1: "#ff3b5c",
   g2: "#00e5ff",
-  dotNote: "#ffe14a",
-  dotLearn: "#ff3b5c",
   dotThought: "#f2f2f2",
   grad0: "#ff3b5c",
   grad50: "#ffe14a",
@@ -84,16 +82,13 @@ export type PresetDesign = {
 };
 
 /** Arma un diseño partiendo de la paleta original y pisando los cambios.
- * Las pelotitas del calendario derivan de los colores base que cada diseño
- * usa para nota/learn/thought (amber, g1, neon), salvo que se pisen a mano. */
+ * La pelotita del calendario deriva del acento neon que cada diseño usa. */
 function design(
   name: string,
   description: string,
   overrides: Partial<BitacoraColors>
 ): PresetDesign {
   const colors: BitacoraColors = { ...DEFAULT_COLORS, ...overrides };
-  colors.dotNote = overrides.dotNote ?? colors.amber;
-  colors.dotLearn = overrides.dotLearn ?? colors.g1;
   colors.dotThought = overrides.dotThought ?? colors.neon;
   return {
     name,
@@ -243,8 +238,6 @@ export function colorsToStyleVars(colors: BitacoraColors): CSSProperties {
     "--cyb-g1": colors.g1,
     "--cyb-g1-rgb": hexToRgbTriplet(colors.g1),
     "--cyb-g2": colors.g2,
-    "--cyb-dot-note": colors.dotNote,
-    "--cyb-dot-learn": colors.dotLearn,
     "--cyb-dot-thought": colors.dotThought,
     "--cyb-grad0": colors.grad0,
     "--cyb-grad50": colors.grad50,

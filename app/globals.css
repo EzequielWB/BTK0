@@ -571,12 +571,6 @@ body {
   border-radius: 50%;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
 }
-.cyb-num .dot-a {
-  background: var(--cyb-dot-note);
-}
-.cyb-num .dot-r {
-  background: var(--cyb-dot-learn);
-}
 .cyb-num .dot-w {
   background: var(--cyb-dot-thought);
 }
@@ -872,56 +866,8 @@ body {
 }
 
 /* ==================================================================
-   LA HOJA — botón hoja + cuaderno con renglones (pensamientos del día)
+   LA HOJA — cuaderno con renglones (pensamientos del día)
    ================================================================== */
-.leaf-btn {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border: 1px solid var(--cyb-neon);
-  background: transparent;
-  color: var(--cyb-neon);
-  cursor: pointer;
-  padding: 0;
-}
-/* Doblez de esquina (hoja de papel) */
-.leaf-btn::after {
-  content: "";
-  position: absolute;
-  top: -1px;
-  right: -1px;
-  width: 0;
-  height: 0;
-  border-style: solid;
-  border-width: 0 9px 9px 0;
-  border-color: transparent var(--cyb-bg) transparent transparent;
-}
-.leaf-lines {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding-top: 6px;
-}
-.leaf-lines i {
-  display: block;
-  height: 2px;
-  width: 14px;
-  background: var(--cyb-green);
-}
-.leaf-lines i:nth-child(2) {
-  width: 9px;
-}
-.leaf-lines i:nth-child(3) {
-  width: 12px;
-}
-
-/* Modal de la hoja: marco HUD pero adentro el cuaderno blanco */
-.paper-shell {
-  max-width: 560px;
-}
 .cyb-paper {
   position: relative;
   background: #fbfaf6;

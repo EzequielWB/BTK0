@@ -54,7 +54,6 @@ export default async function BitacoraLayout({ children }: { children: ReactNode
           <BannerCounters config={counters} today={todayISO()} />
         </span>
         <nav className="cyb-nav">
-          <Link href="/bitacora">Hoy</Link>
           <Link href="/bitacora/buscar">Buscar</Link>
           <Link href="/bitacora/agenda">Cuaderno</Link>
           <Link href="/bitacora/efemerides">Efemérides</Link>

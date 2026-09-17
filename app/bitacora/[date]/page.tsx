@@ -3,10 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { CalendarNav } from "@/components/calendar-nav";
 import { DayFlagButton } from "@/components/day-flag-button";
 import { DayGoals } from "@/components/day-goals";
-import { LearningsEditor } from "@/components/learnings-editor";
 import { MotivationalQuote } from "@/components/motivational-quote";
 import { JournalSheet } from "@/components/journal-sheet";
-import { NotesEditor } from "@/components/notes-editor";
 import { ObjectivesChecklist } from "@/components/objectives-checklist";
 import { ReminderPanel } from "@/components/reminder-panel";
 import { TemporalGoalsSection } from "@/components/temporal-goals-section";
@@ -40,8 +38,6 @@ import type {
   DayGoal,
   DayMark,
   JournalEntry,
-  Learning,
-  Note,
   Objective,
   Reminder,
   Settings,
@@ -61,7 +57,7 @@ export default async function DayPage({
 
   const supabase = await createClient();
 
-  const [{ data: objectives }, { data: day }, { data: goals }, { data: noteRows }, { data: learningRows }, { data: reminderRows }, { data: annualRows }, { data: journalRow }, { data: dayGoalRows }] =
+  const [{ data: objectives }, { data: day }, { data: goals }, { data: reminderRows }, { data: annualRows }, { data: journalRow }, { data: dayGoalRows }] =
     await Promise.all([
       supabase
         .from("objectives")
@@ -77,18 +73,6 @@ export default async function DayPage({
         .lte("start_date", date)
         .gte("end_date", date)
         .order("start_date"),
-      supabase
-        .from("notes")
-        .select("*")
-        .eq("date", date)
-        .order("created_at")
-        .order("id"),
-      supabase
-        .from("learnings")
-        .select("*")
-        .eq("date", date)
-        .order("created_at")
-        .order("id"),
       supabase
         .from("reminders")
         .select("*")
@@ -106,8 +90,6 @@ export default async function DayPage({
     ]);
 
   const dayRow = (day ?? null) as Day | null;
-  const notes = (noteRows ?? []) as Note[];
-  const learnings = (learningRows ?? []) as Learning[];
   const reminders = (reminderRows ?? []) as Reminder[];
   const isFuture = date > todayISO();
   const hasActiveReminder = reminders.length > 0 && date >= todayISO();
@@ -157,14 +139,12 @@ export default async function DayPage({
     > | null
   );
 
-  // Marcado del calendario con 3 componentes por día:
-  // verde = día cumplido (según Ajustes), amarillo = hay notas, rojo = se aprendió algo.
+  // Marcado del calendario: verde = día cumplido (según Ajustes),
+  // blanco "tinta" = hay La Hoja ese día.
   const { start: monthStart, end: monthEnd } = monthRangeISO(date);
 
   const [
     { data: monthDays },
-    { data: notesInMonth },
-    { data: learningsInMonth },
     { data: remindersInMonth },
     { data: flagsInMonth },
     { data: journalDates },
@@ -172,16 +152,6 @@ export default async function DayPage({
     supabase
       .from("days")
       .select("id, date, objectives: daily_objectives(status)")
-      .gte("date", monthStart)
-      .lte("date", monthEnd),
-    supabase
-      .from("notes")
-      .select("date")
-      .gte("date", monthStart)
-      .lte("date", monthEnd),
-    supabase
-      .from("learnings")
-      .select("date")
       .gte("date", monthStart)
       .lte("date", monthEnd),
     supabase
@@ -299,12 +269,6 @@ export default async function DayPage({
     }
   }
 
-  const noteDates = new Set(
-    ((notesInMonth ?? []) as { date: string }[]).map((row) => row.date)
-  );
-  const learningDates = new Set(
-    ((learningsInMonth ?? []) as { date: string }[]).map((row) => row.date)
-  );
   const thoughtDates = new Set(
     ((journalDates ?? []) as { date: string }[]).map((row) => row.date)
   );
@@ -312,16 +276,12 @@ export default async function DayPage({
   const marks: Record<string, DayMark> = {};
   const allMarkedDates = new Set([
     ...completedDates,
-    ...noteDates,
-    ...learningDates,
     ...thoughtDates,
     ...percentByDate.keys(),
   ]);
   for (const markedDate of allMarkedDates) {
     marks[markedDate] = {
       complete: completedDates.has(markedDate),
-      note: noteDates.has(markedDate),
-      learn: learningDates.has(markedDate),
       thought: thoughtDates.has(markedDate),
       reminder: (remindersByDate[markedDate]?.length ?? 0) > 0,
       percent: percentByDate.get(markedDate),
@@ -452,25 +412,12 @@ export default async function DayPage({
       </div>,
     ],
     [
-      "notas_aprendizajes",
-      !isFuture ? (
-        <div className="grid gap-4 md:grid-cols-2" key="notas_aprendizajes">
-          <div className="blk">
-            <NotesEditor
-              key={`notes-${date}`}
-              date={date}
-              initialNotes={notes}
-            />
-          </div>
-          <div className="blk">
-            <LearningsEditor
-              key={`learnings-${date}`}
-              date={date}
-              initialLearnings={learnings}
-            />
-          </div>
-        </div>
-      ) : null,
+      "la_hoja",
+      <JournalSheet
+        key={`journal-${date}`}
+        date={date}
+        initial={journal?.content ?? ""}
+      />,
     ],
   ];
 
@@ -489,11 +436,6 @@ export default async function DayPage({
             Agenda - {monthLabel(parsed.getFullYear(), parsed.getMonth())}
           </span>
           <div className="flex items-center gap-2">
-            <JournalSheet
-              key={`journal-${date}`}
-              date={date}
-              initial={journal?.content ?? ""}
-            />
             <DayFlagButton date={date} flagged={isFlagged} />
           </div>
         </div>
@@ -511,9 +453,8 @@ export default async function DayPage({
         <div className="blk future-blk">
           <span className="blk-tag">Vista futura</span>
           <p className="cyb-hint text-sm">
-            Todavía no llegó este día. Podés dejar recordatorios, pero las
-            notas, los objetivos y los aprendizajes se habilitan cuando llegue
-            la fecha.
+            Todavía no llegó este día. Podés dejar recordatorios, pero los
+            objetivos se habilitan cuando llegue la fecha.
           </p>
         </div>
       )}

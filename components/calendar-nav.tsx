@@ -129,11 +129,7 @@ export function CalendarNav({
           if (!cell) return <span key={`empty-${i}`} />;
 
           const mark = marks[cell];
-          const dots = [
-            mark?.note ? "dot-a" : null,
-            mark?.learn ? "dot-r" : null,
-            mark?.thought ? "dot-w" : null,
-          ].filter((className): className is string => Boolean(className));
+          const dots = mark?.thought ? ["dot-w"] : [];
 
           const isFuture = cell > today;
           // Color del día en base al % de objetivos completados. Solo se
@@ -201,8 +197,8 @@ export function CalendarNav({
                         ? "Vista futura (solo lectura)"
                         : mark?.complete
                           ? "Día cumplido"
-                          : mark?.note || mark?.learn
-                            ? "Día registrado"
+                          : mark?.thought
+                            ? "Día con hoja"
                             : undefined
               }
               className="relative py-1 flex items-center justify-center rounded hover:bg-zinc-800/50"
@@ -272,7 +268,7 @@ export function CalendarNav({
           >
             <span className="blk-tag">Borrar día · {formatShortDate(deleteDate)}</span>
             <p className="cyb-hint mt-2 mb-4">
-              Se va a borrar todo: notas, aprendizajes, recordatorios y objetivos
+              Se va a borrar todo: la hoja, recordatorios y objetivos
               registrados este día.
             </p>
 

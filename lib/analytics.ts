@@ -6,8 +6,6 @@ import type {
   Day,
   DayGoal,
   DayStatsPoint,
-  Learning,
-  Note,
   Objective,
 } from "@/lib/types";
 
@@ -25,13 +23,11 @@ export type PeriodFacts = {
   worst: Array<{ iso: string; percent: number }>;
   daysWithData: number;
   emptyDays: number;
-  daysWithNotes: number;
-  daysWithLearnings: number;
+  daysWithJournal: number;
   streak: number;
   longestStreak: number;
   efficiency: number;
-  notes: { iso: string; content: string }[];
-  learnings: { iso: string; content: string }[];
+  journal: { iso: string; content: string }[];
   dayGoals: { iso: string; content: string }[];
 };
 
@@ -113,23 +109,14 @@ export async function buildPeriodFacts(
         )
     : { data: [] as DailyObjective[] };
 
-  const { data: noteRows } = rangeDays > 0
+  const { data: journalRows } = rangeDays > 0
     ? await supabase
-        .from("notes")
+        .from("journal")
         .select("date, content")
         .gte("date", startISO)
         .lte("date", toISO)
         .order("date", { ascending: false })
-    : { data: [] as Note[] };
-
-  const { data: learningRows } = rangeDays > 0
-    ? await supabase
-        .from("learnings")
-        .select("date, content")
-        .gte("date", startISO)
-        .lte("date", toISO)
-        .order("date", { ascending: false })
-    : { data: [] as Learning[] };
+    : { data: [] as { date: string; content: string | null }[] };
 
   const { data: dayGoalRows } = rangeDays > 0
     ? await supabase
@@ -156,11 +143,8 @@ export async function buildPeriodFacts(
     byDayId.set(entry.day_id, list);
   }
 
-  const noteDates = new Set<string>(
-    ((noteRows ?? []) as Note[]).map((note) => note.date)
-  );
-  const learningDates = new Set<string>(
-    ((learningRows ?? []) as Learning[]).map((learning) => learning.date)
+  const journalDates = new Set<string>(
+    ((journalRows ?? []) as { date: string }[]).map((row) => row.date)
   );
 
   const daily: PeriodDayPoint[] = [];
@@ -169,9 +153,8 @@ export async function buildPeriodFacts(
     const date = addDays(startISO, i);
     const day = dayRows.find((row) => row.date === date);
     const todosForDay = day ? (byDayId.get(day.id) ?? []) : [];
-    const hasNotes = noteDates.has(date);
-    const hasLearnings = learningDates.has(date);
-    const hasData = Boolean(hasNotes || hasLearnings || todosForDay.length > 0);
+    const hasJournal = journalDates.has(date);
+    const hasData = Boolean(hasJournal || todosForDay.length > 0);
     const ignoredCount = todosForDay.filter(
       (entry) => statusOf(entry) === "ignored"
     ).length;
@@ -205,19 +188,12 @@ export async function buildPeriodFacts(
   const withData = daily.filter((point) => point.hasData);
   const daysWithData = withData.length;
   const emptyDays = Math.max(rangeDays, 0) - daysWithData;
-  const daysWithNotes = noteDates.size;
-  const daysWithLearnings = learningDates.size;
+  const daysWithJournal = journalDates.size;
   const efficiency = Math.round((periodPoints / Math.max(rangeDays, 0)) * 100);
 
-  const notes = ((noteRows ?? []) as Note[])
+  const journal = ((journalRows ?? []) as { date: string; content: string | null }[])
     .slice(0, MAX_SAMPLES)
-    .map((note) => ({ iso: note.date, content: clip(note.content) }));
-  const learnings = ((learningRows ?? []) as Learning[])
-    .slice(0, MAX_SAMPLES)
-    .map((learning) => ({
-      iso: learning.date,
-      content: clip(learning.content),
-    }));
+    .map((entry) => ({ iso: entry.date, content: clip(entry.content ?? "") }));
   const dayGoals = ((dayGoalRows ?? []) as DayGoal[])
     .slice(0, MAX_SAMPLES)
     .map((goal) => ({
@@ -234,13 +210,11 @@ export async function buildPeriodFacts(
     worst,
     daysWithData,
     emptyDays,
-    daysWithNotes,
-    daysWithLearnings,
+    daysWithJournal,
     streak,
     longestStreak: longestStreak(daily),
     efficiency,
-    notes,
-    learnings,
+    journal,
     dayGoals,
   };
 }

@@ -34,7 +34,6 @@ export function JournalSheet({
   date: string;
   initial: string;
 }) {
-  const [open, setOpen] = useState(false);
   const [text, setText] = useState(initial);
   const [status, setStatus] = useState<SaveState>("idle");
   const [lastSaved, setLastSaved] = useState<string | null>(null);
@@ -83,18 +82,6 @@ export function JournalSheet({
     }, SAVE_DELAY_MS);
   }
 
-  function close() {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-    if (dirtyRef.current) {
-      dirtyRef.current = false;
-      void saveJournalAction(date, textRef.current.trim());
-    }
-    setOpen(false);
-  }
-
   useEffect(() => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
@@ -107,78 +94,45 @@ export function JournalSheet({
   }, []);
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="leaf-btn"
-        aria-label="Abrir pensamientos del día"
-        title="Pensamientos del día"
-      >
-        <span aria-hidden className="leaf-lines">
-          <i />
-          <i />
-          <i />
+    <section className="blk">
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <span className="blk-tag">La Hoja · {formatShortDate(date)}</span>
+      </div>
+
+      <div className="cyb-paper">
+        <textarea
+          value={text}
+          onChange={(event) => handleChange(event.target.value)}
+          rows={14}
+          placeholder="Escribí tus pensamientos del día..."
+          aria-label="Pensamientos del día"
+          className="cyb-paper-in"
+        />
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-2 mt-2">
+        <span
+          role="status"
+          aria-live="polite"
+          className={`paper-status ${
+            status === "error"
+              ? "text-[var(--cyb-g1)]"
+              : status === "saved"
+                ? "text-[var(--cyb-green)]"
+                : status === "idle"
+                  ? "cyb-muted"
+                  : ""
+          }`}
+        >
+          {statusLabel(status, lastSaved)}
         </span>
-      </button>
-
-      {open && (
-        <div className="cyb-modal" onClick={close}>
-          <div
-            className="cyb-modal-panel paper-shell"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-2 gap-2">
-              <span className="blk-tag">
-                La Hoja · {formatShortDate(date)}
-              </span>
-              <button
-                type="button"
-                onClick={close}
-                className="cyb-link"
-                aria-label="Cerrar"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="cyb-paper">
-              <textarea
-                value={text}
-                onChange={(event) => handleChange(event.target.value)}
-                rows={14}
-                placeholder="Escribí tus pensamientos del día..."
-                aria-label="Pensamientos del día"
-                className="cyb-paper-in"
-              />
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-2 mt-2">
-              <span
-                role="status"
-                aria-live="polite"
-                className={`paper-status ${
-                  status === "error"
-                    ? "text-[var(--cyb-g1)]"
-                    : status === "saved"
-                      ? "text-[var(--cyb-green)]"
-                      : status === "idle"
-                        ? "cyb-muted"
-                        : ""
-                }`}
-              >
-                {statusLabel(status, lastSaved)}
-              </span>
-              {text.length > SOFT_CAP && (
-                <span className="paper-warn">
-                  Aviso de tinta: pasaste ~{SOFT_CAP.toLocaleString("es-AR")}{" "}
-                  caracteres
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+        {text.length > SOFT_CAP && (
+          <span className="paper-warn">
+            Aviso de tinta: pasaste ~{SOFT_CAP.toLocaleString("es-AR")}{" "}
+            caracteres
+          </span>
+        )}
+      </div>
+    </section>
   );
 }

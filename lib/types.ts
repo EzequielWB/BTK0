@@ -27,20 +27,6 @@ export type Day = {
   updated_at: string;
 };
 
-export type Note = {
-  id: string;
-  date: string;
-  content: string;
-  created_at: string;
-};
-
-export type Learning = {
-  id: string;
-  date: string;
-  content: string;
-  created_at: string;
-};
-
 export type Reminder = {
   id: string;
   date: string;
@@ -129,8 +115,6 @@ export type DayGoal = {
 
 export type DayMark = {
   complete: boolean;
-  note: boolean;
-  learn: boolean;
   thought: boolean;
   reminder: boolean;
   /** % de objetivos completados del día (0-100). Solo días pasados con
@@ -164,10 +148,7 @@ export type BitacoraColors = {
   border: string;
   g1: string;
   g2: string;
-  /** Pelotitas del calendario (marcas bajo el día), independientes de la
-   * paleta global: nota (dotNote), aprendizaje (dotLearn), pensamiento (dotThought). */
-  dotNote: string;
-  dotLearn: string;
+  /** Pelotita del calendario: pensamiento (hoja del día). */
   dotThought: string;
   /** Degradé del calendario: color en 0% de completado (default rojo). */
   grad0: string;

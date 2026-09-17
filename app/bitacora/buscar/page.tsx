@@ -2,12 +2,14 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { isAuthenticated } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { formatShortDate, isValidISODate, toISODate } from "@/lib/utils";
+import {
+  formatShortDate,
+  isValidISODate,
+  toISODate,
+} from "@/lib/utils";
 import type {
   AnnualCategory,
   AnnualReminder,
-  Learning,
-  Note,
   Reminder,
 } from "@/lib/types";
 
@@ -16,15 +18,11 @@ export const dynamic = "force-dynamic";
 type Category =
   | "Recordatorio"
   | "Efeméride"
-  | "Anotación"
-  | "Aprendizaje"
   | "Hoja";
 
 const CATEGORY_ORDER: Category[] = [
   "Recordatorio",
   "Efeméride",
-  "Anotación",
-  "Aprendizaje",
   "Hoja",
 ];
 
@@ -70,25 +68,11 @@ export default async function BuscarPage({
   if (term.length > 0) {
     const supabase = await createClient();
     const [
-      { data: notes },
-      { data: learnings },
       { data: reminders },
       { data: journalRows },
       { data: annualRows },
       { data: categoryRows },
     ] = await Promise.all([
-      supabase
-        .from("notes")
-        .select("date, content")
-        .gte("date", start)
-        .lte("date", end)
-        .order("date"),
-      supabase
-        .from("learnings")
-        .select("date, content")
-        .gte("date", start)
-        .lte("date", end)
-        .order("date"),
       supabase
         .from("reminders")
         .select("date, content")
@@ -134,22 +118,6 @@ export default async function BuscarPage({
           undefined,
         date: when,
         text: entry.content ?? "",
-      });
-    }
-
-    for (const row of (notes ?? []) as Note[]) {
-      items.push({
-        category: "Anotación",
-        date: row.date,
-        text: row.content ?? "",
-      });
-    }
-
-    for (const row of (learnings ?? []) as Learning[]) {
-      items.push({
-        category: "Aprendizaje",
-        date: row.date,
-        text: row.content ?? "",
       });
     }
 

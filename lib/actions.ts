@@ -139,85 +139,6 @@ export async function changePasswordAction(
 }
 
 // ---------------------------------------------------------------------------
-// Días / notas
-// ---------------------------------------------------------------------------
-
-export async function addNoteAction(
-  date: string,
-  content: string,
-  id: string
-): Promise<ActionResult> {
-  await requireAuth();
-  if (isFutureDay(date)) return { error: "Días futuros: solo lectura." };
-
-  const text = content.trim();
-  if (!text) return { error: "La nota está vacía." };
-
-  const supabase = await createClient();
-  const { error } = await supabase.from("notes").insert({ id, date, content: text });
-
-  revalidatePath(`/bitacora/${date}`);
-
-  if (error) return { error: "No se pudo agregar la nota." };
-  return { success: "Nota agregada" };
-}
-
-export async function deleteNoteAction(
-  noteId: string,
-  date: string
-): Promise<ActionResult> {
-  await requireAuth();
-
-  const supabase = await createClient();
-  const { error } = await supabase.from("notes").delete().eq("id", noteId);
-
-  revalidatePath(`/bitacora/${date}`);
-
-  if (error) return { error: "No se pudo borrar la nota." };
-  return { success: "Nota eliminada" };
-}
-
-export async function addLearningAction(
-  date: string,
-  content: string,
-  id: string
-): Promise<ActionResult> {
-  await requireAuth();
-  if (isFutureDay(date)) return { error: "Días futuros: solo lectura." };
-
-  const text = content.trim();
-  if (!text) return { error: "El aprendizaje está vacío." };
-
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("learnings")
-    .insert({ id, date, content: text });
-
-  revalidatePath(`/bitacora/${date}`);
-
-  if (error) return { error: "No se pudo agregar el aprendizaje." };
-  return { success: "Aprendizaje agregado" };
-}
-
-export async function deleteLearningAction(
-  learningId: string,
-  date: string
-): Promise<ActionResult> {
-  await requireAuth();
-
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("learnings")
-    .delete()
-    .eq("id", learningId);
-
-  revalidatePath(`/bitacora/${date}`);
-
-  if (error) return { error: "No se pudo borrar el aprendizaje." };
-  return { success: "Aprendizaje eliminado" };
-}
-
-// ---------------------------------------------------------------------------
 // Objetivos diarios (checklist)
 // ---------------------------------------------------------------------------
 
@@ -889,11 +810,10 @@ export async function deleteDayDataAction(date: string): Promise<ActionResult> {
   const dayId = day ? (day as { id: string }).id : null;
 
   let failure = false;
-  const { error: notesErr } = await supabase.from("notes").delete().eq("date", date);
-  const { error: learnErr } = await supabase.from("learnings").delete().eq("date", date);
+  const { error: journalErr } = await supabase.from("journal").delete().eq("date", date);
   const { error: remErr } = await supabase.from("reminders").delete().eq("date", date);
   const { error: dayGoalsErr } = await supabase.from("day_goals").delete().eq("date", date);
-  if (notesErr || learnErr || remErr || dayGoalsErr) failure = true;
+  if (journalErr || remErr || dayGoalsErr) failure = true;
 
   if (dayId) {
     const { error: dailyErr } = await supabase

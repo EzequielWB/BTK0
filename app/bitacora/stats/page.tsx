@@ -118,28 +118,16 @@ export default async function StatsPage({
         )
     : { data: [] as DailyObjective[] };
 
-  const { data: noteRows } = rangeDays > 0
+  const { data: journalRows } = rangeDays > 0
     ? await supabase
-        .from("notes")
+        .from("journal")
         .select("date")
         .gte("date", fromISO)
         .lte("date", endDate)
     : { data: [] as { date: string }[] };
 
-  const noteDates = new Set<string>(
-    ((noteRows ?? []) as { date: string }[]).map((note) => note.date)
-  );
-
-  const { data: learningRows } = rangeDays > 0
-    ? await supabase
-        .from("learnings")
-        .select("date")
-        .gte("date", fromISO)
-        .lte("date", endDate)
-    : { data: [] as { date: string }[] };
-
-  const learningDates = new Set<string>(
-    ((learningRows ?? []) as { date: string }[]).map((learning) => learning.date)
+  const journalDates = new Set<string>(
+    ((journalRows ?? []) as { date: string }[]).map((row) => row.date)
   );
 
   const { data: objectiveRows } = await supabase
@@ -161,9 +149,8 @@ export default async function StatsPage({
     const date = addDays(fromISO, i);
     const day = dayRows.find((row) => row.date === date);
     const todosForDay = day ? (byDayId.get(day.id) ?? []) : [];
-    const hasNotes = noteDates.has(date);
-    const hasLearnings = learningDates.has(date);
-    const hasData = Boolean(hasNotes || hasLearnings || todosForDay.length > 0);
+    const hasJournal = journalDates.has(date);
+    const hasData = Boolean(hasJournal || todosForDay.length > 0);
     const ignoredCount = todosForDay.filter(
       (entry) => statusOf(entry) === "ignored"
     ).length;
@@ -186,8 +173,6 @@ export default async function StatsPage({
     : trailingStreak(points, today);
 
   const daysWithData = points.filter((point) => point.hasData).length;
-  const daysWithNotes = noteDates.size;
-  const daysWithLearnings = learningDates.size;
 
   const daysTracked =
     dayRows.length > 0
@@ -263,7 +248,7 @@ export default async function StatsPage({
 
       <section>
         <h2 className="blk-tag">Resumen</h2>
-        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           <div className="blk">
             <dt className="cyb-hint text-sm">
               {isYearView ? "Mejor racha" : "Racha actual"}
@@ -273,14 +258,6 @@ export default async function StatsPage({
           <div className="blk">
             <dt className="cyb-hint text-sm">Días con registro</dt>
             <dd className="text-2xl font-bold">{daysWithData}</dd>
-          </div>
-          <div className="blk">
-            <dt className="cyb-hint text-sm">Días con notas</dt>
-            <dd className="text-2xl font-bold">{daysWithNotes}</dd>
-          </div>
-          <div className="blk">
-            <dt className="cyb-hint text-sm">Días con aprendizajes</dt>
-            <dd className="text-2xl font-bold">{daysWithLearnings}</dd>
           </div>
           <div className="blk">
             <dt className="cyb-hint text-sm">Objetivos trackeados</dt>

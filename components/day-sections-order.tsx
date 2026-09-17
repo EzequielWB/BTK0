@@ -55,7 +55,7 @@ export function DaySectionsOrder({
       <h2 className="blk-tag">Orden_de_la_bitácora</h2>
       <p className="cyb-muted text-sm mb-3">
         Acomodá el orden de las tarjetas en la vista del día. El calendario
-        (agenda) siempre queda arriba, y Notas + Aprendizajes se mueven juntas.
+        (agenda) siempre queda arriba.
       </p>
 
       <ul className="space-y-2">

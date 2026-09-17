@@ -483,123 +483,14 @@ await setCompletion("percent", 84);
     // 3) Volver al día y verificar segmentos de colores (verde/amarillo/rojo)
     await page.goto(todayUrl, { waitUntil: "networkidle" });
     await page.waitForSelector("h2:has-text('Objetivos')", { timeout: 15000 });
-    console.log("Card 'Notas_del_día' (edificio N):", (await page.locator(".blk").count()) >= 4);
+    console.log("Vista del día con tarjetas (edificio N):", (await page.locator(".blk").count()) >= 4);
     const todayNum = new URL(todayUrl).pathname.split("/").pop().slice(-2);
     const todayCell = page.locator(`nav a:has-text('*${todayNum}')`).first();
 
-    // 4) Notas
-    const notesSection = page.locator("section", {
-      has: page.getByRole("heading", { name: "Notas del día" }),
-    });
-    const noteText = "nota-" + Date.now();
-    const textarea = notesSection.locator("textarea");
-    await textarea.fill(noteText);
-    await page.click("button:has-text('Agregar nota')");
-    await page.waitForSelector(`text=${noteText}`, { timeout: 10000 });
-    console.log("Nota acompañada encima del cuadro:", await page.locator(`text=${noteText}`).count() > 0);
-
-    const note2 = noteText + "-2";
-    await textarea.fill(note2);
-    await page.click("button:has-text('Agregar nota')");
-    await page.waitForSelector(`text=${note2}`, { timeout: 10000 });
-
-    await page.waitForFunction(
-      () =>
-        ![...document.querySelectorAll("button")].some((b) =>
-          b.textContent.includes("Agregando")
-        ),
-      { timeout: 10000 }
-    );
-
-    const noteItems = notesSection.locator("li");
-    const beforeCount = await noteItems.count();
-    const firstNoteText = (await noteItems.first().innerText()).split("\n")[0].trim();
-
-    await notesSection.locator("button:has-text('Eliminar')").first().click();
-    await page.waitForTimeout(1500);
-    const afterCount = await noteItems.count();
-    console.log("Nota borrada (count -1):", afterCount === beforeCount - 1);
-    console.log(
-      "El texto borrado ya no está:",
-      (await page.getByText(firstNoteText, { exact: true }).count()) === 0
-    );
-
-    await page.goto(todayUrl, { waitUntil: "networkidle" });
-    console.log(
-      "Nota persistida tras reload:",
-      (await page.getByText(note2, { exact: true }).count()) > 0
-    );
-
-    // 5) Aprendizajes: limpiar, agregar y ver el segmento rojo (partición)
-    const learnSection = page.locator("section", {
-      has: page.getByRole("heading", { name: "Qué aprendí" }),
-    });
-    while ((await learnSection.locator("li").count()) > 0) {
-      await learnSection.locator("button:has-text('Eliminar')").first().click();
-      await page.waitForTimeout(700);
-    }
-
-    console.log(
-      "Hoy sin aprendizaje -> verde+amarillo (sin rojo):",
-      (await todayCell.locator("i.segs-g").count()) === 1 &&
-        (await todayCell.locator("i.segs-a").count()) === 1 &&
-        (await todayCell.locator("i.segs-r").count()) === 0
-    );
-
-    const learningText = "aprendi-" + Date.now();
-    await learnSection.locator("textarea").fill(learningText);
-    await page.click("button:has-text('Agregar aprendizaje')");
-    await page.waitForSelector(`text=${learningText}`, { timeout: 10000 });
-    await page.waitForFunction(
-      (num) => {
-        const link = [...document.querySelectorAll("nav a")].find((l) =>
-          l.textContent.includes("*" + num)
-        );
-        return Boolean(link && link.querySelector("i.segs-r"));
-      },
-      todayNum,
-      { timeout: 10000 }
-    );
-    console.log(
-      "Hoy con aprendizaje -> 3 colores (verde/amarillo/rojo):",
-      (await todayCell.locator("i.segs-g").count()) === 1 &&
-        (await todayCell.locator("i.segs-a").count()) === 1 &&
-        (await todayCell.locator("i.segs-r").count()) === 1
-    );
-
-    await page.goto(todayUrl, { waitUntil: "networkidle" });
-    console.log(
-      "Aprendizaje persistido tras reload:",
-      (await page.getByText(learningText, { exact: true }).count()) > 0
-    );
-
-    await learnSection.locator("button:has-text('Eliminar')").first().click();
-    await page.waitForFunction(
-      (num) => {
-        const link = [...document.querySelectorAll("nav a")].find((l) =>
-          l.textContent.includes("*" + num)
-        );
-        return Boolean(link && link.querySelectorAll("i.segs-r").length === 0);
-      },
-      todayNum,
-      { timeout: 10000 }
-    );
-    console.log(
-      "Borrado aprendizaje -> vuelve a verde+amarillo:",
-      (await todayCell.locator("i.segs-g").count()) === 1 &&
-        (await todayCell.locator("i.segs-a").count()) === 1 &&
-        (await todayCell.locator("i.segs-r").count()) === 0
-    );
-
-    // 5b) La Hoja: pensamientos del día (botón hoja en cabecera + cuaderno)
-    await page.goto(todayUrl, { waitUntil: "networkidle" });
-    const leafBtn = page.locator('button[aria-label="Abrir pensamientos del día"]');
-    await leafBtn.waitFor({ timeout: 10000 });
-    console.log("Botón hoja en la cabecera del día: yes");
-    await leafBtn.click();
+    // 4) La Hoja (pensamientos del día): sección inline con autoguardado
     const sheet = page.locator(".cyb-paper");
     await sheet.waitFor({ timeout: 10000 });
-    console.log("Se abre el cuaderno blanco con renglones: yes");
+    console.log("La Hoja como sección en la vista del día: yes");
     const sheetTextarea = sheet.locator("textarea");
 
     // Limpiar sobras de corridas anteriores (si el día quedó con texto)
@@ -608,7 +499,7 @@ await setCompletion("percent", 84);
       await sheetTextarea.fill("");
       await page.waitForFunction(
         (iso) =>
-          !document.querySelector(`nav a[href="/bitacora/${iso}"] .cyb-num i.segs-w`),
+          !document.querySelector(`nav a[href="/bitacora/${iso}"] .cyb-num .cyb-dots i.dot-w`),
         todayIso,
         { timeout: 10000 }
       );
@@ -626,51 +517,47 @@ await setCompletion("percent", 84);
     await page.locator(".paper-warn").waitFor({ timeout: 10000 });
     console.log("Tope blando: aviso de tinta aparece: yes");
 
-    // Restaurar texto real, cerrar -> 4to segmento blanco en el calendario
+    // Restaurar texto real -> marca de tinta blanca en el calendario
     await sheetTextarea.fill(pensoText);
     await page
       .locator(".paper-status", { hasText: "Guardado" })
       .waitFor({ timeout: 10000 });
-    await page.locator(".paper-shell button[aria-label='Cerrar']").click();
     await page.waitForSelector(
-      `nav a[href="/bitacora/${todayIso}"] .cyb-num i.segs-w`,
+      `nav a[href="/bitacora/${todayIso}"] .cyb-num .cyb-dots i.dot-w`,
       { timeout: 10000 }
     );
-    console.log("4to segmento blanco (.segs-w) en el calendario: yes");
+    console.log("Marca de tinta (dot-w) en el calendario: yes");
 
     await page.reload({ waitUntil: "networkidle" });
     await page.waitForSelector(
-      `nav a[href="/bitacora/${todayIso}"] .cyb-num i.segs-w`,
+      `nav a[href="/bitacora/${todayIso}"] .cyb-num .cyb-dots i.dot-w`,
       { timeout: 10000 }
     );
-    console.log("Segmento persiste tras reload: yes");
-    await leafBtn.click();
-    await sheet.waitFor({ timeout: 10000 });
-    const loadedSheetText = (await sheetTextarea.inputValue()).trim();
+    console.log("Marca persiste tras reload: yes");
+    const loadedSheetText = (await page.locator(".cyb-paper-in").inputValue()).trim();
     console.log(
       "El texto del pensamiento persiste en la hoja:",
       loadedSheetText === pensoText
     );
 
-    // Limpiar la hoja -> la fila se borra y el segmento desaparece
+    // Limpiar la hoja -> la fila se borra y la marca desaparece
     if (loadedSheetText !== pensoText) {
-      await sheetTextarea.fill(pensoText);
+      await page.locator(".cyb-paper-in").fill(pensoText);
       await page
         .locator(".paper-status", { hasText: "Guardado" })
         .waitFor({ timeout: 10000 });
     }
-    await sheetTextarea.fill("");
+    await page.locator(".cyb-paper-in").fill("");
     await page
       .locator(".paper-status", { hasText: "Guardado" })
       .waitFor({ timeout: 10000 });
-    await page.locator(".paper-shell button[aria-label='Cerrar']").click();
     await page.waitForFunction(
       (iso) =>
-        !document.querySelector(`nav a[href="/bitacora/${iso}"] .cyb-num i.segs-w`),
+        !document.querySelector(`nav a[href="/bitacora/${iso}"] .cyb-num .cyb-dots i.dot-w`),
       todayIso,
       { timeout: 10000 }
     );
-    console.log("Al vaciar la hoja, la fila se borra y el segmento desaparece: yes");
+    console.log("Al vaciar la hoja, la fila se borra y la marca desaparece: yes");
 
     // 5c) Objetivos del día: lista por día (no Ajustes), completar/desmarcar,
     //     editar inline, borrar; pendientes visibles en días pasados; sin
@@ -872,10 +759,8 @@ await setCompletion("percent", 84);
         futureBanner.includes("podés dejar recordatorios")
     );
     console.log(
-      "Día futuro sin editores (Objetivos/Notas/Aprendizajes):",
-      (await page.locator("h2:has-text('Objetivos')").count()) === 0 &&
-        (await page.locator("h2:has-text('Notas del día')").count()) === 0 &&
-        (await page.locator("h2:has-text('Qué aprendí')").count()) === 0
+      "Día futuro sin editores (Objetivos):",
+      (await page.locator("h2:has-text('Objetivos')").count()) === 0
     );
     console.log(
       "Tarjeta de recordatorios presente en día futuro:",

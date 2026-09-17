@@ -49,25 +49,10 @@ alter table days add column if not exists mood int check (mood between 1 and 5);
 -- La columna notes fue reemplazada por la tabla notes (varias por día)
 alter table days drop column if exists notes;
 
--- ------------------------------------------------------------
--- notes: notas que se van agregando a lo largo de un día
--- ------------------------------------------------------------
-create table if not exists notes (
-  id         uuid primary key default gen_random_uuid(),
-  date       date not null,
-  content    text not null,
-  created_at timestamptz not null default now()
-);
-
--- ------------------------------------------------------------
--- learnings: aprendizajes nuevos ("qué aprendí") de cada día
--- ------------------------------------------------------------
-create table if not exists learnings (
-  id         uuid primary key default gen_random_uuid(),
-  date       date not null,
-  content    text not null,
-  created_at timestamptz not null default now()
-);
+-- Las tablas notes y learnings fueron retiradas: sus datos se migraron a la
+-- tabla journal ("La Hoja", una fila por día). Si por error siguen existiendo
+-- en bases viejas, se pueden dropear:
+--   drop table if exists notes, learnings;
 
 -- ------------------------------------------------------------
 -- daily_objectives: estado por día de cada objetivo.
@@ -270,8 +255,6 @@ create table if not exists agenda_items (
 -- ------------------------------------------------------------
 create index if not exists idx_days_date on days(date);
 create index if not exists idx_annual_reminders_md on annual_reminders(month, day);
-create index if not exists idx_notes_date on notes(date, created_at);
-create index if not exists idx_learnings_date on learnings(date, created_at);
 create index if not exists idx_reminders_date on reminders(date);
 create index if not exists idx_daily_objectives_day on daily_objectives(day_id);
 create index if not exists idx_daily_objectives_objective on daily_objectives(objective_id);
@@ -291,8 +274,6 @@ alter table password_config enable row level security;
 alter table settings enable row level security;
 alter table objectives enable row level security;
 alter table days enable row level security;
-alter table notes enable row level security;
-alter table learnings enable row level security;
 alter table reminders enable row level security;
 alter table day_flags enable row level security;
 alter table daily_objectives enable row level security;

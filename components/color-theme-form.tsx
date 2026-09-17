@@ -31,19 +31,15 @@ const COLOR_META: Record<keyof BitacoraColors, { label: string; hint: string }> 
   track: { label: "Track", hint: "Inputs y grillas" },
   field: { label: "Campo", hint: "Fondo de inputs" },
   border: { label: "Borde", hint: "Bordes generales" },
-  g1: { label: "Rojo", hint: "Aprendizaje · recuerdos · ✕" },
+  g1: { label: "Rojo", hint: "Errores · recuerdos · ✕" },
   g2: { label: "Cian", hint: "Glitch de la cita" },
-  dotNote: { label: "Pelotita nota", hint: "Calendario · hay notas ese día" },
-  dotLearn: { label: "Pelotita aprendizaje", hint: "Calendario · se aprendió algo" },
-  dotThought: { label: "Pelotita pensamiento", hint: "Calendario · journal ese día" },
+  dotThought: { label: "Pelotita hoja", hint: "Calendario · hay La Hoja ese día" },
   grad0: { label: "Degradé 0%", hint: "Calendario · sin objetivos completados" },
   grad50: { label: "Degradé 50%", hint: "Calendario · mitad de objetivos" },
   grad100: { label: "Degradé 100%", hint: "Calendario · día completamente cumplido" },
 };
 
 const DOT_KEYS: (keyof BitacoraColors)[] = [
-  "dotNote",
-  "dotLearn",
   "dotThought",
 ];
 const GENERAL_KEYS = COLOR_KEYS.filter(
