@@ -221,14 +221,72 @@ class LocalQuery {
     return this;
   }
 
-  private project(row: Row): Row {
+  // Separa columnas de un select respetando los paréntesis de las relaciones
+  // embebidas (alias: tabla(col1, col2)).
+  private splitColumns(select: string): string[] {
+    const cols: string[] = [];
+    let depth = 0;
+    let current = "";
+    for (const ch of select) {
+      if (ch === "(") depth++;
+      else if (ch === ")") depth--;
+      if (ch === "," && depth === 0) {
+        cols.push(current.trim());
+        current = "";
+      } else {
+        current += ch;
+      }
+    }
+    if (current.trim()) cols.push(current.trim());
+    return cols;
+  }
+
+  // Relación embebida "alias: tabla(cols)": resuelve las filas de la tabla
+  // hija cuyo FK apunta al id de la fila padre (ej: day_id -> days.id),
+  // proyectadas a las columnas pedidas. En Supabase real lo hace PostgREST.
+  private resolveRelation(
+    db: Store,
+    table: string,
+    fkColumn: string,
+    parentId: unknown,
+    inner: string
+  ): Row[] {
+    if (parentId == null) return [];
+    const related = (db[table] ?? []).filter(
+      (row) => row[fkColumn] === parentId
+    );
+    if (inner.trim() === "" || inner.trim() === "*") {
+      return related.map((row) => ({ ...row }));
+    }
+    return related.map((row) => {
+      const out: Row = {};
+      for (const column of this.splitColumns(inner)) out[column] = row[column];
+      return out;
+    });
+  }
+
+  private project(row: Row, db: Store): Row {
     if (this.columns === "*") return { ...row };
-    const cols = this.columns
-      .split(",")
-      .map((column) => column.trim())
-      .filter(Boolean);
     const out: Row = {};
-    for (const column of cols) out[column] = row[column];
+    for (const column of this.splitColumns(this.columns)) {
+      const rel =
+        /^([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\(([^)]*)\)$/.exec(
+          column
+        );
+      if (rel) {
+        const [, alias, table, inner] = rel;
+        const parentSingular = this.table.replace(/s$/, "");
+        out[alias] = this.resolveRelation(
+          db,
+          table,
+          `${parentSingular}_id`,
+          row.id,
+          inner
+        );
+      } else {
+        out[column] = row[column];
+      }
+    }
     return out;
   }
 
@@ -307,7 +365,7 @@ class LocalQuery {
 
     if (this.op !== "select") save(db);
 
-    const projected = resultRows.map((row) => this.project(row));
+    const projected = resultRows.map((row) => this.project(row, db));
 
     let data: Row[] | Row | null = projected;
     let error: { message: string } | null = null;
@@ -355,69 +413,6 @@ function addDaysISO(iso: string, days: number): string {
   const date = new Date(`${iso}T12:00:00Z`);
   date.setUTCDate(date.getUTCDate() + days);
   return date.toISOString().slice(0, 10);
-}
-
-// Ídem lib/completion.statusOf: filas viejas usaban boolean "completed".
-function statusOfRow(row: Row): string {
-  const status = row.status as string | undefined;
-  if (
-    status === "none" ||
-    status === "partial" ||
-    status === "done" ||
-    status === "ignored"
-  ) {
-    return status;
-  }
-  return row.completed ? "done" : "none";
-}
-
-// Congela el valor de los días pasados (replica freeze_day_scores).
-function freezeDayScoresLocal(db: Store): boolean {
-  const today = arToday();
-  const settings = (db.settings ?? []).find((row) => row.id === 1);
-  const mode = (settings?.completion_mode as string | undefined) ?? "off";
-  const threshold = Math.max(1, Number(settings?.threshold ?? 1));
-  const now = new Date().toISOString();
-
-  let changed = false;
-  for (const day of db.days ?? []) {
-    const dayDate = day.date as string;
-    if (dayDate >= today || day.score_frozen_at) continue;
-
-    const activeCount = (db.objectives ?? []).filter(
-      (objective) =>
-        objective.is_active === true &&
-        ((objective.created_at as string)?.slice(0, 10) ?? "0000-00-00") <= dayDate
-    ).length;
-
-    let points = 0;
-    let ignored = 0;
-    for (const entry of db.daily_objectives ?? []) {
-      if (entry.day_id !== day.id) continue;
-      const status = statusOfRow(entry);
-      if (status === "ignored") ignored++;
-      else if (status === "done") points += 1;
-      else if (status === "partial") points += 0.5;
-    }
-
-    const total = Math.max(0, activeCount - ignored);
-    let percent: number | null = null;
-    let fulfilled = false;
-    if (total > 0) {
-      percent = Math.min(100, Math.round((points / total) * 100));
-      if (mode === "count") fulfilled = points >= threshold;
-      else if (mode === "percent") {
-        fulfilled = percent >= Math.min(100, threshold);
-      }
-    }
-
-    day.percent = percent;
-    day.fulfilled = fulfilled;
-    day.score_frozen_at = now;
-    day.updated_at = now;
-    changed = true;
-  }
-  return changed;
 }
 
 // Arrastra objetivos del día pendientes hacia la fecha siguiente (replica
@@ -502,8 +497,6 @@ export function createLocalClient() {
             changed = true;
           }
         }
-      } else if (name === "freeze_day_scores") {
-        changed = freezeDayScoresLocal(db);
       } else if (name === "rollover_pending_day_goals") {
         changed = rolloverDayGoalsLocal(db);
       } else if (name === "stop_day_goal_chain") {

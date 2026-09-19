@@ -1080,21 +1080,11 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
     -Anonimo (aumentas el peso de tu sacrificio...). Verificacion: check en verde.
 
 [2026-09-19] VALOR CONGELADO DEL DIA + ARRASTRE DE OBJETIVOS DEL DIA
-  - Congelamiento del calendario: cuando un dia pasa, su color y su verde quedan
-    fijos para siempre (agregar o editar objetivos despues NO los cambia).
-    Se guarda por dia en las columnas nuevas days.percent, days.fulfilled y
-    days.score_frozen_at. La funcion freeze_day_scores() calcula el valor una
-    sola vez (primer render posterior al dia) replicando lib/completion.ts
-    (done=1, partial=0.5, ignored fuera de la cuenta) con el denominador de
-    objetivos ACTIVOS creados ANTES o ESE dia (created_at <= fecha del dia);
-    modo "off" siempre fulfilled=false. Se invoca (idempotente) desde:
-    - app/bitacora/[date]/page.tsx (antes de leer los datos del mes)
-    - app/bitacora/stats/page.tsx y lib/analytics.buildPeriodFacts (las
-      estadisticas usan el valor congelado en dias pasados)
-  - Los objetivos del dia (day_goals) pendientes se arrastran como copia al
-    dia siguiente, y asi cada dia hasta completarse (nunca a dias futuros).
-    Columnas nuevas day_goals.rollover_from (id del dia anterior) y
-    day_goals.rollover_stopped (cadena cancelada). Funciones RPC nuevas:
+  - ARRASTRE (queda activo): los objetivos del dia (day_goals) pendientes se
+    arrastran como copia al dia siguiente, y asi cada dia hasta completarse
+    (nunca a dias futuros). Columnas nuevas day_goals.rollover_from (id del
+    dia anterior) y day_goals.rollover_stopped (cadena cancelada). Funciones
+    RPC nuevas:
     - rollover_pending_day_goals(): loop que copia el tip pendiente de cada
       cadena a la fecha siguiente hasta hoy (rellena huecos); idempotente y
       sin duplicados (no copia si ya existe la copia rollover_from+date).
@@ -1103,9 +1093,15 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
       deleteDayDataAction antes de borrar, para que el pendiente del dia
       anterior no "resucite" al dia siguiente.
   - UI: components/day-goals.tsx muestra "arrastrado de ayer" en las copias.
-  - lib/local-client.ts: implementa los 3 RPC en modo local (misma logica en
-    TS sobre local-db.json) y acepta args en rpc().
-  - supabase/schema.sql: columnas nuevas + 3 funciones RPC (aplicar en el
-    SQL Editor de Supabase). lib/types.ts: Day y DayGoal extendidos.
+  - lib/local-client.ts: implementa los 2 RPC en modo local (misma logica en
+    TS sobre local-db.json) y acepta args en rpc(). supabase/schema.sql:
+    columnas nuevas + 2 funciones RPC (aplicar en el SQL Editor de Supabase).
+    lib/types.ts: DayGoal extendido (rollover_from, rollover_stopped).
+  - CONGELADO DEL CALENDARIO (implementado y luego REVERTIDO): primero se
+    agrego days.percent/fulfilled/score_frozen_at + freeze_day_scores() para
+    fijar el color de los dias pasados, pero el usuario prefirio que el color
+    SIGA recalcularse al tocar objetivos (como antes), asi que se quito:
+    el calendario y las stats vuelven a calcular todo en vivo y las columnas
+    y la funcion freeze quedaron fuera del schema y del codigo.
   - Verificacion: check (tsc+eslint) y build en verde; E2E por Playwright
-    contra dev de congelamiento y arrastre sin errores de consola.
+    contra dev de arrastre sin errores de consola.

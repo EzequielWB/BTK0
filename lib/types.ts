@@ -27,13 +27,6 @@ export type Day = {
   updated_at: string;
   /** Ánimo del día (1-5). NULL = sin registrar. */
   mood?: number | null;
-  /** Valor congelado del día (una vez que pasó): % de objetivos (0-100).
-   * null si el día no tuvo objetivos contables. */
-  percent?: number | null;
-  /** Valor congelado: si el día quedó "cumplido" según Ajustes. */
-  fulfilled?: boolean | null;
-  /** Momento en que el día se congeló; null = todavía no. */
-  score_frozen_at?: string | null;
 };
 
 export type Reminder = {

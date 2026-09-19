@@ -46,15 +46,6 @@ create table if not exists days (
 -- Ánimo del día (1 = mal, 5 = genial). NULL = sin registrar.
 alter table days add column if not exists mood int check (mood between 1 and 5);
 
--- "Congelado" del valor del día: una vez que el día pasó, se calcula una sola
--- vez (primer render posterior) y se guarda acá. percent = % de objetivos
--- (0-100, null si el día no tuvo objetivos contables), fulfilled = día
--- cumplido según Ajustes, score_frozen_at = momento en que se congeló (null =
--- todavía no congelado). Recalcular/agregar objetivos después no los cambia.
-alter table days add column if not exists percent int;
-alter table days add column if not exists fulfilled boolean;
-alter table days add column if not exists score_frozen_at timestamptz;
-
 -- La columna notes fue reemplazada por la tabla notes (varias por día)
 alter table days drop column if exists notes;
 
@@ -342,90 +333,6 @@ as $$
   set completed_at = r.date::timestamptz
   where r.date < (now() at time zone 'America/Argentina/Buenos_Aires')::date
     and r.completed_at is null;
-$$;
-
--- ------------------------------------------------------------
--- Función: congelar el valor de los días que ya pasaron
--- calcula percent/fulfilled de cada día con date < hoy en
--- Argentina que todavía no está congelado (score_frozen_at null)
--- y lo guarda. Idempotente: una vez congelado no se vuelve a
--- tocar, así agregar/editar objetivos después no cambia el color
--- del calendario ni las estadísticas de días pasados.
---
--- El denominador usa los objetivos ACTIVOS en el momento del
--- freeze con created_at <= fecha del día (los objetivos creados
--- después de ese día no cuentan para ese día). Replica la lógica
--- de lib/completion.ts: done=1, partial=0.5, ignored queda fuera
--- del numerador y del denominador; fulfilled según settings
--- (completion_mode / threshold); modo "off" => fulfilled=false.
--- ------------------------------------------------------------
-create or replace function freeze_day_scores()
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  today_d date := (now() at time zone 'America/Argentina/Buenos_Aires')::date;
-  r record;
-  cfg_mode text;
-  cfg_threshold int;
-  act_total int;
-  ign int;
-  pts numeric;
-  total int;
-  pct int;
-  ful boolean;
-begin
-  select completion_mode, threshold into cfg_mode, cfg_threshold
-  from settings
-  where id = 1;
-  if not found then
-    cfg_mode := 'off';
-    cfg_threshold := 1;
-  end if;
-  cfg_threshold := greatest(1, coalesce(cfg_threshold, 1));
-
-  for r in
-    select
-      d.id,
-      d.date,
-      (select count(*) from objectives o
-        where o.is_active
-          and o.created_at::date <= d.date) as act_total,
-      count(*) filter (where doe.status = 'ignored') as ign,
-      coalesce(sum(case doe.status
-                     when 'done' then 1
-                     when 'partial' then 0.5
-                     else 0 end), 0) as pts
-    from days d
-    left join daily_objectives doe on doe.day_id = d.id
-    where d.date < today_d
-      and d.score_frozen_at is null
-    group by d.id, d.date
-  loop
-    act_total := coalesce(r.act_total, 0);
-    ign := coalesce(r.ign, 0);
-    pts := coalesce(r.pts, 0);
-    total := greatest(0, act_total - ign);
-    pct := null;
-    ful := false;
-    if total > 0 then
-      pct := least(100, round((pts / total * 100)::numeric)::int);
-      if cfg_mode = 'count' then
-        ful := pts >= cfg_threshold;
-      elsif cfg_mode = 'percent' then
-        ful := pct >= least(100, cfg_threshold);
-      end if;
-    end if;
-    update days
-    set percent = pct,
-        fulfilled = ful,
-        score_frozen_at = now(),
-        updated_at = now()
-    where id = r.id;
-  end loop;
-end;
 $$;
 
 -- ------------------------------------------------------------
