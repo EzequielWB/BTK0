@@ -761,6 +761,9 @@ export async function deleteDayGoalAction(
   await requireAuth();
 
   const supabase = await createClient();
+  // Cancela el arrastre de toda la cadena antes de borrar: así el pendiente
+  // del día anterior no "resucita" como copia al día siguiente.
+  await supabase.rpc("stop_day_goal_chain", { goal_id: id });
   const { error } = await supabase.from("day_goals").delete().eq("id", id);
 
   revalidatePath(`/bitacora/${date}`);
@@ -811,6 +814,17 @@ export async function deleteDayDataAction(date: string): Promise<ActionResult> {
   let failure = false;
   const { error: journalErr } = await supabase.from("journal").delete().eq("date", date);
   const { error: remErr } = await supabase.from("reminders").delete().eq("date", date);
+
+  // Al borrar los objetivos del día de esta fecha también se cancela el
+  // arrastre de sus cadenas: los pendientes de días previos no vuelven a
+  // copiarse a este día (ni siguen arrastrándose).
+  const { data: dayGoalsToDelete } = await supabase
+    .from("day_goals")
+    .select("id")
+    .eq("date", date);
+  for (const goal of (dayGoalsToDelete ?? []) as { id: string }[]) {
+    await supabase.rpc("stop_day_goal_chain", { goal_id: goal.id });
+  }
   const { error: dayGoalsErr } = await supabase.from("day_goals").delete().eq("date", date);
   if (journalErr || remErr || dayGoalsErr) failure = true;
 

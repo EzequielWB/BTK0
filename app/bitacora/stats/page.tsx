@@ -87,6 +87,9 @@ export default async function StatsPage({
     ) + 1;
 
   const supabase = await createClient();
+  // Congelar días pasados antes de leerlos: las estadísticas no cambian más
+  // al agregar/editar objetivos (idempotente).
+  await supabase.rpc("freeze_day_scores");
 
   const { data: settingsRow } = await supabase
     .from("settings")
@@ -151,20 +154,30 @@ export default async function StatsPage({
     const todosForDay = day ? (byDayId.get(day.id) ?? []) : [];
     const hasJournal = journalDates.has(date);
     const hasData = Boolean(hasJournal || todosForDay.length > 0);
-    const ignoredCount = todosForDay.filter(
-      (entry) => statusOf(entry) === "ignored"
-    ).length;
-    // Los ignorados del día no cuentan ni en el numerador ni en el
-    // denominador; si el día quedó sin objetivos en cuenta es neutro.
-    const denominator = totalObjectives - ignoredCount;
-    const dayPoints = todosForDay.reduce(
-      (sum, entry) => sum + statusValue(statusOf(entry)),
-      0
-    );
-    const percent = denominator > 0
-      ? Math.round((dayPoints / denominator) * 100)
-      : 0;
-    const ratio = denominator > 0 ? dayPoints / denominator : 0;
+    let percent: number;
+    let ratio: number;
+    const frozen = Boolean(day?.score_frozen_at);
+    if (frozen) {
+      // Días pasados: valor congelado del calendario (fijo aunque cambien
+      // los objetivos). ratio aproximado desde el porcentaje guardado.
+      percent = day?.percent ?? 0;
+      ratio = percent / 100;
+    } else {
+      const ignoredCount = todosForDay.filter(
+        (entry) => statusOf(entry) === "ignored"
+      ).length;
+      // Los ignorados del día no cuentan ni en el numerador ni en el
+      // denominador; si el día quedó sin objetivos en cuenta es neutro.
+      const denominator = totalObjectives - ignoredCount;
+      const dayPoints = todosForDay.reduce(
+        (sum, entry) => sum + statusValue(statusOf(entry)),
+        0
+      );
+      percent = denominator > 0
+        ? Math.round((dayPoints / denominator) * 100)
+        : 0;
+      ratio = denominator > 0 ? dayPoints / denominator : 0;
+    }
     points.push({ date, percent, hasData, ratio });
   }
 

@@ -80,6 +80,10 @@ export async function buildPeriodFacts(
   endISO: string
 ): Promise<PeriodFacts> {
   const supabase = await createClient();
+  // Asegurar que los días pasados ya tengan su valor congelado antes de
+  // armar las estadísticas (idempotente).
+  await supabase.rpc("freeze_day_scores");
+
   const today = todayISO();
   const toISO = endISO < today ? endISO : today;
   const rangeDays =
@@ -155,22 +159,32 @@ export async function buildPeriodFacts(
     const todosForDay = day ? (byDayId.get(day.id) ?? []) : [];
     const hasJournal = journalDates.has(date);
     const hasData = Boolean(hasJournal || todosForDay.length > 0);
-    const ignoredCount = todosForDay.filter(
-      (entry) => statusOf(entry) === "ignored"
-    ).length;
-    // Los ignorados del día no cuentan ni en el numerador ni en el
-    // denominador; si el día quedó sin objetivos en cuenta es neutro.
-    const denominator = objectives.length - ignoredCount;
-    const dayPoints = todosForDay.reduce(
-      (sum, entry) => sum + statusValue(statusOf(entry)),
-      0
-    );
-    const percent = denominator > 0
-      ? Math.round((dayPoints / denominator) * 100)
-      : 0;
-    const ratio = denominator > 0 ? dayPoints / denominator : 0;
-    if (denominator > 0) {
+    let percent: number;
+    let ratio: number;
+    const frozen = Boolean(day?.score_frozen_at);
+    if (frozen) {
+      // Días pasados: valor congelado (fijo aunque cambien los objetivos).
+      percent = day?.percent ?? 0;
+      ratio = percent / 100;
       periodPoints += ratio;
+    } else {
+      const ignoredCount = todosForDay.filter(
+        (entry) => statusOf(entry) === "ignored"
+      ).length;
+      // Los ignorados del día no cuentan ni en el numerador ni en el
+      // denominador; si el día quedó sin objetivos en cuenta es neutro.
+      const denominator = objectives.length - ignoredCount;
+      const dayPoints = todosForDay.reduce(
+        (sum, entry) => sum + statusValue(statusOf(entry)),
+        0
+      );
+      percent = denominator > 0
+        ? Math.round((dayPoints / denominator) * 100)
+        : 0;
+      ratio = denominator > 0 ? dayPoints / denominator : 0;
+      if (denominator > 0) {
+        periodPoints += ratio;
+      }
     }
     daily.push({ date, percent, hasData, ratio });
   }

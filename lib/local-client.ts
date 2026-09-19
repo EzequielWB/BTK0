@@ -342,32 +342,181 @@ class LocalQuery {
   }
 }
 
+function arToday(): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Argentina/Buenos_Aires",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+function addDaysISO(iso: string, days: number): string {
+  const date = new Date(`${iso}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+// Ídem lib/completion.statusOf: filas viejas usaban boolean "completed".
+function statusOfRow(row: Row): string {
+  const status = row.status as string | undefined;
+  if (
+    status === "none" ||
+    status === "partial" ||
+    status === "done" ||
+    status === "ignored"
+  ) {
+    return status;
+  }
+  return row.completed ? "done" : "none";
+}
+
+// Congela el valor de los días pasados (replica freeze_day_scores).
+function freezeDayScoresLocal(db: Store): boolean {
+  const today = arToday();
+  const settings = (db.settings ?? []).find((row) => row.id === 1);
+  const mode = (settings?.completion_mode as string | undefined) ?? "off";
+  const threshold = Math.max(1, Number(settings?.threshold ?? 1));
+  const now = new Date().toISOString();
+
+  let changed = false;
+  for (const day of db.days ?? []) {
+    const dayDate = day.date as string;
+    if (dayDate >= today || day.score_frozen_at) continue;
+
+    const activeCount = (db.objectives ?? []).filter(
+      (objective) =>
+        objective.is_active === true &&
+        ((objective.created_at as string)?.slice(0, 10) ?? "0000-00-00") <= dayDate
+    ).length;
+
+    let points = 0;
+    let ignored = 0;
+    for (const entry of db.daily_objectives ?? []) {
+      if (entry.day_id !== day.id) continue;
+      const status = statusOfRow(entry);
+      if (status === "ignored") ignored++;
+      else if (status === "done") points += 1;
+      else if (status === "partial") points += 0.5;
+    }
+
+    const total = Math.max(0, activeCount - ignored);
+    let percent: number | null = null;
+    let fulfilled = false;
+    if (total > 0) {
+      percent = Math.min(100, Math.round((points / total) * 100));
+      if (mode === "count") fulfilled = points >= threshold;
+      else if (mode === "percent") {
+        fulfilled = percent >= Math.min(100, threshold);
+      }
+    }
+
+    day.percent = percent;
+    day.fulfilled = fulfilled;
+    day.score_frozen_at = now;
+    day.updated_at = now;
+    changed = true;
+  }
+  return changed;
+}
+
+// Arrastra objetivos del día pendientes hacia la fecha siguiente (replica
+// rollover_pending_day_goals): llena los huecos hasta hoy, nunca a futuro.
+function rolloverDayGoalsLocal(db: Store): boolean {
+  const today = arToday();
+  let changed = false;
+
+  for (let guard = 0; guard < 60; guard++) {
+    let inserted = false;
+    const goals = db.day_goals ?? [];
+    for (const goal of goals) {
+      const nextDate = addDaysISO(goal.date as string, 1);
+      if (nextDate > today) continue;
+      if (goal.completed_at) continue;
+      if (goal.rollover_stopped) continue;
+      const alreadyCopied = goals.some(
+        (copy) =>
+          (copy.date as string) === nextDate &&
+          (copy.rollover_from as string | undefined) === goal.id
+      );
+      if (alreadyCopied) continue;
+      (db.day_goals ??= []).push({
+        id: randomUUID(),
+        date: nextDate,
+        title: goal.title,
+        rollover_from: goal.id,
+        created_at: new Date().toISOString(),
+      });
+      inserted = true;
+      changed = true;
+    }
+    if (!inserted) break;
+  }
+  return changed;
+}
+
+// Cancela el arrastre de toda la cadena de un day_goal (replica
+// stop_day_goal_chain): marca los ancestros y las copias.
+function stopDayGoalChainLocal(db: Store, goalId: string): boolean {
+  const goals = db.day_goals ?? [];
+  const chain = new Set<string>();
+  const queue = [goalId];
+
+  while (queue.length > 0) {
+    const id = queue.shift() as string;
+    if (chain.has(id)) continue;
+    chain.add(id);
+    for (const goal of goals) {
+      if ((goal.rollover_from as string | undefined) === id) {
+        queue.push(goal.id as string);
+      }
+    }
+    const goal = goals.find((row) => row.id === id);
+    if (goal?.rollover_from) queue.push(goal.rollover_from as string);
+  }
+
+  let changed = false;
+  for (const goal of goals) {
+    if (chain.has(goal.id as string) && goal.rollover_stopped !== true) {
+      goal.rollover_stopped = true;
+      changed = true;
+    }
+  }
+  return changed;
+}
+
 export function createLocalClient() {
   return {
     from: (table: string) => new LocalQuery(table),
-    rpc: async (name: string): Promise<ExecResult> => {
+    rpc: async (
+      name: string,
+      args?: Record<string, unknown>
+    ): Promise<ExecResult> => {
+      const db = load();
+      let changed = false;
       if (name === "auto_complete_expired_reminders") {
-        const db = load();
-        const today = new Intl.DateTimeFormat("en-CA", {
-          timeZone: "America/Argentina/Buenos_Aires",
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-        }).format(new Date());
-        let changed = false;
+        const today = arToday();
         for (const row of db.reminders ?? []) {
           if (!row.completed_at && (row.date as string) < today) {
             row.completed_at = row.date;
             changed = true;
           }
         }
-        if (changed) save(db);
-        return { data: null, error: null };
+      } else if (name === "freeze_day_scores") {
+        changed = freezeDayScoresLocal(db);
+      } else if (name === "rollover_pending_day_goals") {
+        changed = rolloverDayGoalsLocal(db);
+      } else if (name === "stop_day_goal_chain") {
+        const goalId = String(args?.goal_id ?? "");
+        if (goalId) changed = stopDayGoalChainLocal(db, goalId);
+      } else {
+        return {
+          data: null,
+          error: { message: `RPC '${name}' no implementado en modo local.` },
+        };
       }
-      return {
-        data: null,
-        error: { message: `RPC '${name}' no implementado en modo local.` },
-      };
+      if (changed) save(db);
+      return { data: null, error: null };
     },
   };
 }

@@ -1052,23 +1052,23 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
     weight_months (idempotente, ya estÃ¡ en supabase/schema.sql).
 
 [2026-09-18] RUMIACIONES (VENTANA TERMINAL SUPERPUESTA, CONTENIDO GLOBAL)
-  - Nueva entidad "rumiaciones": pensamientos CONSTANTES, no atados a un día.
-    Un solo texto global (fila única id=1, estilo settings) que siempre está.
+  - Nueva entidad "rumiaciones": pensamientos CONSTANTES, no atados a un dï¿½a.
+    Un solo texto global (fila ï¿½nica id=1, estilo settings) que siempre estï¿½.
   - supabase/schema.sql: tabla rumiaciones (id pk default 1, content, updated_at)
-    + RLS + insert singleton. NOTA: si ya existía con la forma anterior (date pk)
+    + RLS + insert singleton. NOTA: si ya existï¿½a con la forma anterior (date pk)
     hay que drop table y re-correr.
   - lib/local-client.ts: "rumiaciones" en TABLES. lib/types.ts: tipo Rumiacion
     {id, content, updated_at}. lib/actions.ts: saveRumiacionesAction(content)
-    sin fecha (upsert id=1, delete si queda vacío).
-  - components/rumiaciones.tsx (client): botón ícono de hoja con punta doblada
-    (SVG, verde neón) en la cabecera de la Agenda; abre un modal centrado estilo
+    sin fecha (upsert id=1, delete si queda vacï¿½o).
+  - components/rumiaciones.tsx (client): botï¿½n ï¿½cono de hoja con punta doblada
+    (SVG, verde neï¿½n) en la cabecera de la Agenda; abre un modal centrado estilo
     terminal (fondo negro, texto verde, scanlines, cursor parpadeante) que queda
     por encima del calendario y de la cita. Autoguardado (1,5s) + flush al cerrar/
-    desmontar, Esc/click afuera/? para cerrar. Mismo texto en cualquier día.
-  - app/bitacora/[date]/page.tsx: fetch del singleton (eq id 1) + botón junto a
+    desmontar, Esc/click afuera/? para cerrar. Mismo texto en cualquier dï¿½a.
+  - app/bitacora/[date]/page.tsx: fetch del singleton (eq id 1) + botï¿½n junto a
     ? Destacar.
-  - Verificación: check (tsc+eslint) en verde; E2E por Playwright contra dev:
-    ícono presente (sin label), guardar, persiste el MISMO texto en otro día y
+  - Verificaciï¿½n: check (tsc+eslint) en verde; E2E por Playwright contra dev:
+    ï¿½cono presente (sin label), guardar, persiste el MISMO texto en otro dï¿½a y
     limpieza, sin errores JS.
 
 [2026-09-18] CITA DEL DIA - SOLO FRASES MOTIVACIONALES
@@ -1078,3 +1078,34 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
     juegos/anime). Se mantiene intacta la logica del Otra frase (aleatoria con
     repeticion evitada) y la especial: cada 5 refrescos sale si o si la de
     -Anonimo (aumentas el peso de tu sacrificio...). Verificacion: check en verde.
+
+[2026-09-19] VALOR CONGELADO DEL DIA + ARRASTRE DE OBJETIVOS DEL DIA
+  - Congelamiento del calendario: cuando un dia pasa, su color y su verde quedan
+    fijos para siempre (agregar o editar objetivos despues NO los cambia).
+    Se guarda por dia en las columnas nuevas days.percent, days.fulfilled y
+    days.score_frozen_at. La funcion freeze_day_scores() calcula el valor una
+    sola vez (primer render posterior al dia) replicando lib/completion.ts
+    (done=1, partial=0.5, ignored fuera de la cuenta) con el denominador de
+    objetivos ACTIVOS creados ANTES o ESE dia (created_at <= fecha del dia);
+    modo "off" siempre fulfilled=false. Se invoca (idempotente) desde:
+    - app/bitacora/[date]/page.tsx (antes de leer los datos del mes)
+    - app/bitacora/stats/page.tsx y lib/analytics.buildPeriodFacts (las
+      estadisticas usan el valor congelado en dias pasados)
+  - Los objetivos del dia (day_goals) pendientes se arrastran como copia al
+    dia siguiente, y asi cada dia hasta completarse (nunca a dias futuros).
+    Columnas nuevas day_goals.rollover_from (id del dia anterior) y
+    day_goals.rollover_stopped (cadena cancelada). Funciones RPC nuevas:
+    - rollover_pending_day_goals(): loop que copia el tip pendiente de cada
+      cadena a la fecha siguiente hasta hoy (rellena huecos); idempotente y
+      sin duplicados (no copia si ya existe la copia rollover_from+date).
+    - stop_day_goal_chain(goal_id): marca rollover_stopped en TODA la cadena
+      (ancestros + copias). Se llama en deleteDayGoalAction y en
+      deleteDayDataAction antes de borrar, para que el pendiente del dia
+      anterior no "resucite" al dia siguiente.
+  - UI: components/day-goals.tsx muestra "arrastrado de ayer" en las copias.
+  - lib/local-client.ts: implementa los 3 RPC en modo local (misma logica en
+    TS sobre local-db.json) y acepta args en rpc().
+  - supabase/schema.sql: columnas nuevas + 3 funciones RPC (aplicar en el
+    SQL Editor de Supabase). lib/types.ts: Day y DayGoal extendidos.
+  - Verificacion: check (tsc+eslint) y build en verde; E2E por Playwright
+    contra dev de congelamiento y arrastre sin errores de consola.

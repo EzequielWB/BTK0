@@ -196,6 +196,11 @@ export function DayGoals({
                                 : "pendiente"}
                           </span>
                         )}
+                        {goal.rollover_from && (
+                          <span className="cyb-hint text-xs block">
+                            arrastrado de ayer
+                          </span>
+                        )}
                       </>
                     )}
                   </div>

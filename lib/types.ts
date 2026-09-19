@@ -25,6 +25,15 @@ export type Day = {
   date: string;
   created_at: string;
   updated_at: string;
+  /** Ánimo del día (1-5). NULL = sin registrar. */
+  mood?: number | null;
+  /** Valor congelado del día (una vez que pasó): % de objetivos (0-100).
+   * null si el día no tuvo objetivos contables. */
+  percent?: number | null;
+  /** Valor congelado: si el día quedó "cumplido" según Ajustes. */
+  fulfilled?: boolean | null;
+  /** Momento en que el día se congeló; null = todavía no. */
+  score_frozen_at?: string | null;
 };
 
 export type Reminder = {
@@ -112,13 +121,18 @@ export type AgendaCategoryWithCount = AgendaCategory & {
 
 /** "Objetivo del día": lista por día que se arma SOLO desde la vista
  * del día. Independiente de la eficiencia y del marcado verde.
- * completed_at null = pendiente (si el día terminó, quedó sin hacer). */
+ * completed_at null = pendiente (si el día terminó, quedó sin hacer).
+ * Los pendientes se arrastran al día siguiente: rollover_from = id de la
+ * fila del día anterior de la que esta copia proviene (null = original);
+ * rollover_stopped = la cadena se canceló (al borrar un eslabón). */
 export type DayGoal = {
   id: string;
   date: string;
   title: string;
   completed_at?: string | null;
   created_at: string;
+  rollover_from?: string | null;
+  rollover_stopped?: boolean;
 };
 
 export type DayMark = {

@@ -59,6 +59,15 @@ export default async function DayPage({
 
   const supabase = await createClient();
 
+  // Mantenimiento antes de leer datos, para que lo que se muestra ya venga
+  // congelado/arrastrado:
+  // - freeze_day_scores: congela el valor de los días pasados (no cambia
+  //   más al agregar/editar objetivos).
+  // - rollover_pending_day_goals: arrastra los objetivos del día pendientes
+  //   a la fecha siguiente (cadena hasta hoy).
+  await supabase.rpc("freeze_day_scores");
+  await supabase.rpc("rollover_pending_day_goals");
+
   const [{ data: objectives }, { data: day }, { data: goals }, { data: reminderRows }, { data: annualRows }, { data: journalRow }, { data: dayGoalRows }, { data: rumiacionesRow }] =
     await Promise.all([
       supabase
@@ -158,7 +167,7 @@ export default async function DayPage({
   ] = await Promise.all([
     supabase
       .from("days")
-      .select("id, date, objectives: daily_objectives(status)")
+      .select("id, date, percent, fulfilled, score_frozen_at, objectives: daily_objectives(status)")
       .gte("date", monthStart)
       .lte("date", monthEnd),
     supabase
@@ -186,6 +195,10 @@ export default async function DayPage({
     id: string;
     date: string;
     objectives?: { status: string }[] | null;
+    /** Valor congelado de días pasados (null hasta que freeze_day_scores los marque). */
+    percent?: number | null;
+    fulfilled?: boolean | null;
+    score_frozen_at?: string | null;
   };
   const monthDayRows = ((monthDays ?? []) as MonthDayRow[]);
   const allDays = monthDayRows.map((row) => ({ id: row.id, date: row.date }));
@@ -292,6 +305,18 @@ export default async function DayPage({
       thought: thoughtDates.has(markedDate),
       reminder: (remindersByDate[markedDate]?.length ?? 0) > 0,
       percent: percentByDate.get(markedDate),
+    };
+  }
+
+  // Los días ya pasados usan su valor CONGELADO (solo se calculó una vez):
+  // agregar o editar objetivos después no cambia su color ni su verde.
+  for (const row of monthDayRows) {
+    if (!row.score_frozen_at) continue;
+    marks[row.date] = {
+      complete: Boolean(row.fulfilled),
+      thought: thoughtDates.has(row.date),
+      reminder: (remindersByDate[row.date]?.length ?? 0) > 0,
+      percent: row.percent ?? undefined,
     };
   }
 
