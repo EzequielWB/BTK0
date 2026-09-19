@@ -376,25 +376,23 @@ export default async function DayPage({
     ],
     [
       "objetivos_dia",
-      !isFuture ? (
-        <section className="blk" key="objetivos_dia">
-          <h2 className="blk-tag">
-            Objetivos_del_día
-            {dayGoals.length > 0 && (
-              <span className="normal-case tracking-normal text-xs opacity-80">
-                {" "}
-                {dayGoals.filter((goal) => Boolean(goal.completed_at)).length}/
-                {dayGoals.length}
-              </span>
-            )}
-          </h2>
-          <DayGoals
-            key={`day-goals-${date}`}
-            date={date}
-            initialGoals={dayGoals}
-          />
-        </section>
-      ) : null,
+      <section className="blk" key="objetivos_dia">
+        <h2 className="blk-tag">
+          Objetivos_del_día
+          {dayGoals.length > 0 && (
+            <span className="normal-case tracking-normal text-xs opacity-80">
+              {" "}
+              {dayGoals.filter((goal) => Boolean(goal.completed_at)).length}/
+              {dayGoals.length}
+            </span>
+          )}
+        </h2>
+        <DayGoals
+          key={`day-goals-${date}`}
+          date={date}
+          initialGoals={dayGoals}
+        />
+      </section>,
     ],
     [
       "metas_activas",
@@ -464,8 +462,9 @@ export default async function DayPage({
         <div className="blk future-blk">
           <span className="blk-tag">Vista futura</span>
           <p className="cyb-hint text-sm">
-            Todavía no llegó este día. Podés dejar recordatorios, pero los
-            objetivos se habilitan cuando llegue la fecha.
+            Todavía no llegó este día. Podés ir dejando recordatorios y
+            preparando los objetivos del día con anticipación; el checklist
+            general se habilita cuando llegue la fecha.
           </p>
         </div>
       )}

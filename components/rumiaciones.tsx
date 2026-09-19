@@ -5,6 +5,8 @@ import { saveRumiacionesAction } from "@/lib/actions";
 
 const SOFT_CAP = 20_000;
 const SAVE_DELAY_MS = 1500;
+const DOT_SHOWN_KEY = "bitakora:rumi-dot-shown";
+const DOT_LIFETIME_MS = 7000;
 
 type SaveState = "idle" | "editing" | "saving" | "saved" | "error";
 
@@ -28,6 +30,12 @@ export function Rumiaciones({ initial }: { initial: string }) {
   const [text, setText] = useState(initial);
   const [status, setStatus] = useState<SaveState>("idle");
   const [lastSaved, setLastSaved] = useState<string | null>(null);
+  const [showDot, setShowDot] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return (
+      initial.trim() !== "" && !sessionStorage.getItem(DOT_SHOWN_KEY)
+    );
+  });
 
   const textRef = useRef(text);
   const dirtyRef = useRef(false);
@@ -36,6 +44,17 @@ export function Rumiaciones({ initial }: { initial: string }) {
   useEffect(() => {
     textRef.current = text;
   }, [text]);
+
+  useEffect(() => {
+    if (initial.trim() === "") return;
+    sessionStorage.setItem(DOT_SHOWN_KEY, "1");
+  }, [initial]);
+
+  useEffect(() => {
+    if (!showDot) return;
+    const timerId = setTimeout(() => setShowDot(false), DOT_LIFETIME_MS);
+    return () => clearTimeout(timerId);
+  }, [showDot]);
 
   async function flush() {
     if (timerRef.current) {
@@ -124,6 +143,9 @@ export function Rumiaciones({ initial }: { initial: string }) {
           <path d="M8 14.2h8.5" />
           <path d="M8 16.9h5.5" />
         </svg>
+        {showDot && text.trim() !== "" && (
+          <span className="cyb-rumi-dot" aria-hidden />
+        )}
       </button>
 
       {open && (

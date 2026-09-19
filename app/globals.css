@@ -413,6 +413,16 @@ body {
 .cyb-goal-tick:hover {
   box-shadow: 0 0 6px rgba(var(--cyb-neon-rgb), 0.4);
 }
+.cyb-goal-tick.future {
+  border-style: dashed;
+  border-color: var(--cyb-track);
+  color: var(--cyb-dim);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.cyb-goal-tick.future:hover {
+  box-shadow: none;
+}
 
 /* Link neón chico */
 .cyb-link {
@@ -1105,6 +1115,7 @@ body {
    de la agenda y queda por encima del calendario y de la cita.
    ================================================================== */
 .cyb-rumi-btn {
+  position: relative;
   font: inherit;
   font-size: 11px;
   letter-spacing: 1px;
@@ -1128,6 +1139,31 @@ body {
 .cyb-rumi-ico {
   display: block;
   filter: drop-shadow(0 0 4px rgba(var(--cyb-green-rgb), 0.45));
+}
+.cyb-rumi-dot {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 9px;
+  height: 9px;
+  border-radius: 9999px;
+  background: var(--cyb-green);
+  box-shadow: 0 0 8px rgba(var(--cyb-green-rgb), 0.9);
+  animation: rumi-pulse 1.6s ease-out infinite;
+}
+@keyframes rumi-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  70% {
+    transform: scale(1.7);
+    opacity: 0.25;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .cyb-rumi-modal {

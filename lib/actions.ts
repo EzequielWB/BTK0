@@ -719,7 +719,6 @@ export async function createDayGoalAction(
   id: string
 ): Promise<ActionResult> {
   await requireAuth();
-  if (isFutureDay(date)) return { error: "Días futuros: solo lectura." };
 
   const text = title.trim();
   if (!text) return { error: "Escribí el objetivo del día." };

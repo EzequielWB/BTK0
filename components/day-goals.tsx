@@ -27,6 +27,7 @@ export function DayGoals({
   const [editValue, setEditValue] = useState("");
 
   const isPast = date < todayISO();
+  const isFuture = date > todayISO();
 
   const [optimistic, mutate] = useOptimistic(
     initialGoals,
@@ -139,14 +140,22 @@ export function DayGoals({
                   <button
                     type="button"
                     onClick={() => handleToggle(goal)}
-                    disabled={pending}
+                    disabled={pending || isFuture}
                     aria-label={
-                      done
-                        ? "Desmarcar como pendiente"
-                        : "Marcar objetivo del día como completado"
+                      isFuture
+                        ? "Planificado para este día"
+                        : done
+                          ? "Desmarcar como pendiente"
+                          : "Marcar objetivo del día como completado"
                     }
-                    title={done ? "Desmarcar" : "Completar"}
-                    className={`cyb-goal-tick${done ? " done" : ""}`}
+                    title={
+                      isFuture
+                        ? "Se completa el mismo día"
+                        : done
+                          ? "Desmarcar"
+                          : "Completar"
+                    }
+                    className={`cyb-goal-tick${done ? " done" : ""}${isFuture ? " future" : ""}`}
                   >
                     {done ? "✓" : ""}
                   </button>
@@ -180,7 +189,11 @@ export function DayGoals({
                               (isPast ? " text-[var(--cyb-amber)]" : "")
                             }
                           >
-                            {isPast ? "quedó pendiente" : "pendiente"}
+                            {isFuture
+                              ? "planificado"
+                              : isPast
+                                ? "quedó pendiente"
+                                : "pendiente"}
                           </span>
                         )}
                       </>
