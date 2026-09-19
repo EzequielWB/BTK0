@@ -212,6 +212,24 @@ create table if not exists weight_months (
 );
 
 -- ------------------------------------------------------------
+-- rumiaciones: "Rumiaciones" — pensamientos constantes, NO atados
+-- a un día: un solo texto que siempre está. Fila única (id=1)
+-- estilo settings. Se crea al guardar con texto y se borra (o
+-- queda vacía) si no hay contenido.
+-- NOTA: si ya se había creado con la forma anterior (date pk,
+-- una fila por día), dropearla y volver a correr este bloque:
+--   drop table if exists rumiaciones;
+-- ------------------------------------------------------------
+create table if not exists rumiaciones (
+  id         int primary key default 1,
+  content    text not null default '',
+  updated_at timestamptz not null default now()
+);
+
+insert into rumiaciones (id, content) values (1, '')
+on conflict (id) do nothing;
+
+-- ------------------------------------------------------------
 -- day_goals: "objetivos del día" — lista por día que se arma SOLO
 -- desde la vista del día (a diferencia de objectives, que son
 -- globales). Independiente de la eficiencia/estadísticas y del
@@ -286,6 +304,7 @@ alter table weight_months enable row level security;
 alter table agenda_categories enable row level security;
 alter table agenda_items enable row level security;
 alter table day_goals enable row level security;
+alter table rumiaciones enable row level security;
 
 -- ------------------------------------------------------------
 -- Función: auto-completar recordatorios vencidos

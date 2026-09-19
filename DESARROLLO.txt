@@ -1050,3 +1050,31 @@ NOTA (2026-09-09): PWA + NOTIFICACIONES PUSH + NOMBRE/LOGO
     min 82 / max 83.5 / avg 82.75 / count 2) sin errores de consola.
   - PENDIENTE EN SUPABASE (hosted): correr el create table de weight y
     weight_months (idempotente, ya estÃ¡ en supabase/schema.sql).
+
+[2026-09-18] RUMIACIONES (VENTANA TERMINAL SUPERPUESTA, CONTENIDO GLOBAL)
+  - Nueva entidad "rumiaciones": pensamientos CONSTANTES, no atados a un día.
+    Un solo texto global (fila única id=1, estilo settings) que siempre está.
+  - supabase/schema.sql: tabla rumiaciones (id pk default 1, content, updated_at)
+    + RLS + insert singleton. NOTA: si ya existía con la forma anterior (date pk)
+    hay que drop table y re-correr.
+  - lib/local-client.ts: "rumiaciones" en TABLES. lib/types.ts: tipo Rumiacion
+    {id, content, updated_at}. lib/actions.ts: saveRumiacionesAction(content)
+    sin fecha (upsert id=1, delete si queda vacío).
+  - components/rumiaciones.tsx (client): botón ícono de hoja con punta doblada
+    (SVG, verde neón) en la cabecera de la Agenda; abre un modal centrado estilo
+    terminal (fondo negro, texto verde, scanlines, cursor parpadeante) que queda
+    por encima del calendario y de la cita. Autoguardado (1,5s) + flush al cerrar/
+    desmontar, Esc/click afuera/? para cerrar. Mismo texto en cualquier día.
+  - app/bitacora/[date]/page.tsx: fetch del singleton (eq id 1) + botón junto a
+    ? Destacar.
+  - Verificación: check (tsc+eslint) en verde; E2E por Playwright contra dev:
+    ícono presente (sin label), guardar, persiste el MISMO texto en otro día y
+    limpieza, sin errores JS.
+
+[2026-09-18] CITA DEL DIA - SOLO FRASES MOTIVACIONALES
+  - lib/quotes.ts: curado el pool QUOTES a 87 frases, todas si o si motivacionales,
+    manteniendo la mezcla reales/anime/juegos/refranes. Se eliminaron las no
+    motivacionales (filosoficas neutras, refranes de advertencia, cinicas de
+    juegos/anime). Se mantiene intacta la logica del Otra frase (aleatoria con
+    repeticion evitada) y la especial: cada 5 refrescos sale si o si la de
+    -Anonimo (aumentas el peso de tu sacrificio...). Verificacion: check en verde.

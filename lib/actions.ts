@@ -1137,6 +1137,39 @@ export async function saveJournalAction(
 }
 
 // ---------------------------------------------------------------------------
+// Rumiaciones (pensamientos constantes): un solo texto global, fila única
+// id=1 (estilo settings). Al quedar vacío se borra la fila.
+// ---------------------------------------------------------------------------
+
+export async function saveRumiacionesAction(
+  content: string
+): Promise<ActionResult> {
+  await requireAuth();
+
+  const text = content.trim();
+  const supabase = await createClient();
+
+  if (!text) {
+    const { error } = await supabase.from("rumiaciones").delete().eq("id", 1);
+    revalidatePath("/bitacora", "layout");
+    if (error) return { error: "No se pudo limpiar la rumiación." };
+    return { success: "Rumiación limpia." };
+  }
+
+  const { error } = await supabase
+    .from("rumiaciones")
+    .upsert(
+      { id: 1, content: text, updated_at: new Date().toISOString() },
+      { onConflict: "id" }
+    );
+
+  revalidatePath("/bitacora", "layout");
+
+  if (error) return { error: "No se pudo guardar la rumiación." };
+  return { success: "Rumiación guardada." };
+}
+
+// ---------------------------------------------------------------------------
 // Peso (gráfico por mes): una fila por día (upsert por date). Al registrar el
 // primer peso del mes siguiente se "cierra" el resumen mensual guardado.
 // ---------------------------------------------------------------------------

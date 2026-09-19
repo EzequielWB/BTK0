@@ -7,6 +7,7 @@ import { MotivationalQuote } from "@/components/motivational-quote";
 import { JournalSheet } from "@/components/journal-sheet";
 import { ObjectivesChecklist } from "@/components/objectives-checklist";
 import { ReminderPanel } from "@/components/reminder-panel";
+import { Rumiaciones } from "@/components/rumiaciones";
 import { TemporalGoalsSection } from "@/components/temporal-goals-section";
 import { ClampText } from "@/components/clamp-text";
 import {
@@ -40,6 +41,7 @@ import type {
   JournalEntry,
   Objective,
   Reminder,
+  Rumiacion,
   Settings,
   TemporalGoal,
 } from "@/lib/types";
@@ -57,7 +59,7 @@ export default async function DayPage({
 
   const supabase = await createClient();
 
-  const [{ data: objectives }, { data: day }, { data: goals }, { data: reminderRows }, { data: annualRows }, { data: journalRow }, { data: dayGoalRows }] =
+  const [{ data: objectives }, { data: day }, { data: goals }, { data: reminderRows }, { data: annualRows }, { data: journalRow }, { data: dayGoalRows }, { data: rumiacionesRow }] =
     await Promise.all([
       supabase
         .from("objectives")
@@ -87,6 +89,11 @@ export default async function DayPage({
         .eq("date", date)
         .order("created_at")
         .order("id"),
+      supabase
+        .from("rumiaciones")
+        .select("id, content")
+        .eq("id", 1)
+        .maybeSingle(),
     ]);
 
   const dayRow = (day ?? null) as Day | null;
@@ -299,6 +306,9 @@ export default async function DayPage({
       entry.day === Number(date.slice(8, 10))
   );
   const journal = (journalRow ?? null) as Pick<JournalEntry, "content"> | null;
+  const rumiacionesContent =
+    ((rumiacionesRow ?? null) as Pick<Rumiacion, "content"> | null)?.content ??
+    "";
   const dayGoals = (dayGoalRows ?? []) as DayGoal[];
   const annualDates = new Set<string>();
   for (const entry of efemerides) {
@@ -436,6 +446,7 @@ export default async function DayPage({
             Agenda - {monthLabel(parsed.getFullYear(), parsed.getMonth())}
           </span>
           <div className="flex items-center gap-2">
+            <Rumiaciones initial={rumiacionesContent} />
             <DayFlagButton date={date} flagged={isFlagged} />
           </div>
         </div>

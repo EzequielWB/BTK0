@@ -61,6 +61,14 @@ export type JournalEntry = {
   updated_at: string;
 };
 
+/** "Rumiaciones": pensamientos constantes, no atados a un día.
+ * Fila única (id=1): un solo texto que siempre está. */
+export type Rumiacion = {
+  id: number;
+  content: string;
+  updated_at: string;
+};
+
 /** Peso corporal diario: una fila por día (date es PK), en kg con 1 decimal. */
 export type Weight = {
   date: string;
