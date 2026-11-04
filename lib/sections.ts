@@ -1,7 +1,8 @@
-/** Claves de las tarjetas de contenido del día, en el orden por defecto. */
+/** Claves de las tarjetas de contenido del día, en el orden por defecto.
+ * La cita del día y los objetivos globales NO son tarjetas del día: viven en
+ * la antesala, la ventana que se abre al entrar a la bitácora. */
 export const DEFAULT_DAY_SECTION_ORDER = [
   "efemerides",
-  "cita",
   "objetivos",
   "objetivos_dia",
   "metas_activas",
@@ -13,7 +14,6 @@ export type DaySectionKey = (typeof DEFAULT_DAY_SECTION_ORDER)[number];
 
 export const DAY_SECTION_LABELS: Record<DaySectionKey, string> = {
   efemerides: "Efemérides",
-  cita: "Cita del día",
   objetivos: "Objetivos",
   objetivos_dia: "Objetivos del día",
   metas_activas: "Metas activas",
@@ -39,9 +39,18 @@ export function parseDaySectionOrder(
         out.push(item as DaySectionKey);
       }
     }
-    // Claves que falten (config vieja) se agregan al final en el orden por defecto.
+    // Claves que falten (config vieja) se ubican en la posición que les
+    // corresponde según el orden por defecto: antes de la primera clave
+    // guardada que va después de ellas en el orden canónico.
     for (const key of DEFAULT_DAY_SECTION_ORDER) {
-      if (!seen.has(key)) out.push(key);
+      if (seen.has(key)) continue;
+      const canonicalIndex = DEFAULT_DAY_SECTION_ORDER.indexOf(key);
+      const nextPresentIndex = out.findIndex(
+        (existing) => DEFAULT_DAY_SECTION_ORDER.indexOf(existing) > canonicalIndex
+      );
+      if (nextPresentIndex === -1) out.push(key);
+      else out.splice(nextPresentIndex, 0, key);
+      seen.add(key);
     }
     return out;
   } catch {

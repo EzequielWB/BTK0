@@ -88,6 +88,75 @@ const { chromium } = require("playwright-core");
     });
     console.log("Animación de acceso (IDENTIDAD VERIFICADA): yes");
     await page.waitForURL("**/bitacora/**", { timeout: 15000 });
+
+    // Antesala: ventana de entrada sobre la bitácora difuminada con la frase
+    // del día y (si hay) los objetivos globales. Se cierra con su botón y deja
+    // la URL limpia para que refrescar no la vuelva a abrir.
+    await page.waitForSelector(".cyb-antesala", { timeout: 15000 });
+    console.log("Antesala abierta al entrar:", true);
+    console.log(
+      "URL de entrada marcada (?antesala=1):",
+      page.url().includes("antesala=1")
+    );
+    console.log(
+      "Bitácora visible detrás (deck):",
+      (await page.locator(".cyb-deck").count()) === 1
+    );
+    console.log(
+      "Panel de la antesala centrado:",
+      (await page.locator(".cyb-antesala-panel").count()) === 1
+    );
+
+    // Frase motivacional: recuadro .blk con cita glitch + autor con rol + botón refrescar
+    const quoteBoxes = page.locator(".cyb-antesala blockquote");
+    console.log("Recuadros de frase en la antesala:", await quoteBoxes.count());
+    const quoteText = await quoteBoxes.first().innerText();
+    console.log("Cita entre comillas «»:", quoteText.includes("«"));
+    console.log("Glitch (data-text):", (await quoteBoxes.first().locator("p").first().getAttribute("data-text")) !== null);
+    const getAuthorLine = (full) => full.split("\n").find((l) => l.startsWith("—"));
+    console.log("Autor con guion:", Boolean(getAuthorLine(quoteText)));
+    const refreshButton = page.locator("button[aria-label='Mostrar otra frase']");
+    console.log("Botón 'Otra frase' presente:", (await refreshButton.count()) > 0);
+    let sawRole = false;
+    for (let i = 0; i < 10 && !sawRole; i++) {
+      const previous = await quoteBoxes.first().locator("p.glitch").innerText();
+      await refreshButton.click();
+      // Esperar el cambio real de la frase: el primer render no siempre está
+      // listo en un tiempo fijo y leeríamos la cita anterior.
+      await page.waitForFunction(
+        (prev) => {
+          const p = document.querySelector(".cyb-antesala blockquote p.glitch");
+          return !!p && p.textContent !== prev;
+        },
+        previous,
+        { timeout: 5000 }
+      );
+      const author = getAuthorLine(await quoteBoxes.first().innerText());
+      sawRole = Boolean(author && /,\s[\wáéíóúñ ]+$/.test(author));
+    }
+    console.log("Alguna cita muestra autor con rol:", sawRole);
+    const beforeText = await quoteBoxes.first().locator("p.glitch").innerText();
+    await refreshButton.click();
+    const quoteChanged = await page
+      .waitForFunction(
+        (prev) => {
+          const p = document.querySelector(".cyb-antesala blockquote p.glitch");
+          return !!p && p.textContent !== prev;
+        },
+        beforeText,
+        { timeout: 5000 }
+      )
+      .then(() => true)
+      .catch(() => false);
+    console.log("La frase cambia al refrescar:", quoteChanged);
+
+    await page.locator(".cyb-antesala-enter").click();
+    await page.locator(".cyb-antesala").waitFor({ timeout: 10000, state: "detached" });
+    console.log("Antesala cerrada con 'Entrar a la bitácora': yes");
+    console.log(
+      "URL limpia tras entrar (sin ?antesala):",
+      !page.url().includes("antesala")
+    );
     const todayUrl = page.url();
     console.log("URL tras login:", todayUrl);
     const iso = (d) =>
@@ -127,29 +196,15 @@ const { chromium } = require("playwright-core");
       (await page.locator(".cyb-cal-hd").count()) >= 7
     );
 
-    // Frase motivacional: recuadro .blk con cita glitch + autor con rol + botón refrescar
-    const quoteBoxes = page.locator("blockquote");
-    console.log("Recuadros de frase:", await quoteBoxes.count());
-    const quoteText = await quoteBoxes.first().innerText();
-    console.log("Cita entre comillas «»:", quoteText.includes("«"));
-    console.log("Glitch (data-text):", (await quoteBoxes.first().locator("p").first().getAttribute("data-text")) !== null);
-    const getAuthorLine = (full) => full.split("\n").find((l) => l.startsWith("—"));
-    console.log("Autor con guion:", Boolean(getAuthorLine(quoteText)));
-    const refreshButton = page.locator("button[aria-label='Mostrar otra frase']");
-    console.log("Botón 'Otra frase' presente:", (await refreshButton.count()) > 0);
-    let sawRole = false;
-    for (let i = 0; i < 8 && !sawRole; i++) {
-      await refreshButton.click();
-      await page.waitForTimeout(250);
-      const author = getAuthorLine(await quoteBoxes.first().innerText());
-      sawRole = Boolean(author && /,\s[\wáéíóúñ ]+$/.test(author));
-    }
-    console.log("Alguna cita muestra autor con rol:", sawRole);
-    const beforeText = await quoteBoxes.first().locator("p.glitch").innerText();
-    await refreshButton.click();
-    await page.waitForTimeout(400);
-    const afterText = await quoteBoxes.first().locator("p.glitch").innerText();
-    console.log("La frase cambia al refrescar:", beforeText !== afterText);
+    // Dentro de la bitácora no queda la frase del día ni los objetivos globales.
+    console.log(
+      "Sin cita dentro de la bitácora:",
+      (await page.locator("blockquote").count()) === 0
+    );
+    console.log(
+      "Sin tarjeta de objetivos globales dentro de la bitácora:",
+      (await page.locator("h2:has-text('Objetivos_globales')").count()) === 0
+    );
 
     // 1) Objetivos con 3 estados: slots ✕ (rojo) / − (ámbar) / ✓ (verde) y %
     const firstObj = page.locator(".cyb-trio").first();
@@ -160,7 +215,7 @@ const { chromium } = require("playwright-core");
         (await firstObj.locator('button[aria-label="A medias"]').count()) === 1 &&
         (await firstObj.locator('button[aria-label="Completado"]').count()) === 1
     );
-    const objHeader = page.locator("h2:has-text('Objetivos')").first();
+    const objHeader = page.locator("h2:has-text('Objetivos ·')").first();
     console.log(
       "Header dice 'Objetivos' con %:",
       /OBJETIVOS[\s\S]*%\s*$/i.test(await objHeader.innerText())
@@ -1020,14 +1075,20 @@ await setCompletion("percent", 84);
       { timeout: 10000 }
     );
     console.log("Celda con efeméride marcada (.has-annual): yes");
-    const quote = page.locator("blockquote").first();
     const efemerideBlock = page.locator(".blk.efemeride-blk");
-    const quoteBox = await quote.boundingBox();
+    const checklistBlock = page
+      .locator("section.blk:has(h2:has-text('Objetivos ·'))")
+      .first();
+    const checklistBox = await checklistBlock.boundingBox();
     const efBox = await efemerideBlock.boundingBox();
     console.log(
-      "Bloque 'Efemérides' está encima de la cita:",
+      "Bloque 'Efemérides' está encima del checklist:",
       (await efemerideBlock.count()) === 1 &&
-        Boolean(quoteBox && efBox && efBox.y < quoteBox.y)
+        Boolean(checklistBox && efBox && efBox.y < checklistBox.y)
+    );
+    console.log(
+      "Sin cita en la vista del día:",
+      (await page.locator("blockquote").count()) === 0
     );
     console.log(
       "Muestra el texto de la efeméride en la vista del día:",

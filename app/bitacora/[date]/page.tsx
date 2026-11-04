@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
 import { notFound, redirect } from "next/navigation";
 import { CalendarNav } from "@/components/calendar-nav";
+import { Antesala } from "@/components/antesala";
 import { DayFlagButton } from "@/components/day-flag-button";
 import { DayGoals } from "@/components/day-goals";
+import { GlobalObjectives } from "@/components/global-objectives";
 import { MotivationalQuote } from "@/components/motivational-quote";
 import { JournalSheet } from "@/components/journal-sheet";
 import { ObjectivesChecklist } from "@/components/objectives-checklist";
@@ -38,6 +40,7 @@ import type {
   Day,
   DayGoal,
   DayMark,
+  GlobalObjective,
   JournalEntry,
   Objective,
   Reminder,
@@ -50,12 +53,18 @@ export const dynamic = "force-dynamic";
 
 export default async function DayPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ date: string }>;
+  searchParams: Promise<{ antesala?: string | string[] }>;
 }) {
   const { date } = await params;
   if (!isValidISODate(date)) notFound();
   if (!(await isAuthenticated())) redirect("/");
+
+  // La antesala solo se abre al entrar desde el login (o al refrescar su URL).
+  const { antesala } = await searchParams;
+  const showAntesala = antesala === "1";
 
   const supabase = await createClient();
 
@@ -138,6 +147,20 @@ export default async function DayPage({
   const completedCount = counted.filter(
     (item) => item.status === "done"
   ).length;
+
+  // Los objetivos globales viven en la antesala, no en la bitácora: solo se
+  // consultan cuando esa ventana se va a mostrar.
+  let pendingGlobalObjectives: GlobalObjective[] = [];
+  if (showAntesala) {
+    const { data } = await supabase
+      .from("global_objectives")
+      .select("*")
+      .is("completed_at", null)
+      .order("sort_order")
+      .order("created_at");
+    pendingGlobalObjectives = (data ?? []) as GlobalObjective[];
+  }
+
   const { data: settingsRow } = await supabase
     .from("settings")
     .select("id, completion_mode, threshold, section_order")
@@ -303,7 +326,7 @@ export default async function DayPage({
   const parsed = parseISODate(date);
 
   // Efemérides: marcan su celda en el calendario del mes y aparecen como
-  // propia categoría encima de la cita en la vista del día.
+  // propia categoría en la vista del día.
   const efemerides = (annualRows ?? []) as AnnualReminder[];
   const dayEfemerides = efemerides.filter(
     (entry) =>
@@ -357,10 +380,6 @@ export default async function DayPage({
           </ul>
         </section>
       ) : null,
-    ],
-    [
-      "cita",
-      <MotivationalQuote key="cita" date={date} />,
     ],
     [
       "objetivos",
@@ -442,39 +461,59 @@ export default async function DayPage({
     .map(([, node]) => node);
 
   return (
-    <div className="space-y-4">
-      <div className="blk">
-        <div className="flex items-center justify-between gap-2 mb-2">
-          <span className="blk-tag">
-            Agenda - {monthLabel(parsed.getFullYear(), parsed.getMonth())}
-          </span>
-          <div className="flex items-center gap-2">
-            <Rumiaciones initial={rumiacionesContent} />
-            <DayFlagButton date={date} flagged={isFlagged} />
+    <>
+      {showAntesala ? (
+        <Antesala date={date}>
+          {pendingGlobalObjectives.length > 0 ? (
+            <section className="blk">
+              <span className="blk-tag">
+                Objetivos_globales
+                <span className="normal-case tracking-normal text-xs opacity-80">
+                  {" "}
+                  ({pendingGlobalObjectives.length})
+                </span>
+              </span>
+              <GlobalObjectives objectives={pendingGlobalObjectives} />
+            </section>
+          ) : null}
+          <MotivationalQuote date={date} />
+        </Antesala>
+      ) : null}
+
+      <div className="space-y-4">
+        <div className="blk">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <span className="blk-tag">
+              Agenda - {monthLabel(parsed.getFullYear(), parsed.getMonth())}
+            </span>
+            <div className="flex items-center gap-2">
+              <Rumiaciones initial={rumiacionesContent} />
+              <DayFlagButton date={date} flagged={isFlagged} />
+            </div>
           </div>
+          <CalendarNav
+            date={date}
+            marks={marks}
+            reminders={remindersByDate}
+            pendingReminders={pendingRemindersByDate}
+            flaggedDates={flaggedDates}
+            annualDates={[...annualDates]}
+          />
         </div>
-        <CalendarNav
-          date={date}
-          marks={marks}
-          reminders={remindersByDate}
-          pendingReminders={pendingRemindersByDate}
-          flaggedDates={flaggedDates}
-          annualDates={[...annualDates]}
-        />
+
+        {isFuture && (
+          <div className="blk future-blk">
+            <span className="blk-tag">Vista futura</span>
+            <p className="cyb-hint text-sm">
+              Todavía no llegó este día. Podés ir dejando recordatorios y
+              preparando los objetivos del día con anticipación; el checklist
+              general se habilita cuando llegue la fecha.
+            </p>
+          </div>
+        )}
+
+        {daySectionsSorted}
       </div>
-
-      {isFuture && (
-        <div className="blk future-blk">
-          <span className="blk-tag">Vista futura</span>
-          <p className="cyb-hint text-sm">
-            Todavía no llegó este día. Podés ir dejando recordatorios y
-            preparando los objetivos del día con anticipación; el checklist
-            general se habilita cuando llegue la fecha.
-          </p>
-        </div>
-      )}
-
-      {daySectionsSorted}
-    </div>
+    </>
   );
 }

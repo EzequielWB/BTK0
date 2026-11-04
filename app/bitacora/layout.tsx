@@ -68,6 +68,10 @@ export default async function BitacoraLayout({ children }: { children: ReactNode
         <div className="cyb-stage">{children}</div>
       </main>
 
+      {/* Destino del portal de la antesala: hijo directo del shell para
+          heredar los colores del tema y quedar por encima del deck. */}
+      <div id="antesala-root" />
+
       <ReminderFab />
     </div>
   );

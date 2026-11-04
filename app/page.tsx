@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { isAuthenticated } from "@/lib/session";
 import { createClient, isLocalMode } from "@/lib/supabase/server";
 import { colorsToStyleVars, parseColors } from "@/lib/colors";
@@ -7,9 +6,9 @@ import { LoginScreen } from "@/components/login/login-screen";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  if (await isAuthenticated()) {
-    redirect("/bitacora");
-  }
+  // Con la sesión guardada no se saltea el inicio: se sigue mostrando el ojo
+  // en ASCII, pero en lugar del formulario aparece el botón "Acceder".
+  const sessionActive = await isAuthenticated();
 
   const supabase = await createClient();
   const { data: settingsRow } = await supabase
@@ -27,7 +26,7 @@ export default async function Home() {
       className="relative flex min-h-dvh flex-1 items-center justify-center overflow-x-hidden p-4"
       style={{ ...colorsToStyleVars(colors), backgroundColor: "var(--cyb-bg)" }}
     >
-      <LoginScreen showDefaultHint={isLocalMode()} />
+      <LoginScreen showDefaultHint={isLocalMode()} sessionActive={sessionActive} />
     </main>
   );
 }

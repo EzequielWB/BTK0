@@ -16,8 +16,11 @@ type Phase = "boot" | "idle" | "wrong" | "flash" | "off" | "granted";
 
 export function LoginScreen({
   showDefaultHint = false,
+  sessionActive = false,
 }: {
   showDefaultHint?: boolean;
+  /** Hay una sesión guardada: no se pide la contraseña, solo "Acceder". */
+  sessionActive?: boolean;
 }) {
   const [phase, setPhase] = useState<Phase>("boot");
   const phaseRef = useRef<Phase>("boot");
@@ -52,7 +55,7 @@ export function LoginScreen({
     let cancelled = false;
     const t = window.setTimeout(async () => {
       await grantSessionAction();
-      if (!cancelled) router.push("/bitacora");
+      if (!cancelled) router.push("/bitacora?antesala=1");
     }, 1100);
     return () => {
       cancelled = true;
@@ -109,13 +112,24 @@ export function LoginScreen({
               : "font-pixel text-sm leading-relaxed whitespace-pre-line text-[var(--cyb-fg)] [text-shadow:0_0_8px_rgba(var(--cyb-fg-rgb),0.35)] sm:text-base"
           }
         />
-        <PasswordGate
-          showDefaultHint={showDefaultHint}
-          onError={handleError}
-          onReading={setReading}
-          onSuccess={handleSuccess}
-          disabled={phase !== "idle"}
-        />
+        {sessionActive ? (
+          <button
+            type="button"
+            onClick={() => router.push("/bitacora?antesala=1")}
+            disabled={phase !== "idle"}
+            className="w-full max-w-sm border border-[var(--cyb-border)] bg-[var(--cyb-field)] px-3 py-2.5 text-[11px] uppercase tracking-[0.3em] text-[var(--cyb-fg)] transition-colors hover:border-[var(--cyb-green)] hover:text-[var(--cyb-green)] disabled:opacity-50"
+          >
+            Acceder
+          </button>
+        ) : (
+          <PasswordGate
+            showDefaultHint={showDefaultHint}
+            onError={handleError}
+            onReading={setReading}
+            onSuccess={handleSuccess}
+            disabled={phase !== "idle"}
+          />
+        )}
       </div>
       {phase === "flash" && <CrtShutdown onDone={handleShutdown} />}
     </>

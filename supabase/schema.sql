@@ -74,6 +74,21 @@ create table if not exists daily_objectives (
 alter table daily_objectives add column if not exists note text;
 
 -- ------------------------------------------------------------
+-- global_objectives: objetivos globales ("de vida"), sin fecha de
+-- fin. Se completan UNA sola vez (completed_at) y dejan de
+-- aparecer en la vista del día; en Ajustes se siguen viendo.
+-- No cuentan para el % ni para el calendario.
+-- ------------------------------------------------------------
+create table if not exists global_objectives (
+  id           uuid primary key default gen_random_uuid(),
+  title        text not null,
+  description  text,
+  sort_order   int not null default 0,
+  completed_at timestamptz,
+  created_at   timestamptz not null default now()
+);
+
+-- ------------------------------------------------------------
 -- temporal_goals: metas con rango de fechas ("del X al Y")
 -- ------------------------------------------------------------
 create table if not exists temporal_goals (
@@ -284,6 +299,7 @@ create index if not exists idx_annual_reminders_md on annual_reminders(month, da
 create index if not exists idx_reminders_date on reminders(date);
 create index if not exists idx_daily_objectives_day on daily_objectives(day_id);
 create index if not exists idx_daily_objectives_objective on daily_objectives(objective_id);
+create index if not exists idx_global_objectives_order on global_objectives(sort_order, created_at);
 create index if not exists idx_temporal_goals_range on temporal_goals(start_date, end_date);
 create index if not exists idx_day_flags_date on day_flags(date);
 create index if not exists idx_agenda_items_category on agenda_items(category_id, created_at);
@@ -304,6 +320,7 @@ alter table days enable row level security;
 alter table reminders enable row level security;
 alter table day_flags enable row level security;
 alter table daily_objectives enable row level security;
+alter table global_objectives enable row level security;
 alter table temporal_goals enable row level security;
 alter table annual_reminders enable row level security;
 alter table annual_categories enable row level security;

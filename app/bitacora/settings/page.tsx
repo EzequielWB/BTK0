@@ -4,11 +4,12 @@ import { ColorThemeForm } from "@/components/color-theme-form";
 import { CompletionSettingsForm } from "@/components/completion-settings-form";
 import { CountersManager } from "@/components/counters-manager";
 import { DaySectionsOrder } from "@/components/day-sections-order";
+import { GlobalObjectiveManager } from "@/components/global-objective-manager";
 import { ObjectiveManager } from "@/components/objective-manager";
 import { TemporalGoalManager } from "@/components/temporal-goal-manager";
 import { isAuthenticated } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import type { Objective, Settings, TemporalGoal } from "@/lib/types";
+import type { GlobalObjective, Objective, Settings, TemporalGoal } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -17,15 +18,23 @@ export default async function SettingsPage() {
 
   const supabase = await createClient();
 
-  const [{ data: objectives }, { data: goals }, { data: settings }] =
-    await Promise.all([
-      supabase.from("objectives").select("*").order("created_at"),
-      supabase.from("temporal_goals").select("*").order("start_date"),
-      supabase.from("settings").select("*").eq("id", 1).maybeSingle(),
-    ]);
+  const [
+    { data: globalObjectives },
+    { data: objectives },
+    { data: goals },
+    { data: settings },
+  ] = await Promise.all([
+    supabase.from("global_objectives").select("*").order("created_at"),
+    supabase.from("objectives").select("*").order("created_at"),
+    supabase.from("temporal_goals").select("*").order("start_date"),
+    supabase.from("settings").select("*").eq("id", 1).maybeSingle(),
+  ]);
 
   return (
     <div className="space-y-8">
+      <GlobalObjectiveManager
+        objectives={(globalObjectives ?? []) as GlobalObjective[]}
+      />
       <ObjectiveManager objectives={(objectives ?? []) as Objective[]} />
       <TemporalGoalManager goals={(goals ?? []) as TemporalGoal[]} />
       <DaySectionsOrder sectionOrder={(settings ?? null)?.section_order} />

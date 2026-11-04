@@ -3,10 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { AUTH_COOKIE, AUTH_DAY_COOKIE, generateSalt, hashPassword, isAuthenticated } from "@/lib/session";
+import { AUTH_COOKIE, AUTH_MAX_AGE_SECONDS, generateSalt, hashPassword, isAuthenticated } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { isDaySectionOrder } from "@/lib/sections";
-import { addDays, arNow, isValidISODate, isValidMonthDay, monthRangeISO, todayISO } from "@/lib/utils";
+import { addDays, isValidISODate, isValidMonthDay, monthRangeISO, todayISO } from "@/lib/utils";
 import { COLOR_KEYS, stringifyColors } from "@/lib/colors";
 import { parseCounters, stringifyCounters } from "@/lib/counters";
 import { parseKilograms } from "@/lib/weight";
@@ -72,10 +72,9 @@ export async function grantSessionAction(): Promise<ActionResult> {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 24 * 30,
+    maxAge: AUTH_MAX_AGE_SECONDS,
   } as const;
   cookieStore.set(AUTH_COOKIE, (data as { password_hash: string }).password_hash, options);
-  cookieStore.set(AUTH_DAY_COOKIE, arNow().date, options);
 
   return { success: "granted" };
 }
@@ -83,7 +82,6 @@ export async function grantSessionAction(): Promise<ActionResult> {
 export async function logoutAction(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.delete(AUTH_COOKIE);
-  cookieStore.delete(AUTH_DAY_COOKIE);
   redirect("/");
 }
 
@@ -599,6 +597,145 @@ export async function reorderObjectivesAction(
 
   revalidatePath("/bitacora/settings");
   revalidatePath("/bitacora");
+
+  if (failure) return { error: "No se pudo guardar el nuevo orden." };
+  return { success: "Orden actualizado." };
+}
+
+// ---------------------------------------------------------------------------
+// CRUD objetivos globales (metas "de vida", sin fecha de fin)
+// ---------------------------------------------------------------------------
+
+export async function createGlobalObjectiveAction(
+  _prevState: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  await requireAuth();
+
+  const title = String(formData.get("title") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim() || null;
+  if (!title) return { error: "El título es obligatorio." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("global_objectives")
+    .insert({ title, description });
+
+  revalidatePath("/bitacora/settings");
+  revalidatePath("/bitacora", "layout");
+
+  if (error) return { error: "No se pudo crear el objetivo global." };
+  return { success: "Objetivo global creado." };
+}
+
+export async function updateGlobalObjectiveAction(
+  _prevState: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  await requireAuth();
+
+  const id = String(formData.get("id") ?? "");
+  const title = String(formData.get("title") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim() || null;
+  if (!id) return { error: "Falta el objetivo a editar." };
+  if (!title) return { error: "El título es obligatorio." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("global_objectives")
+    .update({ title, description })
+    .eq("id", id);
+
+  revalidatePath("/bitacora/settings");
+  revalidatePath("/bitacora", "layout");
+
+  if (error) return { error: "No se pudo actualizar el objetivo global." };
+  return { success: "Objetivo global actualizado." };
+}
+
+export async function deleteGlobalObjectiveAction(
+  formData: FormData
+): Promise<void> {
+  await requireAuth();
+
+  const id = String(formData.get("id") ?? "");
+
+  const supabase = await createClient();
+  await supabase.from("global_objectives").delete().eq("id", id);
+
+  revalidatePath("/bitacora/settings");
+  revalidatePath("/bitacora", "layout");
+}
+
+/** Completar (o reabrir) un objetivo global. Se llama desde la vista del día
+ * después del "¿Seguro?". */
+export async function completeGlobalObjectiveAction(
+  id: string,
+  completed: boolean
+): Promise<ActionResult> {
+  await requireAuth();
+
+  const objectiveId = String(id ?? "").trim();
+  if (!objectiveId) return { error: "Falta el objetivo a completar." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("global_objectives")
+    .update({ completed_at: completed ? new Date().toISOString() : null })
+    .eq("id", objectiveId);
+
+  revalidatePath("/bitacora/settings");
+  revalidatePath("/bitacora", "layout");
+
+  if (error) return { error: "No se pudo completar el objetivo global." };
+  return {
+    success: completed ? "Objetivo global completado." : "Objetivo global reabierto.",
+  };
+}
+
+export async function reorderGlobalObjectivesAction(
+  ids: string[]
+): Promise<ActionResult> {
+  await requireAuth();
+
+  const seen = new Set<string>();
+  const uniqueIds: string[] = [];
+  for (const raw of ids) {
+    const id = String(raw).trim();
+    if (id && !seen.has(id)) {
+      seen.add(id);
+      uniqueIds.push(id);
+    }
+  }
+  if (uniqueIds.length < 2) {
+    return { error: "Se necesitan al menos dos objetivos para ordenar." };
+  }
+
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("global_objectives")
+    .select("id")
+    .in("id", uniqueIds);
+
+  if (error) return { error: "No se pudo cargar los objetivos globales." };
+  const known = new Set(
+    ((data ?? []) as Array<{ id: string }>).map((row) => row.id)
+  );
+  const missing = uniqueIds.some((id) => !known.has(id));
+  if (missing) return { error: "Algunos objetivos globales no existen." };
+
+  let failure = false;
+  for (let index = 0; index < uniqueIds.length; index++) {
+    const res = await supabase
+      .from("global_objectives")
+      .update({ sort_order: index })
+      .eq("id", uniqueIds[index]);
+    if (res.error) failure = true;
+  }
+
+  revalidatePath("/bitacora/settings");
+  revalidatePath("/bitacora", "layout");
 
   if (failure) return { error: "No se pudo guardar el nuevo orden." };
   return { success: "Orden actualizado." };

@@ -8,6 +8,19 @@ export type Objective = {
   created_at: string;
 };
 
+/** Objetivo global ("de vida"): no tiene fecha de fin y se completa una sola
+ * vez. Al completarse deja de mostrarse en la vista del día, pero sigue
+ * visible en Ajustes. */
+export type GlobalObjective = {
+  id: string;
+  title: string;
+  description: string | null;
+  sort_order: number;
+  /** Fecha en que se completó (null/ausente = pendiente). */
+  completed_at?: string | null;
+  created_at: string;
+};
+
 export type TemporalGoal = {
   id: string;
   title: string;
